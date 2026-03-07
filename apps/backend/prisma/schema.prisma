@@ -26,6 +26,7 @@ model User {
   auditLogs     AuditLog[]
   spacePerms    SpacePermission[]
   pagePerms     PagePermission[]
+  pageVersions  PageVersion[]
 }
 
 model OAuthAccount {
@@ -96,6 +97,7 @@ model PageVersion {
   authorId    String
   createdAt   DateTime @default(now())
   page        Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  author      User     @relation(fields: [authorId], references: [id])
 }
 
 model PagePermission {

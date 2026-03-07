@@ -15,12 +15,14 @@ import { AdminModule } from './admin/admin.module';
 import { HocuspocusModule } from './hocuspocus/hocuspocus.module';
 import { MailModule } from './mail/mail.module';
 import { SetupModule } from './setup/setup.module';
+import { RedisModule } from './redis/redis.module';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    RedisModule,
     AuthModule,
     UsersModule,
     SpacesModule,

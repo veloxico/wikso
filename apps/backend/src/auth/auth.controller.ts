@@ -61,6 +61,16 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 
+  @Get('providers')
+  @ApiOperation({ summary: 'Get available auth providers' })
+  getProviders() {
+    return {
+      github: !!process.env.GITHUB_CLIENT_ID,
+      google: !!process.env.GOOGLE_CLIENT_ID,
+      saml: !!process.env.SAML_ENTRY_POINT,
+    };
+  }
+
   // OAuth2 routes
   @Get('google')
   @UseGuards(AuthGuard('google'))

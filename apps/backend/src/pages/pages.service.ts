@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SearchService } from '../search/search.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { WebhooksService } from '../webhooks/webhooks.service';
 import { CreatePageDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
 import { MovePageDto } from './dto/move-page.dto';
@@ -19,6 +21,8 @@ export class PagesService {
   constructor(
     private prisma: PrismaService,
     private searchService: SearchService,
+    private notificationsService: NotificationsService,
+    private webhooksService: WebhooksService,
   ) {}
 
   async create(spaceSlug: string, dto: CreatePageDto, authorId: string) {
@@ -44,7 +48,23 @@ export class PagesService {
     });
 
     // Index in search
-    await this.searchService.indexPage(page);
+    await this.searchService.indexPage(page, { slug: spaceSlug, name: space.name });
+
+    // Notify all space members (except the author)
+    await this.notifySpaceMembers(space.id, authorId, 'page.created', {
+      pageId: page.id,
+      pageTitle: page.title,
+      spaceSlug,
+      spaceName: space.name,
+    });
+
+    // Fire webhook
+    await this.webhooksService.fireEvent('page.created', {
+      pageId: page.id,
+      title: page.title,
+      spaceSlug,
+      authorId,
+    });
 
     return page;
   }
@@ -109,6 +129,7 @@ export class PagesService {
         ...(dto.contentJson !== undefined && { contentJson: dto.contentJson }),
         ...(dto.status && { status: dto.status }),
       },
+      include: { space: true },
     });
 
     if (dto.contentJson !== undefined) {
@@ -117,13 +138,45 @@ export class PagesService {
       });
     }
 
-    await this.searchService.indexPage(page);
+    await this.searchService.indexPage(page, page.space ? { slug: page.space.slug, name: page.space.name } : undefined);
+
+    // Notify space members about the update
+    if (page.space) {
+      await this.notifySpaceMembers(page.spaceId, userId, 'page.updated', {
+        pageId: page.id,
+        pageTitle: page.title,
+        spaceSlug: page.space.slug,
+        spaceName: page.space.name,
+      });
+    }
+
+    // Fire webhook
+    await this.webhooksService.fireEvent('page.updated', {
+      pageId: page.id,
+      title: page.title,
+      updatedBy: userId,
+    });
+
     return page;
   }
 
   async delete(pageId: string) {
+    const page = await this.prisma.page.findUnique({
+      where: { id: pageId },
+      include: { space: true },
+    });
+
     await this.searchService.removePage(pageId);
     await this.prisma.page.delete({ where: { id: pageId } });
+
+    // Fire webhook
+    if (page) {
+      await this.webhooksService.fireEvent('page.deleted', {
+        pageId,
+        title: page.title,
+      });
+    }
+
     return { message: 'Page deleted' };
   }
 
@@ -141,6 +194,7 @@ export class PagesService {
     return this.prisma.pageVersion.findMany({
       where: { pageId },
       orderBy: { createdAt: 'desc' },
+      include: { author: { select: { id: true, name: true, avatarUrl: true } } },
     });
   }
 
@@ -150,5 +204,47 @@ export class PagesService {
     });
     if (!version) throw new NotFoundException('Version not found');
     return version;
+  }
+
+  async restoreVersion(pageId: string, versionId: string, userId: string) {
+    const version = await this.getVersion(pageId, versionId);
+
+    const page = await this.prisma.page.update({
+      where: { id: pageId },
+      data: { contentJson: version.contentJson || {} },
+      include: { space: true },
+    });
+
+    // Create a new version for the restore
+    await this.prisma.pageVersion.create({
+      data: { pageId, contentJson: version.contentJson || {}, authorId: userId },
+    });
+
+    await this.searchService.indexPage(page, page.space ? { slug: page.space.slug, name: page.space.name } : undefined);
+
+    return page;
+  }
+
+  /** Notify all members of a space except the actor */
+  private async notifySpaceMembers(
+    spaceId: string,
+    actorId: string,
+    type: string,
+    payload: Record<string, unknown>,
+  ) {
+    try {
+      const members = await this.prisma.spacePermission.findMany({
+        where: { spaceId },
+        select: { userId: true },
+      });
+
+      const promises = members
+        .filter((m) => m.userId && m.userId !== actorId)
+        .map((m) => this.notificationsService.create(m.userId!, type, payload));
+
+      await Promise.all(promises);
+    } catch {
+      // Non-critical — don't break the main flow
+    }
   }
 }

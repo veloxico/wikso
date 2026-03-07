@@ -32,14 +32,19 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/backend/package.json ./apps/backend/
 
-RUN pnpm install --frozen-lockfile --prod
+# Install ALL deps (including prisma CLI for migrations)
+RUN pnpm install --frozen-lockfile
 
 COPY packages/shared ./packages/shared
-COPY --from=builder /app/apps/backend/node_modules/.prisma ./apps/backend/node_modules/.prisma
-COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY apps/backend/prisma ./apps/backend/prisma
+
+# Generate Prisma client in production stage
+RUN pnpm --filter @confluence/backend exec prisma generate
+
+# Copy compiled backend from builder
+COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 
 WORKDIR /app/apps/backend
 
-EXPOSE 3000
-CMD ["node", "dist/main.js"]
+EXPOSE 3000 1234
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy && node dist/main.js"]

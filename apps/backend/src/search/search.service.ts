@@ -31,7 +31,7 @@ export class SearchService implements OnModuleInit {
     }
   }
 
-  async indexPage(page: any) {
+  async indexPage(page: any, space?: { slug: string; name: string }) {
     try {
       const index = this.client.index(this.indexName);
       const content = typeof page.contentJson === 'object'
@@ -44,6 +44,8 @@ export class SearchService implements OnModuleInit {
           title: page.title,
           content,
           spaceId: page.spaceId,
+          spaceSlug: space?.slug || '',
+          spaceName: space?.name || '',
           authorId: page.authorId,
           status: page.status,
           slug: page.slug,

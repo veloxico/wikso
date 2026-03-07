@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, Settings, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useSpace } from '@/hooks/useSpaces';
 import { usePages, useCreatePage } from '@/hooks/usePages';
 import { PageTree } from '@/components/features/PageTree';
@@ -21,7 +22,7 @@ export default function SpaceLayout({ children }: { children: React.ReactNode })
       const newPage = await createPage.mutateAsync({ title: 'Untitled' });
       router.push(`/spaces/${slug}/pages/${newPage.id}`);
     } catch {
-      // TODO: toast error
+      toast.error('Failed to create page');
     }
   };
 

@@ -3,32 +3,35 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { MailService } from '../mail/mail.service';
+import { RedisService } from '../redis/redis.service';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuid } from 'uuid';
 import { RegisterDto } from './dto/register.dto';
 
+const RESET_TOKEN_PREFIX = 'auth:reset:';
+const VERIFY_TOKEN_PREFIX = 'auth:verify:';
+const RESET_TOKEN_TTL = 3600; // 1 hour
+const VERIFY_TOKEN_TTL = 86400; // 24 hours
+
 @Injectable()
 export class AuthService {
-  // TODO: Move token storage to Redis for scalability
-  private resetTokens = new Map<string, { userId: string; expires: Date }>();
-  private verifyTokens = new Map<string, { userId: string; expires: Date }>();
-
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
     private mailService: MailService,
-    private prisma: PrismaService, // Keeping for OAuth direct access for now
+    private prisma: PrismaService,
+    private redis: RedisService,
   ) {}
 
   async register(dto: RegisterDto) {
-    // UsersService.create handles duplicate check and password hashing
     const user = await this.usersService.create(dto);
 
     const verifyToken = uuid();
-    this.verifyTokens.set(verifyToken, {
-      userId: user.id,
-      expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
-    });
+    await this.redis.set(
+      `${VERIFY_TOKEN_PREFIX}${verifyToken}`,
+      JSON.stringify({ userId: user.id }),
+      VERIFY_TOKEN_TTL,
+    );
 
     // Send verification email (non-blocking)
     try {
@@ -49,11 +52,12 @@ export class AuthService {
   }
 
   async verifyEmail(token: string) {
-    const data = this.verifyTokens.get(token);
-    if (!data || data.expires < new Date()) throw new BadRequestException('Invalid or expired token');
+    const raw = await this.redis.get(`${VERIFY_TOKEN_PREFIX}${token}`);
+    if (!raw) throw new BadRequestException('Invalid or expired token');
 
+    const data = JSON.parse(raw);
     await this.usersService.updateProfile(data.userId, { emailVerified: true } as any);
-    this.verifyTokens.delete(token);
+    await this.redis.del(`${VERIFY_TOKEN_PREFIX}${token}`);
     return { message: 'Email verified successfully' };
   }
 
@@ -77,6 +81,13 @@ export class AuthService {
         secret: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
         expiresIn: '7d',
       }),
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        avatarUrl: user.avatarUrl || null,
+      },
     };
   }
 
@@ -97,10 +108,11 @@ export class AuthService {
     if (!user) return { message: 'If the email exists, a reset link has been sent' };
 
     const token = uuid();
-    this.resetTokens.set(token, {
-      userId: user.id,
-      expires: new Date(Date.now() + 60 * 60 * 1000), // 1h
-    });
+    await this.redis.set(
+      `${RESET_TOKEN_PREFIX}${token}`,
+      JSON.stringify({ userId: user.id }),
+      RESET_TOKEN_TTL,
+    );
 
     try {
       await this.mailService.sendPasswordResetEmail(user.email, user.name, token);
@@ -111,17 +123,16 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string) {
-    const data = this.resetTokens.get(token);
-    if (!data || data.expires < new Date()) throw new BadRequestException('Invalid or expired token');
+    const raw = await this.redis.get(`${RESET_TOKEN_PREFIX}${token}`);
+    if (!raw) throw new BadRequestException('Invalid or expired token');
 
+    const data = JSON.parse(raw);
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(newPassword, salt);
-    
-    // Updating password directly via prisma or add updatePassword to UsersService
-    // Using prisma direct update here since passwordHash is not in UpdateUserDto usually
+
     await this.prisma.user.update({ where: { id: data.userId }, data: { passwordHash } });
-    
-    this.resetTokens.delete(token);
+
+    await this.redis.del(`${RESET_TOKEN_PREFIX}${token}`);
     return { message: 'Password reset successful' };
   }
 
@@ -134,7 +145,6 @@ export class AuthService {
     accessToken?: string;
     refreshToken?: string;
   }) {
-    // ... (Keep existing OAuth logic or refactor later)
     let account = await this.prisma.oAuthAccount.findUnique({
       where: {
         provider_providerAccountId: {
@@ -155,10 +165,7 @@ export class AuthService {
 
     let user = await this.usersService.findByEmail(profile.email);
     if (!user) {
-      // Create user via UsersService? No, it requires password. 
-      // OAuth users might not have password. create() expects RegisterDto with password.
-      // So create manually via prisma here for OAuth users (without password)
-       user = await this.prisma.user.create({
+      user = await this.prisma.user.create({
         data: {
           email: profile.email,
           name: profile.name,

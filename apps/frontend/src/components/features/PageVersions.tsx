@@ -12,6 +12,7 @@ interface PageVersion {
   contentJson: Record<string, unknown>;
   authorId: string;
   createdAt: string;
+  author?: { id: string; name: string; avatarUrl?: string };
 }
 
 interface PageVersionsProps {
@@ -70,7 +71,7 @@ export function PageVersions({ slug, pageId, onPreview }: PageVersionsProps) {
                 {new Date(version.createdAt).toLocaleString()}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">by {version.authorId}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">by {version.author?.name || 'Unknown'}</p>
           </div>
           {onPreview && (
             <Button

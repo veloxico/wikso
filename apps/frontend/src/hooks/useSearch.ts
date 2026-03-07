@@ -23,7 +23,7 @@ export function useSearch(params: SearchParams) {
     queryKey: ['search', params],
     queryFn: async () => {
       const { data } = await api.get('/search', { params });
-      return data;
+      return data.hits ?? data;
     },
     enabled: !!params.q && params.q.length >= 2,
   });

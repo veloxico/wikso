@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { toast } from 'sonner';
 import type { Page } from '@/types';
 
 export function usePages(slug: string) {
@@ -40,6 +41,10 @@ export function useCreatePage(slug: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pages', slug] });
+      toast.success('Page created');
+    },
+    onError: () => {
+      toast.error('Failed to create page');
     },
   });
 }
@@ -60,6 +65,23 @@ export function useUpdatePage(slug: string, pageId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pages', slug] });
       queryClient.invalidateQueries({ queryKey: ['pages', slug, pageId] });
+    },
+  });
+}
+
+export function useDeletePage(slug: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (pageId: string) => {
+      const { data } = await api.delete(`/spaces/${slug}/pages/${pageId}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pages', slug] });
+      toast.success('Page deleted');
+    },
+    onError: () => {
+      toast.error('Failed to delete page');
     },
   });
 }

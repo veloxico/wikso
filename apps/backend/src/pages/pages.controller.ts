@@ -70,4 +70,15 @@ export class PagesController {
   getVersion(@Param('pageId') pageId: string, @Param('versionId') versionId: string) {
     return this.pagesService.getVersion(pageId, versionId);
   }
+
+  @Post(':pageId/versions/:versionId/restore')
+  @UseGuards(SpacePermissionGuard)
+  @ApiOperation({ summary: 'Restore page to a specific version' })
+  restoreVersion(
+    @Param('pageId') pageId: string,
+    @Param('versionId') versionId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.pagesService.restoreVersion(pageId, versionId, user.id);
+  }
 }

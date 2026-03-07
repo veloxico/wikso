@@ -3,6 +3,7 @@
 import { Sidebar } from '@/components/features/Sidebar';
 import { MobileSidebar } from '@/components/features/MobileSidebar';
 import { CommandPalette, useCommandPalette } from '@/components/features/CommandPalette';
+import { ErrorBoundary } from '@/components/features/ErrorBoundary';
 
 export default function DashboardLayout({
   children,
@@ -22,7 +23,9 @@ export default function DashboardLayout({
       <MobileSidebar />
 
       <main className="flex-1 overflow-y-auto bg-background">
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </main>
       <CommandPalette open={open} onOpenChange={setOpen} />
     </div>

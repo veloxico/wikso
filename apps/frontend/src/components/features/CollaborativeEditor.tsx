@@ -5,7 +5,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Collaboration from '@tiptap/extension-collaboration';
-import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
+import CollaborationCaret from '@tiptap/extension-collaboration-caret';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import * as Y from 'yjs';
 import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Code, Quote, Undo, Redo, WifiOff, Loader2 } from 'lucide-react';
@@ -71,8 +71,7 @@ export function CollaborativeEditor({ pageId, editable = true }: CollaborativeEd
     {
       extensions: [
         StarterKit.configure({
-          // @ts-expect-error -- history disabled for Yjs collaboration
-          history: false,
+          undoRedo: false,
         }),
         Placeholder.configure({
           placeholder: 'Start writing collaboratively...',
@@ -80,7 +79,7 @@ export function CollaborativeEditor({ pageId, editable = true }: CollaborativeEd
         Collaboration.configure({
           document: ydoc,
         }),
-        CollaborationCursor.configure({
+        CollaborationCaret.configure({
           provider,
           user: {
             name: user?.name || 'Anonymous',

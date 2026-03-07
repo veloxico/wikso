@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+// NEXT_PUBLIC_API_URL should be the backend origin (e.g. http://localhost:3000)
+// We always append /api because backend uses setGlobalPrefix('api')
+const envUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const baseURL = envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
 
 export const api = axios.create({
   baseURL,
