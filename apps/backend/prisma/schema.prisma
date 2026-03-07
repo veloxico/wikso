@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  name          String
+  avatarUrl     String?
+  passwordHash  String?
+  emailVerified Boolean    @default(false)
+  role          GlobalRole @default(VIEWER)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  oauthAccounts OAuthAccount[]
+  spaces        Space[]
+  pages         Page[]
+  comments      Comment[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  spacePerms    SpacePermission[]
+  pagePerms     PagePermission[]
+}
+
+model OAuthAccount {
+  id                String @id @default(uuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  accessToken       String?
+  refreshToken      String?
+  user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Space {
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  name        String
+  description String?
+  type        SpaceType @default(PUBLIC)
+  ownerId     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  owner       User              @relation(fields: [ownerId], references: [id])
+  pages       Page[]
+  permissions SpacePermission[]
+}
+
+model SpacePermission {
+  id      String    @id @default(uuid())
+  spaceId String
+  userId  String?
+  role    SpaceRole
+  space   Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user    User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Page {
+  id          String     @id @default(uuid())
+  spaceId     String
+  parentId    String?
+  title       String
+  slug        String
+  contentJson Json?
+  yjsState    Bytes?
+  status      PageStatus @default(DRAFT)
+  authorId    String
+  position    Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  space       Space            @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  parent      Page?            @relation("PageTree", fields: [parentId], references: [id])
+  children    Page[]           @relation("PageTree")
+  author      User             @relation(fields: [authorId], references: [id])
+  versions    PageVersion[]
+  comments    Comment[]
+  attachments Attachment[]
+  permissions PagePermission[]
+  tags        PageTag[]
+}
+
+model PageVersion {
+  id          String   @id @default(uuid())
+  pageId      String
+  contentJson Json
+  authorId    String
+  createdAt   DateTime @default(now())
+  page        Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+}
+
+model PagePermission {
+  id     String    @id @default(uuid())
+  pageId String
+  userId String?
+  role   SpaceRole
+  page   Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  user   User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id             String   @id @default(uuid())
+  pageId         String
+  parentId       String?
+  authorId       String
+  content        String
+  selectionStart Int?
+  selectionEnd   Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  page     Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  author   User      @relation(fields: [authorId], references: [id])
+  parent   Comment?  @relation("CommentThread", fields: [parentId], references: [id])
+  children Comment[] @relation("CommentThread")
+}
+
+model Attachment {
+  id         String   @id @default(uuid())
+  pageId     String
+  uploaderId String
+  filename   String
+  mimeType   String
+  size       Int
+  storageKey String
+  createdAt  DateTime @default(now())
+  page       Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id      String    @id @default(uuid())
+  name    String
+  spaceId String
+  pages   PageTag[]
+
+  @@unique([name, spaceId])
+}
+
+model PageTag {
+  pageId String
+  tagId  String
+  page   Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([pageId, tagId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  payload   Json
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String
+  meta       Json?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id])
+}
+
+model Webhook {
+  id        String   @id @default(uuid())
+  url       String
+  events    String[]
+  secret    String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum GlobalRole {
+  ADMIN
+  VIEWER
+}
+
+enum SpaceType {
+  PUBLIC
+  PRIVATE
+  PERSONAL
+}
+
+enum SpaceRole {
+  ADMIN
+  EDITOR
+  VIEWER
+  GUEST
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}

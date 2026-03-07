@@ -1,0 +1,45 @@
+FROM node:20-alpine AS builder
+
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+
+WORKDIR /app
+
+# Copy root workspace files
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY packages/shared/package.json ./packages/shared/
+COPY apps/backend/package.json ./apps/backend/
+
+RUN pnpm install --frozen-lockfile
+
+# Copy shared package source
+COPY packages/shared ./packages/shared
+COPY apps/backend/prisma ./apps/backend/prisma
+RUN pnpm --filter @confluence/backend exec prisma generate
+
+# Copy backend source
+COPY apps/backend/tsconfig*.json apps/backend/nest-cli.json ./apps/backend/
+COPY apps/backend/src ./apps/backend/src
+RUN pnpm --filter @confluence/backend run build
+
+# Production stage
+FROM node:20-alpine
+
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+
+WORKDIR /app
+
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY packages/shared/package.json ./packages/shared/
+COPY apps/backend/package.json ./apps/backend/
+
+RUN pnpm install --frozen-lockfile --prod
+
+COPY packages/shared ./packages/shared
+COPY --from=builder /app/apps/backend/node_modules/.prisma ./apps/backend/node_modules/.prisma
+COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+COPY apps/backend/prisma ./apps/backend/prisma
+
+WORKDIR /app/apps/backend
+
+EXPOSE 3000
+CMD ["node", "dist/main.js"]
