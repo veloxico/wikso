@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Search, Bell, Settings, LogOut, Plus } from 'lucide-react';
+import { LayoutDashboard, Search, Bell, Settings, LogOut, Plus, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/button';
@@ -60,6 +60,24 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Admin link */}
+      {user?.role === 'ADMIN' && (
+        <div className="px-3 pb-1">
+          <Link
+            href="/admin"
+            className={cn(
+              'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+              pathname.startsWith('/admin')
+                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+            )}
+          >
+            <Shield className="h-4 w-4" />
+            Admin
+          </Link>
+        </div>
+      )}
 
       {/* User */}
       <div className="border-t border-border p-3">

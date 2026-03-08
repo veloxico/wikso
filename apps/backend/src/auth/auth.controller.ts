@@ -1,7 +1,8 @@
-import { Controller, Post, Get, Body, UseGuards, Req, Res, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Req, Res, Query, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
+import { SettingsService } from '../settings/settings.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RegisterDto } from './dto/register.dto';
@@ -13,7 +14,10 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private settingsService: SettingsService,
+  ) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -69,6 +73,26 @@ export class AuthController {
       google: !!process.env.GOOGLE_CLIENT_ID,
       saml: !!process.env.SAML_ENTRY_POINT,
     };
+  }
+
+  // --- Public settings (no auth required) ---
+  @Get('settings/public')
+  @ApiOperation({ summary: 'Get public settings (registration enabled, site name)' })
+  getPublicSettings() {
+    return this.settingsService.getPublicSettings();
+  }
+
+  // --- Invite acceptance (no auth required) ---
+  @Get('invite/:token')
+  @ApiOperation({ summary: 'Validate invite token' })
+  validateInvite(@Param('token') token: string) {
+    return this.authService.validateInviteToken(token);
+  }
+
+  @Post('accept-invite')
+  @ApiOperation({ summary: 'Accept invitation and set password' })
+  acceptInvite(@Body() body: { token: string; name: string; password: string }) {
+    return this.authService.acceptInvite(body.token, body.name, body.password);
   }
 
   // --- Helper: redirect to frontend with tokens ---

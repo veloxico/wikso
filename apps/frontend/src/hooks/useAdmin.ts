@@ -3,6 +3,8 @@ import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import type { User } from '@/types';
 
+// ─── Interfaces ──────────────────────────────────────────
+
 export interface AdminStats {
   totalUsers: number;
   totalSpaces: number;
@@ -14,84 +16,11 @@ export interface AuditLogEntry {
   id: string;
   userId: string;
   action: string;
-  entity: string;
+  entityType: string;
   entityId: string;
-  metadata: Record<string, unknown>;
+  meta: Record<string, unknown>;
   createdAt: string;
   user?: { id: string; name: string; email: string };
-}
-
-export function useAdminStats() {
-  return useQuery<AdminStats>({
-    queryKey: ['admin', 'stats'],
-    queryFn: async () => {
-      const { data } = await api.get('/admin/stats');
-      // Backend returns { usersCount, spacesCount, pagesCount } — map to expected shape
-      return {
-        totalUsers: data.usersCount ?? data.totalUsers ?? 0,
-        totalSpaces: data.spacesCount ?? data.totalSpaces ?? 0,
-        totalPages: data.pagesCount ?? data.totalPages ?? 0,
-        totalComments: data.commentsCount ?? data.totalComments ?? 0,
-      };
-    },
-  });
-}
-
-export function useAdminUsers(skip = 0, take = 20) {
-  return useQuery<User[]>({
-    queryKey: ['admin', 'users', skip, take],
-    queryFn: async () => {
-      const { data } = await api.get('/admin/users', { params: { skip, take } });
-      // Backend returns { users: [...], total } — extract the array
-      return Array.isArray(data) ? data : data.users ?? [];
-    },
-  });
-}
-
-export function useUpdateUserRole() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
-      const { data } = await api.patch(`/admin/users/${userId}`, { role });
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      toast.success('User role updated');
-    },
-    onError: () => {
-      toast.error('Failed to update user role');
-    },
-  });
-}
-
-export function useDeleteUser() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (userId: string) => {
-      const { data } = await api.delete(`/admin/users/${userId}`);
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
-      toast.success('User deleted');
-    },
-    onError: () => {
-      toast.error('Failed to delete user');
-    },
-  });
-}
-
-export function useAuditLog(skip = 0, take = 20) {
-  return useQuery<AuditLogEntry[]>({
-    queryKey: ['admin', 'audit-log', skip, take],
-    queryFn: async () => {
-      const { data } = await api.get('/admin/audit-log', { params: { skip, take } });
-      // Backend returns { logs: [...], total } — extract the array
-      return Array.isArray(data) ? data : data.logs ?? [];
-    },
-  });
 }
 
 export interface AuthProviderInfo {
@@ -111,6 +40,184 @@ export interface AuthProvidersStatus {
   saml: AuthProviderInfo;
 }
 
+export interface AdminSpace {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  type: string;
+  ownerId: string;
+  createdAt: string;
+  owner: { id: string; name: string; email: string };
+  _count: { pages: number; permissions: number };
+}
+
+export interface AdminWebhook {
+  id: string;
+  url: string;
+  events: string[];
+  active: boolean;
+  userId: string;
+  createdAt: string;
+}
+
+export interface EmailStatus {
+  configured: boolean;
+  host: string;
+  port: string;
+  from: string;
+}
+
+// ─── Stats ───────────────────────────────────────────────
+
+export function useAdminStats() {
+  return useQuery<AdminStats>({
+    queryKey: ['admin', 'stats'],
+    queryFn: async () => {
+      const { data } = await api.get('/admin/stats');
+      return {
+        totalUsers: data.usersCount ?? data.totalUsers ?? 0,
+        totalSpaces: data.spacesCount ?? data.totalSpaces ?? 0,
+        totalPages: data.pagesCount ?? data.totalPages ?? 0,
+        totalComments: data.commentsCount ?? data.totalComments ?? 0,
+      };
+    },
+  });
+}
+
+// ─── Users ───────────────────────────────────────────────
+
+export function useAdminUsers(
+  skip = 0,
+  take = 20,
+  filters?: { search?: string; role?: string; status?: string },
+) {
+  return useQuery<User[]>({
+    queryKey: ['admin', 'users', skip, take, filters],
+    queryFn: async () => {
+      const { data } = await api.get('/admin/users', {
+        params: { skip, take, ...filters },
+      });
+      return Array.isArray(data) ? data : data.users ?? [];
+    },
+  });
+}
+
+export function useUpdateUserRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      const { data } = await api.patch(`/admin/users/${userId}/role`, { role });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast.success('User role updated');
+    },
+    onError: () => toast.error('Failed to update user role'),
+  });
+}
+
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { data } = await api.delete(`/admin/users/${userId}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success('User deleted');
+    },
+    onError: () => toast.error('Failed to delete user'),
+  });
+}
+
+export function useSuspendUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { data } = await api.patch(`/admin/users/${userId}/suspend`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast.success('User suspended');
+    },
+    onError: () => toast.error('Failed to suspend user'),
+  });
+}
+
+export function useActivateUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { data } = await api.patch(`/admin/users/${userId}/activate`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast.success('User activated');
+    },
+    onError: () => toast.error('Failed to activate user'),
+  });
+}
+
+export function useInviteUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (dto: { email: string; role?: string; name?: string }) => {
+      const { data } = await api.post('/admin/users/invite', dto);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success('Invitation sent');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to invite user');
+    },
+  });
+}
+
+export function useBulkInvite() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (dto: { emails: string[]; role?: string }) => {
+      const { data } = await api.post('/admin/users/invite/bulk', dto);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success('Bulk invitations sent');
+    },
+    onError: () => toast.error('Failed to send invitations'),
+  });
+}
+
+// ─── Audit Log ───────────────────────────────────────────
+
+export function useAuditLog(
+  skip = 0,
+  take = 20,
+  filters?: { action?: string; userId?: string; from?: string; to?: string; search?: string },
+) {
+  return useQuery<AuditLogEntry[]>({
+    queryKey: ['admin', 'audit-log', skip, take, filters],
+    queryFn: async () => {
+      const { data } = await api.get('/admin/audit-log', {
+        params: { skip, take, ...filters },
+      });
+      return Array.isArray(data) ? data : data.logs ?? [];
+    },
+  });
+}
+
+// ─── Auth Providers ──────────────────────────────────────
+
 export function useAuthProviders() {
   return useQuery<AuthProvidersStatus>({
     queryKey: ['admin', 'auth-providers'],
@@ -118,5 +225,86 @@ export function useAuthProviders() {
       const { data } = await api.get('/admin/auth-providers');
       return data;
     },
+  });
+}
+
+// ─── Spaces ──────────────────────────────────────────────
+
+export function useAdminSpaces(skip = 0, take = 20) {
+  return useQuery<AdminSpace[]>({
+    queryKey: ['admin', 'spaces', skip, take],
+    queryFn: async () => {
+      const { data } = await api.get('/admin/spaces', { params: { skip, take } });
+      return Array.isArray(data) ? data : data.spaces ?? [];
+    },
+  });
+}
+
+export function useDeleteAdminSpace() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (spaceId: string) => {
+      const { data } = await api.delete(`/admin/spaces/${spaceId}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'spaces'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success('Space deleted');
+    },
+    onError: () => toast.error('Failed to delete space'),
+  });
+}
+
+// ─── Email ───────────────────────────────────────────────
+
+export function useEmailStatus() {
+  return useQuery<EmailStatus>({
+    queryKey: ['admin', 'email-status'],
+    queryFn: async () => {
+      const { data } = await api.get('/admin/email/status');
+      return data;
+    },
+  });
+}
+
+export function useTestEmail() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post('/admin/email/test');
+      return data;
+    },
+    onSuccess: (data: any) => {
+      if (data.success) toast.success(data.message);
+      else toast.error(data.message);
+    },
+    onError: () => toast.error('Failed to send test email'),
+  });
+}
+
+// ─── Webhooks ────────────────────────────────────────────
+
+export function useAdminWebhooks(skip = 0, take = 20) {
+  return useQuery<AdminWebhook[]>({
+    queryKey: ['admin', 'webhooks', skip, take],
+    queryFn: async () => {
+      const { data } = await api.get('/admin/webhooks', { params: { skip, take } });
+      return Array.isArray(data) ? data : data.webhooks ?? [];
+    },
+  });
+}
+
+export function useToggleWebhook() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const { data } = await api.patch(`/admin/webhooks/${id}`, { active });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'webhooks'] });
+      toast.success('Webhook updated');
+    },
+    onError: () => toast.error('Failed to update webhook'),
   });
 }

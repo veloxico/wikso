@@ -33,6 +33,7 @@ export default function LoginPage() {
   const { setUser, setTokens } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const [providers, setProviders] = useState<AuthProviders | null>(null);
+  const [registrationEnabled, setRegistrationEnabled] = useState<boolean>(true);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -42,6 +43,10 @@ export default function LoginPage() {
     api.get('/auth/providers')
       .then((res) => setProviders(res.data))
       .catch(() => setProviders({ github: false, google: false, saml: false }));
+
+    api.get('/auth/settings/public')
+      .then((res) => setRegistrationEnabled(res.data.registrationEnabled))
+      .catch(() => setRegistrationEnabled(true));
   }, []);
 
   const hasOAuth = providers && (providers.github || providers.google || providers.saml);
@@ -129,10 +134,12 @@ export default function LoginPage() {
           )}
           <div className="flex flex-col items-center gap-2 text-sm text-gray-500">
             <Link href="/forgot-password" className="hover:text-foreground underline">Forgot password?</Link>
-            <p>
-              Don&apos;t have an account?{' '}
-              <Link href="/register" className="font-medium text-black dark:text-white underline">Sign up</Link>
-            </p>
+            {registrationEnabled && (
+              <p>
+                Don&apos;t have an account?{' '}
+                <Link href="/register" className="font-medium text-black dark:text-white underline">Sign up</Link>
+              </p>
+            )}
           </div>
         </CardFooter>
       </Card>

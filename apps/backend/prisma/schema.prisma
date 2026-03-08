@@ -15,6 +15,8 @@ model User {
   passwordHash  String?
   emailVerified Boolean    @default(false)
   role          GlobalRole @default(VIEWER)
+  status        UserStatus @default(ACTIVE)
+  invitedBy     String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -182,14 +184,34 @@ model Webhook {
   url       String
   events    String[]
   secret    String?
+  active    Boolean  @default(true)
   userId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+model SystemSettings {
+  id                        String   @id @default("singleton")
+  siteName                  String   @default("Dokka")
+  siteDescription           String   @default("")
+  registrationEnabled       Boolean  @default(true)
+  allowedEmailDomains       String[] @default([])
+  emailVerificationRequired Boolean  @default(false)
+  passwordMinLength         Int      @default(6)
+  sessionTimeoutMinutes     Int      @default(10080)
+  maxAttachmentSizeMb       Int      @default(25)
+  updatedAt                 DateTime @updatedAt
+}
+
 enum GlobalRole {
   ADMIN
+  EDITOR
   VIEWER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
 }
 
 enum SpaceType {

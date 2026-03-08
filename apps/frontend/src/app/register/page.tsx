@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ShieldAlert } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,13 @@ export default function RegisterPage() {
   const router = useRouter();
   const { setUser, setTokens } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
+  const [registrationEnabled, setRegistrationEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    api.get('/auth/settings/public')
+      .then((res) => setRegistrationEnabled(res.data.registrationEnabled))
+      .catch(() => setRegistrationEnabled(true)); // default to enabled on error
+  }, []);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
@@ -36,7 +44,7 @@ export default function RegisterPage() {
     try {
       setError(null);
       const res = await api.post('/auth/register', data);
-      
+
       const { accessToken, refreshToken, user } = res.data;
       setTokens(accessToken, refreshToken);
       setUser(user);
@@ -45,6 +53,53 @@ export default function RegisterPage() {
       setError(err.response?.data?.message || 'Failed to register');
     }
   };
+
+  // Show disabled message if registration is turned off
+  if (registrationEnabled === false) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-50/50 dark:bg-zinc-950">
+        <div className="flex flex-col items-center gap-6">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <ShieldAlert className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <CardTitle className="text-2xl">Registration Disabled</CardTitle>
+              <CardDescription>
+                Public registration is currently disabled. Please contact your administrator to get
+                an invitation.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="flex flex-col space-y-4">
+              <Link href="/login" className="w-full">
+                <Button variant="outline" className="w-full">
+                  Back to Login
+                </Button>
+              </Link>
+            </CardFooter>
+          </Card>
+          <AuthFooter />
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (registrationEnabled === null) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-50/50 dark:bg-zinc-950">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+              <div className="h-4 w-64 animate-pulse rounded bg-muted" />
+              <div className="h-10 animate-pulse rounded bg-muted" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-50/50 dark:bg-zinc-950">
@@ -67,7 +122,7 @@ export default function RegisterPage() {
               <Input id="email" type="email" placeholder="m@example.com" {...register('email')} />
               {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" {...register('password')} />
@@ -75,7 +130,7 @@ export default function RegisterPage() {
             </div>
 
             {error && <p className="text-sm text-red-500">{error}</p>}
-            
+
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Signing up...' : 'Sign up'}
             </Button>

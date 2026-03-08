@@ -16,6 +16,7 @@ import { HocuspocusModule } from './hocuspocus/hocuspocus.module';
 import { MailModule } from './mail/mail.module';
 import { SetupModule } from './setup/setup.module';
 import { RedisModule } from './redis/redis.module';
+import { SettingsModule } from './settings/settings.module';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 
 @Module({
@@ -36,6 +37,7 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     HocuspocusModule,
     MailModule,
     SetupModule,
+    SettingsModule,
   ],
   providers: [
     {
