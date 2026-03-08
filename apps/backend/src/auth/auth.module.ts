@@ -21,6 +21,11 @@ if (process.env.GITHUB_CLIENT_ID) {
   const { GitHubStrategy } = require('./strategies/github.strategy');
   optionalProviders.push(GitHubStrategy);
 }
+if (process.env.SAML_ENTRY_POINT) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { SamlStrategy } = require('./strategies/saml.strategy');
+  optionalProviders.push(SamlStrategy);
+}
 
 @Module({
   imports: [

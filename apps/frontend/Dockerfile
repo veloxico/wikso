@@ -24,7 +24,7 @@ ARG NEXT_PUBLIC_WS_URL=ws://localhost:1234
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 
-RUN pnpm --filter @confluence/frontend run build
+RUN pnpm --filter @dokka/frontend run build
 
 # Production stage
 FROM node:20-alpine AS runner

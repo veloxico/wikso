@@ -46,4 +46,33 @@ export class AdminService {
     ]);
     return { usersCount, spacesCount, pagesCount };
   }
+
+  getAuthProviders() {
+    return {
+      local: {
+        enabled: true,
+        label: 'Email / Password',
+      },
+      google: {
+        enabled: !!process.env.GOOGLE_CLIENT_ID,
+        label: 'Google OAuth',
+        clientIdConfigured: !!process.env.GOOGLE_CLIENT_ID,
+        callbackUrl: process.env.GOOGLE_CALLBACK_URL || 'Not configured',
+      },
+      github: {
+        enabled: !!process.env.GITHUB_CLIENT_ID,
+        label: 'GitHub OAuth',
+        clientIdConfigured: !!process.env.GITHUB_CLIENT_ID,
+        callbackUrl: process.env.GITHUB_CALLBACK_URL || 'Not configured',
+      },
+      saml: {
+        enabled: !!process.env.SAML_ENTRY_POINT,
+        label: 'SAML SSO',
+        entryPointConfigured: !!process.env.SAML_ENTRY_POINT,
+        issuer: process.env.SAML_ISSUER || 'Not configured',
+        callbackUrl: process.env.SAML_CALLBACK_URL || 'Not configured',
+        certConfigured: !!process.env.SAML_CERT,
+      },
+    };
+  }
 }

@@ -11,6 +11,9 @@ import {
   Trash2,
   UserCog,
   ScrollText,
+  Key,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import {
   useAdminStats,
@@ -18,6 +21,8 @@ import {
   useUpdateUserRole,
   useDeleteUser,
   useAuditLog,
+  useAuthProviders,
+  type AuthProviderInfo,
 } from '@/hooks/useAdmin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,7 +37,7 @@ import {
 const PAGE_SIZE = 10;
 
 export default function AdminPage() {
-  const [tab, setTab] = useState<'users' | 'audit'>('users');
+  const [tab, setTab] = useState<'users' | 'audit' | 'auth'>('users');
   const [usersPage, setUsersPage] = useState(0);
   const [auditPage, setAuditPage] = useState(0);
 
@@ -45,6 +50,7 @@ export default function AdminPage() {
     auditPage * PAGE_SIZE,
     PAGE_SIZE,
   );
+  const { data: authProviders, isLoading: authLoading } = useAuthProviders();
   const updateRole = useUpdateUserRole();
   const deleteUser = useDeleteUser();
 
@@ -106,6 +112,15 @@ export default function AdminPage() {
         >
           <ScrollText className="h-4 w-4" />
           Audit Log
+        </Button>
+        <Button
+          variant={tab === 'auth' ? 'default' : 'outline'}
+          size="sm"
+          className="gap-2"
+          onClick={() => setTab('auth')}
+        >
+          <Key className="h-4 w-4" />
+          Auth Providers
         </Button>
       </div>
 
@@ -215,6 +230,77 @@ export default function AdminPage() {
                   </div>
                 </div>
               </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Auth Providers */}
+      {tab === 'auth' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Authentication Providers</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-6 text-sm text-muted-foreground">
+              Provider credentials are configured via environment variables. This panel shows the current configuration status.
+            </p>
+            {authLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-20 animate-pulse rounded bg-muted" />
+                ))}
+              </div>
+            ) : authProviders ? (
+              <div className="space-y-4">
+                {(Object.entries(authProviders) as [string, AuthProviderInfo][]).map(
+                  ([key, provider]) => (
+                    <div
+                      key={key}
+                      className="flex items-start gap-4 rounded-lg border border-border p-4"
+                    >
+                      <div className="mt-0.5">
+                        {provider.enabled ? (
+                          <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-muted-foreground/40" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium">{provider.label}</span>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                              provider.enabled
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                            }`}
+                          >
+                            {provider.enabled ? 'Enabled' : 'Not Configured'}
+                          </span>
+                        </div>
+                        {provider.callbackUrl && provider.callbackUrl !== 'Not configured' && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            Callback: <code className="bg-muted px-1 py-0.5 rounded">{provider.callbackUrl}</code>
+                          </p>
+                        )}
+                        {(provider as any).issuer && (provider as any).issuer !== 'Not configured' && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Issuer: <code className="bg-muted px-1 py-0.5 rounded">{(provider as any).issuer}</code>
+                          </p>
+                        )}
+                        {(provider as any).certConfigured !== undefined && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Certificate: {(provider as any).certConfigured ? '✓ Configured' : '✗ Missing'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Unable to load provider status.</p>
             )}
           </CardContent>
         </Card>

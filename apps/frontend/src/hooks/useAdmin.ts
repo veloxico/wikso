@@ -26,7 +26,13 @@ export function useAdminStats() {
     queryKey: ['admin', 'stats'],
     queryFn: async () => {
       const { data } = await api.get('/admin/stats');
-      return data;
+      // Backend returns { usersCount, spacesCount, pagesCount } — map to expected shape
+      return {
+        totalUsers: data.usersCount ?? data.totalUsers ?? 0,
+        totalSpaces: data.spacesCount ?? data.totalSpaces ?? 0,
+        totalPages: data.pagesCount ?? data.totalPages ?? 0,
+        totalComments: data.commentsCount ?? data.totalComments ?? 0,
+      };
     },
   });
 }
@@ -36,7 +42,8 @@ export function useAdminUsers(skip = 0, take = 20) {
     queryKey: ['admin', 'users', skip, take],
     queryFn: async () => {
       const { data } = await api.get('/admin/users', { params: { skip, take } });
-      return data;
+      // Backend returns { users: [...], total } — extract the array
+      return Array.isArray(data) ? data : data.users ?? [];
     },
   });
 }
@@ -81,6 +88,34 @@ export function useAuditLog(skip = 0, take = 20) {
     queryKey: ['admin', 'audit-log', skip, take],
     queryFn: async () => {
       const { data } = await api.get('/admin/audit-log', { params: { skip, take } });
+      // Backend returns { logs: [...], total } — extract the array
+      return Array.isArray(data) ? data : data.logs ?? [];
+    },
+  });
+}
+
+export interface AuthProviderInfo {
+  enabled: boolean;
+  label: string;
+  clientIdConfigured?: boolean;
+  callbackUrl?: string;
+  entryPointConfigured?: boolean;
+  issuer?: string;
+  certConfigured?: boolean;
+}
+
+export interface AuthProvidersStatus {
+  local: AuthProviderInfo;
+  google: AuthProviderInfo;
+  github: AuthProviderInfo;
+  saml: AuthProviderInfo;
+}
+
+export function useAuthProviders() {
+  return useQuery<AuthProvidersStatus>({
+    queryKey: ['admin', 'auth-providers'],
+    queryFn: async () => {
+      const { data } = await api.get('/admin/auth-providers');
       return data;
     },
   });

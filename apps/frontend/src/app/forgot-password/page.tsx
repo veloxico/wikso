@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
+import { AuthFooter } from '@/components/features/AuthFooter';
 
 const forgotSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -39,6 +40,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-50/50 dark:bg-zinc-950">
+      <div className="flex flex-col items-center gap-6">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Reset password</CardTitle>
@@ -79,6 +81,8 @@ export default function ForgotPasswordPage() {
           </Link>
         </CardFooter>
       </Card>
+      <AuthFooter />
+      </div>
     </div>
   );
 }

@@ -22,4 +22,4 @@ export {
   type RegisterRequest,
   type PaginatedResponse,
   type SearchResult,
-} from '@confluence/shared';
+} from '@dokka/shared';

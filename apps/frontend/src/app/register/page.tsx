@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { AuthFooter } from '@/components/features/AuthFooter';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -47,6 +48,7 @@ export default function RegisterPage() {
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-50/50 dark:bg-zinc-950">
+      <div className="flex flex-col items-center gap-6">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Create an account</CardTitle>
@@ -86,6 +88,8 @@ export default function RegisterPage() {
           </p>
         </CardFooter>
       </Card>
+      <AuthFooter />
+      </div>
     </div>
   );
 }

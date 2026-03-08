@@ -51,4 +51,10 @@ export class AdminController {
   getStats() {
     return this.adminService.getStats();
   }
+
+  @Get('auth-providers')
+  @ApiOperation({ summary: 'Get authentication provider configuration status' })
+  getAuthProviders() {
+    return this.adminService.getAuthProviders();
+  }
 }

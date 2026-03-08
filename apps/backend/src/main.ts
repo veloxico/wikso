@@ -16,8 +16,8 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
 
   const config = new DocumentBuilder()
-    .setTitle('Confluence Backend API')
-    .setDescription('Wiki system API documentation')
+    .setTitle('Dokka API')
+    .setDescription('Dokka — wiki & knowledge base API')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

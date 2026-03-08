@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Confluence',
-  description: 'Modern wiki & knowledge base',
+  title: 'Dokka',
+  description: 'Dokka — modern wiki & knowledge base',
 };
 
 export default function RootLayout({

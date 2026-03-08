@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Req, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Req, Res, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
@@ -71,7 +71,16 @@ export class AuthController {
     };
   }
 
-  // OAuth2 routes
+  // --- Helper: redirect to frontend with tokens ---
+  private async oauthRedirect(req: any, res: any) {
+    const tokens = await this.authService.login(req.user);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    res.redirect(
+      `${frontendUrl}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`,
+    );
+  }
+
+  // OAuth2 routes — Google
   @Get('google')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Login with Google' })
@@ -80,10 +89,11 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google OAuth callback' })
-  googleCallback(@Req() req: any) {
-    return this.authService.login(req.user);
+  async googleCallback(@Req() req: any, @Res() res: any) {
+    return this.oauthRedirect(req, res);
   }
 
+  // OAuth2 routes — GitHub
   @Get('github')
   @UseGuards(AuthGuard('github'))
   @ApiOperation({ summary: 'Login with GitHub' })
@@ -92,7 +102,22 @@ export class AuthController {
   @Get('github/callback')
   @UseGuards(AuthGuard('github'))
   @ApiOperation({ summary: 'GitHub OAuth callback' })
-  githubCallback(@Req() req: any) {
-    return this.authService.login(req.user);
+  async githubCallback(@Req() req: any, @Res() res: any) {
+    return this.oauthRedirect(req, res);
+  }
+
+  // SAML SSO routes
+  @Get('saml')
+  @UseGuards(AuthGuard('saml'))
+  @ApiOperation({ summary: 'Initiate SAML SSO login' })
+  samlAuth() {
+    // Passport automatically redirects to the IdP
+  }
+
+  @Post('saml/callback')
+  @UseGuards(AuthGuard('saml'))
+  @ApiOperation({ summary: 'SAML Assertion Consumer Service (ACS)' })
+  async samlCallback(@Req() req: any, @Res() res: any) {
+    return this.oauthRedirect(req, res);
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "confluence",
+  "name": "dokka",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -8,8 +8,8 @@
     "lint": "turbo lint",
     "test": "turbo test",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "dev:backend": "turbo dev --filter=@confluence/backend",
-    "dev:frontend": "turbo dev --filter=@confluence/frontend"
+    "dev:backend": "turbo dev --filter=@dokka/backend",
+    "dev:frontend": "turbo dev --filter=@dokka/frontend"
   },
   "devDependencies": {
     "prettier": "^3.4.2",

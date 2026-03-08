@@ -23,9 +23,9 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex items-center gap-2 border-b border-border px-4 py-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
-          C
+          D
         </div>
-        <span className="text-lg font-semibold">Confluence</span>
+        <span className="text-lg font-semibold">Dokka</span>
       </div>
 
       {/* New space button */}
