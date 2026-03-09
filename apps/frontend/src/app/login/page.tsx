@@ -6,11 +6,11 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Loader2, BookOpen } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { AuthFooter } from '@/components/features/AuthFooter';
@@ -39,6 +39,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [providers, setProviders] = useState<AuthProviders | null>(null);
   const [registrationEnabled, setRegistrationEnabled] = useState<boolean>(true);
+  const [visible, setVisible] = useState(false);
 
   const loginSchema = useMemo(() => createLoginSchema(t), [t]);
 
@@ -47,7 +48,6 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
-    // Check if first-run setup is needed (empty database)
     api.get('/setup/status')
       .then((res) => { if (res.data.setupRequired) router.replace('/setup'); })
       .catch(() => {});
@@ -59,6 +59,8 @@ export default function LoginPage() {
     api.get('/auth/settings/public')
       .then((res) => setRegistrationEnabled(res.data.registrationEnabled))
       .catch(() => setRegistrationEnabled(true));
+
+    requestAnimationFrame(() => setVisible(true));
   }, [router]);
 
   const hasOAuth = providers && (providers.github || providers.google || providers.saml);
@@ -68,7 +70,6 @@ export default function LoginPage() {
     try {
       setError(null);
       const res = await api.post('/auth/login', data);
-
       const { accessToken, refreshToken, user } = res.data;
       setTokens(accessToken, refreshToken);
       setUser(user);
@@ -79,84 +80,102 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-gray-50/50 dark:bg-zinc-950">
-      <div className="flex flex-col items-center gap-6">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">{t('auth.login.title')}</CardTitle>
-          <CardDescription>{t('auth.login.description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="relative flex min-h-screen w-full items-center justify-center bg-background overflow-hidden">
+      {/* Decorative background */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
+      </div>
+
+      <div
+        className="relative z-10 flex w-full max-w-xl flex-col items-center gap-6 px-4 transition-all duration-700"
+        style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)' }}
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
+            <BookOpen className="h-5 w-5 text-primary" />
+          </div>
+          <span className="text-2xl font-bold tracking-tight">Dokka</span>
+        </div>
+
+        {/* Card */}
+        <div className="w-full rounded-2xl border border-border bg-card p-8 shadow-sm">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold">{t('auth.login.title')}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t('auth.login.description')}</p>
+          </div>
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{t('common.email')}</Label>
-              <Input id="email" type="email" placeholder="m@example.com" {...register('email')} />
-              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+              <Input id="email" type="email" placeholder="m@example.com" {...register('email')} className="h-11" />
+              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="password">{t('common.password')}</Label>
-              <Input id="password" type="password" {...register('password')} />
-              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+              <Input id="password" type="password" {...register('password')} className="h-11" />
+              {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
             </div>
 
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? t('auth.login.loggingIn') : t('auth.login.button')}
+            <Button type="submit" className="h-11 w-full text-base" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('auth.login.loggingIn')}</>
+              ) : (
+                t('auth.login.button')
+              )}
             </Button>
           </form>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
+
           {hasOAuth && (
-            <>
-              <div className="relative w-full text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:-translate-y-1/2 after:border-t after:border-gray-200 dark:after:border-gray-800">
-                <span className="relative z-10 bg-white px-2 text-gray-500 dark:bg-zinc-950 dark:text-gray-400">{t('common.orContinueWith')}</span>
+            <div className="mt-6">
+              <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:-translate-y-1/2 after:border-t after:border-border">
+                <span className="relative z-10 bg-card px-3 text-muted-foreground">{t('common.orContinueWith')}</span>
               </div>
-              <div className="grid w-full gap-2" style={{ gridTemplateColumns: `repeat(${[providers.github, providers.google, providers.saml].filter(Boolean).length}, 1fr)` }}>
-                {providers.github && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => { window.location.href = `${base}/api/v1/auth/github`; }}
-                  >
+              <div className="mt-4 grid gap-3" style={{ gridTemplateColumns: `repeat(${[providers!.github, providers!.google, providers!.saml].filter(Boolean).length}, 1fr)` }}>
+                {providers!.github && (
+                  <Button variant="outline" className="h-11 w-full" onClick={() => { window.location.href = `${base}/api/v1/auth/github`; }}>
                     GitHub
                   </Button>
                 )}
-                {providers.google && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => { window.location.href = `${base}/api/v1/auth/google`; }}
-                  >
+                {providers!.google && (
+                  <Button variant="outline" className="h-11 w-full" onClick={() => { window.location.href = `${base}/api/v1/auth/google`; }}>
                     Google
                   </Button>
                 )}
-                {providers.saml && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => { window.location.href = `${base}/api/v1/auth/saml`; }}
-                  >
+                {providers!.saml && (
+                  <Button variant="outline" className="h-11 w-full" onClick={() => { window.location.href = `${base}/api/v1/auth/saml`; }}>
                     SSO (SAML)
                   </Button>
                 )}
               </div>
-            </>
+            </div>
           )}
-          <div className="flex flex-col items-center gap-2 text-sm text-gray-500">
-            <Link href="/forgot-password" className="hover:text-foreground underline">{t('auth.login.forgotPassword')}</Link>
+
+          <div className="mt-6 flex flex-col items-center gap-2 text-sm text-muted-foreground">
+            <Link href="/forgot-password" className="hover:text-foreground underline underline-offset-4 transition-colors">
+              {t('auth.login.forgotPassword')}
+            </Link>
             {registrationEnabled && (
               <p>
                 {t('auth.login.noAccount')}{' '}
-                <Link href="/register" className="font-medium text-black dark:text-white underline">{t('auth.login.signUp')}</Link>
+                <Link href="/register" className="font-medium text-foreground underline underline-offset-4">
+                  {t('auth.login.signUp')}
+                </Link>
               </p>
             )}
           </div>
-        </CardFooter>
-      </Card>
-      <AuthFooter />
-      <LanguageSwitcher compact />
+        </div>
+
+        <AuthFooter />
+        <LanguageSwitcher compact />
       </div>
     </div>
   );
