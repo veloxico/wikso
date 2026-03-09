@@ -7,6 +7,7 @@ WORKDIR /app
 
 # Copy root workspace files
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY patches ./patches
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/frontend/package.json ./apps/frontend/
 
@@ -38,6 +39,7 @@ ENV NEXT_PUBLIC_API_URL=http://localhost:3000
 ENV NEXT_PUBLIC_WS_URL=ws://localhost:1234
 
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY patches ./patches
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/frontend/package.json ./apps/frontend/
 
