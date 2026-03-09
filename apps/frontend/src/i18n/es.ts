@@ -106,6 +106,10 @@ const es = {
       title: '!Bienvenido a Dokka!',
       description: 'Gracias por elegir Dokka como su plataforma wiki. Vamos a configurar su cuenta de administrador para comenzar.',
       continue: 'Comenzar',
+      featurePages: 'Páginas y espacios',
+      featureCollaboration: 'Colaboración en tiempo real',
+      featureSearch: 'Búsqueda de texto completo',
+      featureAdmin: 'Panel de administración',
     },
     admin: {
       title: 'Crear cuenta de administrador',
@@ -369,6 +373,9 @@ const es = {
       characters: 'caracteres',
       passwordPolicy: 'Política de contraseñas',
       minPasswordLength: 'Longitud mínima de contraseña:',
+      maxAttachmentSize: 'Límite de carga de archivos',
+      maxAttachmentSizeDescription: 'Tamaño máximo de archivo que los usuarios pueden subir como adjunto. Límite máximo: 100 MB.',
+      maxFileSize: 'Tamaño máximo:',
       saveSecuritySettings: 'Guardar configuración de seguridad',
     },
     users: {

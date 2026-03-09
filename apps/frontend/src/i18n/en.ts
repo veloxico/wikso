@@ -106,6 +106,10 @@ const en = {
       title: 'Welcome to Dokka!',
       description: 'Thank you for choosing Dokka as your wiki platform. Let\'s set up your admin account to get started.',
       continue: 'Get Started',
+      featurePages: 'Pages & Spaces',
+      featureCollaboration: 'Real-time Collaboration',
+      featureSearch: 'Full-text Search',
+      featureAdmin: 'Admin Panel',
     },
     admin: {
       title: 'Create Admin Account',
@@ -369,6 +373,9 @@ const en = {
       characters: 'characters',
       passwordPolicy: 'Password Policy',
       minPasswordLength: 'Minimum password length:',
+      maxAttachmentSize: 'File Upload Limit',
+      maxAttachmentSizeDescription: 'Maximum file size that users can upload as attachments. Hard limit: 100 MB.',
+      maxFileSize: 'Max file size:',
       saveSecuritySettings: 'Save Security Settings',
     },
     users: {

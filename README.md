@@ -28,19 +28,19 @@
 - **Drag & Drop** — reorder pages in the tree via drag and drop
 - **Templates** — create pages from predefined templates
 - **Page Export** — export pages to PDF / Markdown
-- **File Attachments** — upload and attach files to pages (S3 / MinIO)
+- **File Attachments** — upload and attach files to pages (S3 / MinIO), configurable size limit (up to 100 MB)
 - **Avatar Upload** — profile photo with built-in image cropping
 - **Notifications** — in-app notifications for page changes
 - **Webhooks** — integrate with external services via webhook events
 - **Multi-language** — UI available in English, Russian, Spanish, Chinese
 - **Dark Mode** — full dark theme support
 - **Responsive** — works on desktop and mobile
-- **Admin Panel** — user management, space management, system settings
+- **Admin Panel** — user management, space management, security & system settings
 - **SSO** — Google, GitHub, SAML authentication
 
 ## Quick Start (Docker)
 
-The fastest way to run Dokka — a single command, no manual steps. Works on **Linux**, **macOS**, and **Windows (WSL2)**.
+The fastest way to run Dokka — a single command, no build required. Pre-built images are pulled from Docker Hub. Works on **Linux**, **macOS**, and **Windows (WSL2)**.
 
 ### Requirements
 
@@ -53,7 +53,16 @@ git clone <your-repo-url> && cd confluence
 docker compose up -d
 ```
 
-That's it — all services start automatically with health checks. Docker Compose waits for PostgreSQL, Redis, MinIO and Meilisearch to become healthy before starting the backend, and waits for the backend to be healthy before starting the frontend.
+That's it. Docker Compose pulls pre-built images from Docker Hub (`veloxico/dokka-be`, `veloxico/dokka-fe`) and starts all 6 services with health-check ordering. No local build, no Node.js, no pnpm required.
+
+### Docker Hub Images
+
+| Image | Description |
+|-------|-------------|
+| [`veloxico/dokka-be`](https://hub.docker.com/r/veloxico/dokka-be) | Backend — NestJS API + Hocuspocus WS |
+| [`veloxico/dokka-fe`](https://hub.docker.com/r/veloxico/dokka-fe) | Frontend — Next.js application |
+
+### Service URLs
 
 | Service | URL |
 |---------|-----|
@@ -65,10 +74,22 @@ That's it — all services start automatically with health checks. Docker Compos
 ### What happens automatically
 
 1. **PostgreSQL, Redis, MinIO, Meilisearch** start and pass health checks
-2. **Backend** runs Prisma migrations (`prisma migrate deploy`) on first boot
-3. **Backend** auto-creates the MinIO S3 bucket (`dokka-uploads`) if it doesn't exist
-4. **Frontend** starts after the backend is healthy
-5. **Setup Wizard** — on first launch, open the frontend URL and you'll be guided through creating your admin account. No default credentials or manual seeding required.
+2. **Backend** image is pulled from Docker Hub (no local build)
+3. **Backend** runs Prisma migrations (`prisma migrate deploy`) on first boot
+4. **Backend** auto-creates the MinIO S3 bucket (`dokka-uploads`) if it doesn't exist
+5. **Frontend** image is pulled from Docker Hub and starts after the backend is healthy
+6. **Setup Wizard** — on first launch, open the frontend URL and you'll be guided through creating your admin account. No default credentials or manual seeding required.
+
+### Useful commands
+
+```bash
+docker compose up -d          # Start all services (pulls images on first run)
+docker compose down            # Stop all services (data is preserved in volumes)
+docker compose down -v         # Stop and delete all data (clean slate)
+docker compose pull            # Pull latest images from Docker Hub
+docker compose logs backend    # View backend logs
+docker compose logs frontend   # View frontend logs
+```
 
 ## Local Development
 
@@ -111,7 +132,6 @@ cp apps/frontend/.env.example apps/frontend/.env.local
 cd apps/backend
 npx prisma db push           # Apply schema to database
 npx prisma generate          # Generate Prisma client
-# npx ts-node src/seed-admin.ts  # (Optional) Seed admin via CLI — alternatively use the setup wizard in browser
 cd ../..
 ```
 
@@ -124,6 +144,19 @@ pnpm dev
 # Or start them separately:
 pnpm dev:backend   # Backend on http://localhost:3000 + Hocuspocus on ws://localhost:1234
 pnpm dev:frontend  # Frontend on http://localhost:3001
+```
+
+### Building & publishing Docker images
+
+```bash
+# Build locally
+docker compose build
+
+# Tag and push to Docker Hub
+docker tag confluence-backend veloxico/dokka-be:latest
+docker tag confluence-frontend veloxico/dokka-fe:latest
+docker push veloxico/dokka-be:latest
+docker push veloxico/dokka-fe:latest
 ```
 
 ## Environment Variables

@@ -3,10 +3,15 @@ try { require('dotenv/config'); } catch {}
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Hard cap: 100 MB. Actual per-file limit is configurable via admin settings (maxAttachmentSizeMb).
+  app.useBodyParser('json', { limit: '100mb' });
+  app.useBodyParser('urlencoded', { limit: '100mb', extended: true });
 
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3001',

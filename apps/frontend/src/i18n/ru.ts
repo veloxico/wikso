@@ -106,6 +106,10 @@ const ru = {
       title: 'Добро пожаловать в Dokka!',
       description: 'Спасибо, что выбрали Dokka. Давайте создадим учётную запись администратора, чтобы начать работу.',
       continue: 'Начать',
+      featurePages: 'Страницы и пространства',
+      featureCollaboration: 'Совместное редактирование',
+      featureSearch: 'Полнотекстовый поиск',
+      featureAdmin: 'Панель администратора',
     },
     admin: {
       title: 'Создание учётной записи администратора',
@@ -369,6 +373,9 @@ const ru = {
       characters: 'символов',
       passwordPolicy: 'Политика паролей',
       minPasswordLength: 'Минимальная длина пароля:',
+      maxAttachmentSize: 'Лимит загрузки файлов',
+      maxAttachmentSizeDescription: 'Максимальный размер файла, который пользователи могут загрузить как вложение. Жёсткий лимит: 100 МБ.',
+      maxFileSize: 'Макс. размер файла:',
       saveSecuritySettings: 'Сохранить настройки безопасности',
     },
     users: {

@@ -106,6 +106,10 @@ const zh = {
       title: '欢迎使用 Dokka！',
       description: '感谢您选择 Dokka 作为您的知识库平台。让我们创建管理员账户以开始使用。',
       continue: '开始',
+      featurePages: '页面和空间',
+      featureCollaboration: '实时协作',
+      featureSearch: '全文搜索',
+      featureAdmin: '管理面板',
     },
     admin: {
       title: '创建管理员账户',
@@ -369,6 +373,9 @@ const zh = {
       characters: '个字符',
       passwordPolicy: '密码策略',
       minPasswordLength: '最小密码长度：',
+      maxAttachmentSize: '文件上传限制',
+      maxAttachmentSizeDescription: '用户可以上传的最大附件大小。硬性上限：100 MB。',
+      maxFileSize: '最大文件大小：',
       saveSecuritySettings: '保存安全设置',
     },
     users: {

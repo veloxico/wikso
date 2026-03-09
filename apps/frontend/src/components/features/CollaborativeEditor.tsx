@@ -157,9 +157,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const { data } = await api.post(`/pages/${pageId}/attachments`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const { data } = await api.post(`/pages/${pageId}/attachments`, formData);
       // Use permanent proxy URL instead of expiring signed URL.
       // GET /api/v1/attachments/:id/file streams the file directly from S3 — no expiration.
       // Relative path works because Next.js rewrites /api/* to the backend.

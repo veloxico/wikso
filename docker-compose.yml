@@ -1,8 +1,6 @@
 services:
   backend:
-    build:
-      context: .
-      dockerfile: apps/backend/Dockerfile
+    image: veloxico/dokka-be:latest
     ports:
       - '3000:3000'
       - '1234:1234'
@@ -62,12 +60,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: .
-      dockerfile: apps/frontend/Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=http://localhost:3000
-        - NEXT_PUBLIC_WS_URL=ws://localhost:1234
+    image: veloxico/dokka-fe:latest
     ports:
       - '3001:3000'
     environment:

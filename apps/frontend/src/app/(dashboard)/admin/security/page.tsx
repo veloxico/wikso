@@ -47,6 +47,7 @@ export default function AdminSecurityPage() {
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
   const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
   const [passwordMinLength, setPasswordMinLength] = useState(6);
+  const [maxAttachmentSizeMb, setMaxAttachmentSizeMb] = useState(25);
   const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
   const [newDomain, setNewDomain] = useState('');
 
@@ -55,6 +56,7 @@ export default function AdminSecurityPage() {
       setRegistrationEnabled(settings.registrationEnabled);
       setEmailVerificationRequired(settings.emailVerificationRequired);
       setPasswordMinLength(settings.passwordMinLength);
+      setMaxAttachmentSizeMb(settings.maxAttachmentSizeMb);
       setAllowedDomains(settings.allowedEmailDomains);
     }
   }, [settings]);
@@ -76,6 +78,7 @@ export default function AdminSecurityPage() {
       registrationEnabled,
       emailVerificationRequired,
       passwordMinLength,
+      maxAttachmentSizeMb,
       allowedEmailDomains: allowedDomains,
     });
   };
@@ -193,6 +196,35 @@ export default function AdminSecurityPage() {
                 className="w-24"
               />
               <span className="text-sm text-muted-foreground">{t('admin.security.characters')}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Max Attachment Size */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('admin.security.maxAttachmentSize')}</CardTitle>
+            <CardDescription>
+              {t('admin.security.maxAttachmentSizeDescription')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium whitespace-nowrap">
+                {t('admin.security.maxFileSize')}
+              </label>
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={maxAttachmentSizeMb}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setMaxAttachmentSizeMb(Math.min(Math.max(v, 1), 100));
+                }}
+                className="w-24"
+              />
+              <span className="text-sm text-muted-foreground">MB (max 100)</span>
             </div>
           </CardContent>
         </Card>

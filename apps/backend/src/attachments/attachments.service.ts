@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 import {
   S3Client,
   PutObjectCommand,
@@ -16,7 +17,10 @@ export class AttachmentsService implements OnModuleInit {
   private s3: S3Client;
   private bucket: string;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private settingsService: SettingsService,
+  ) {
     this.bucket = process.env.MINIO_BUCKET || process.env.S3_BUCKET || 'attachments';
 
     const useSsl = process.env.MINIO_USE_SSL === 'true' || process.env.S3_USE_SSL === 'true';
@@ -54,6 +58,17 @@ export class AttachmentsService implements OnModuleInit {
   }
 
   async upload(pageId: string, uploaderId: string, file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No file provided');
+
+    // Enforce configurable file size limit from admin settings (hard cap 100 MB)
+    const settings = await this.settingsService.getSettings();
+    const maxBytes = Math.min(settings.maxAttachmentSizeMb, 100) * 1024 * 1024;
+    if (file.size > maxBytes) {
+      throw new BadRequestException(
+        `File size (${(file.size / 1024 / 1024).toFixed(1)} MB) exceeds the maximum allowed size (${settings.maxAttachmentSizeMb} MB)`,
+      );
+    }
+
     const storageKey = `${pageId}/${uuid()}-${file.originalname}`;
 
     await this.s3.send(

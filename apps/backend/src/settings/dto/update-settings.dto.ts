@@ -45,6 +45,6 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(500)
+  @Max(100)
   maxAttachmentSizeMb?: number;
 }
