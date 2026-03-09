@@ -1,8 +1,9 @@
-import { Controller, Get, Patch, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -12,9 +13,13 @@ export class NotificationsController {
   constructor(private notificationsService: NotificationsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List notifications' })
-  findAll(@CurrentUser() user: any) {
-    return this.notificationsService.findByUser(user.id);
+  @ApiOperation({ summary: 'List notifications (paginated)' })
+  findAll(@CurrentUser() user: any, @Query() pagination: PaginationDto) {
+    return this.notificationsService.findByUser(
+      user.id,
+      pagination.skip,
+      pagination.take,
+    );
   }
 
   @Patch(':id/read')

@@ -17,6 +17,16 @@ interface PageExportProps {
   pageTitle: string;
 }
 
+/** Escape HTML special characters to prevent XSS when inserting into HTML templates. */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function convertJsonToMarkdown(json: any): string {
   let markdown = '';
 
@@ -130,6 +140,7 @@ function convertJsonToMarkdown(json: any): string {
 
         // Apply marks
         if (node.marks) {
+          let linkHref: string | null = null;
           node.marks.forEach((mark: any) => {
             if (mark.type === 'bold') {
               nodeText = `**${nodeText}**`;
@@ -139,8 +150,13 @@ function convertJsonToMarkdown(json: any): string {
               nodeText = `\`${nodeText}\``;
             } else if (mark.type === 'strike') {
               nodeText = `~~${nodeText}~~`;
+            } else if (mark.type === 'link') {
+              linkHref = mark.attrs?.href || '';
             }
           });
+          if (linkHref) {
+            nodeText = `[${nodeText}](${linkHref})`;
+          }
         }
 
         text += nodeText;
@@ -190,11 +206,12 @@ export function PageExport({ editor, pageTitle }: PageExportProps) {
     if (!editor) return;
 
     const html = editor.getHTML();
+    const safeTitle = escapeHtml(pageTitle);
     const fullHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>${pageTitle}</title>
+  <title>${safeTitle}</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
     h1, h2, h3 { margin-top: 1em; margin-bottom: 0.5em; }
@@ -206,7 +223,7 @@ export function PageExport({ editor, pageTitle }: PageExportProps) {
   </style>
 </head>
 <body>
-  <h1>${pageTitle}</h1>
+  <h1>${safeTitle}</h1>
   ${html}
 </body>
 </html>`;
@@ -252,11 +269,12 @@ export function PageExport({ editor, pageTitle }: PageExportProps) {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    const safeTitlePrint = escapeHtml(pageTitle);
     printWindow.document.write(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>${pageTitle}</title>
+  <title>${safeTitlePrint}</title>
   <style>
     @media print {
       @page { margin: 20mm; }
@@ -287,7 +305,7 @@ export function PageExport({ editor, pageTitle }: PageExportProps) {
   </style>
 </head>
 <body>
-  <h1>${pageTitle}</h1>
+  <h1>${safeTitlePrint}</h1>
   ${html}
   <script>window.onload = function() { window.print(); window.close(); }<\/script>
 </body>

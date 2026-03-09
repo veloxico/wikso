@@ -102,6 +102,21 @@ export class UsersService {
     });
   }
 
+  /** Search users by name for @mention autocomplete */
+  async searchByName(query: string, limit = 10) {
+    if (!query || query.length < 1) return [];
+    return this.prisma.user.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { email: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      select: { id: true, name: true, email: true, avatarUrl: true },
+      take: limit,
+    });
+  }
+
   async findAll(skip = 0, take = 20) {
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({

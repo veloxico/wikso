@@ -31,7 +31,8 @@ export class RecentPagesService {
   }
 
   async recordVisit(userId: string, pageId: string) {
-    return this.prisma.recentPage.upsert({
+    // Track in recent pages
+    const result = await this.prisma.recentPage.upsert({
       where: {
         userId_pageId: { userId, pageId },
       },
@@ -44,5 +45,16 @@ export class RecentPagesService {
         visitedAt: new Date(),
       },
     });
+
+    // Also record a page view for analytics
+    try {
+      await this.prisma.pageView.create({
+        data: { pageId, userId },
+      });
+    } catch {
+      // Non-critical — don't break the main flow
+    }
+
+    return result;
   }
 }

@@ -28,6 +28,19 @@ export function useCreateComment(pageId: string) {
   });
 }
 
+export function useUpdateComment(pageId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ commentId, content }: { commentId: string; content: string }) => {
+      const { data } = await api.patch(`/comments/${commentId}`, { content });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', pageId] });
+    },
+  });
+}
+
 export function useDeleteComment(pageId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -38,5 +51,16 @@ export function useDeleteComment(pageId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', pageId] });
     },
+  });
+}
+
+export function useSearchUsers(query: string) {
+  return useQuery<{ id: string; name: string; email: string; avatarUrl?: string }[]>({
+    queryKey: ['users', 'search', query],
+    queryFn: async () => {
+      const { data } = await api.get(`/users/search?q=${encodeURIComponent(query)}`);
+      return data;
+    },
+    enabled: query.length >= 1,
   });
 }

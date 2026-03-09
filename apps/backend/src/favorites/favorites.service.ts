@@ -31,9 +31,18 @@ export class FavoritesService {
       return { isFavorite: false };
     }
 
-    await this.prisma.favorite.create({
-      data: { userId, pageId },
-    });
+    try {
+      await this.prisma.favorite.create({
+        data: { userId, pageId },
+      });
+    } catch (err: any) {
+      // P2002 = unique constraint violation — another concurrent request already created it.
+      // Treat as already-favorited rather than crashing.
+      if (err?.code === 'P2002') {
+        return { isFavorite: true };
+      }
+      throw err;
+    }
     return { isFavorite: true };
   }
 

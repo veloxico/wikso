@@ -7,6 +7,8 @@ import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 
 @ApiTags('Templates')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('templates')
 export class TemplatesController {
   constructor(private templatesService: TemplatesService) {}
@@ -24,24 +26,18 @@ export class TemplatesController {
   }
 
   @Post()
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create a new template' })
   create(@Body() dto: CreateTemplateDto, @CurrentUser() user: any) {
     return this.templatesService.create(dto, user.id);
   }
 
   @Patch(':id')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update a template' })
   update(@Param('id') id: string, @Body() dto: UpdateTemplateDto) {
     return this.templatesService.update(id, dto);
   }
 
   @Delete(':id')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Delete a template' })
   remove(@Param('id') id: string) {
     return this.templatesService.delete(id);

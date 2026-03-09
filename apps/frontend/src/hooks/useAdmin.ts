@@ -318,3 +318,60 @@ export function useToggleWebhook() {
     onError: () => toast.error(t('toasts.webhookUpdateFailed')),
   });
 }
+
+// ─── Trash ──────────────────────────────────────────────
+
+export interface AdminTrashedPage {
+  id: string;
+  title: string;
+  deletedAt: string;
+  deletedBy: string | null;
+  space: { id: string; name: string; slug: string } | null;
+  author: { id: string; name: string } | null;
+}
+
+export function useAdminTrash(skip = 0, take = 20, search?: string) {
+  return useQuery<{ pages: AdminTrashedPage[]; total: number }>({
+    queryKey: ['admin', 'trash', skip, take, search],
+    queryFn: async () => {
+      const { data } = await api.get('/admin/trash', {
+        params: { skip, take, ...(search ? { search } : {}) },
+      });
+      return data;
+    },
+  });
+}
+
+export function useAdminRestorePage() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (pageId: string) => {
+      const { data } = await api.post(`/admin/trash/${pageId}/restore`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'trash'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success(t('admin.trash.restored'));
+    },
+    onError: () => toast.error(t('toasts.pageRestoreFailed')),
+  });
+}
+
+export function useAdminPermanentDelete() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (pageId: string) => {
+      const { data } = await api.delete(`/admin/trash/${pageId}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'trash'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success(t('admin.trash.deleted'));
+    },
+    onError: () => toast.error(t('toasts.pageDeleteFailed')),
+  });
+}

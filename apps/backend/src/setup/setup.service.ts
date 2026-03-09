@@ -1,12 +1,16 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthService } from '../auth/auth.service';
 import { GlobalRole } from '@prisma/client';
 import { SetupAdminDto } from './dto/setup-admin.dto';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class SetupService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private authService: AuthService,
+  ) {}
 
   /**
    * Check if initial setup is needed (no users exist yet)
@@ -21,6 +25,7 @@ export class SetupService {
 
   /**
    * Create the first admin user. Only works when DB has zero users.
+   * Returns JWT tokens so the frontend can auto-login.
    */
   async createAdmin(dto: SetupAdminDto) {
     const userCount = await this.prisma.user.count();
@@ -41,13 +46,6 @@ export class SetupService {
         emailVerified: true,
         role: GlobalRole.ADMIN,
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-      },
     });
 
     // Create a default "General" space owned by admin
@@ -61,9 +59,12 @@ export class SetupService {
       },
     });
 
+    // Generate JWT tokens for auto-login
+    const tokens = await this.authService.login(admin);
+
     return {
       message: 'Setup complete. Admin user created.',
-      user: admin,
+      ...tokens,
     };
   }
 }

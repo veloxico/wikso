@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PagesService } from './pages.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -7,6 +7,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreatePageDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
 import { MovePageDto } from './dto/move-page.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Pages')
 @ApiBearerAuth()
@@ -29,6 +30,13 @@ export class PagesController {
     return this.pagesService.getTree(slug);
   }
 
+  @Get('popular')
+  @UseGuards(SpacePermissionGuard)
+  @ApiOperation({ summary: 'Get popular pages' })
+  getPopular(@Param('slug') slug: string, @Query('period') period?: string) {
+    return this.pagesService.getPopular(slug, period || '7d');
+  }
+
   @Get(':pageId')
   @UseGuards(SpacePermissionGuard)
   @ApiOperation({ summary: 'Get page by ID' })
@@ -45,9 +53,16 @@ export class PagesController {
 
   @Delete(':pageId')
   @UseGuards(SpacePermissionGuard)
-  @ApiOperation({ summary: 'Delete page' })
-  remove(@Param('pageId') pageId: string) {
-    return this.pagesService.delete(pageId);
+  @ApiOperation({ summary: 'Move page to trash (soft delete)' })
+  remove(@Param('pageId') pageId: string, @CurrentUser() user: any) {
+    return this.pagesService.delete(pageId, user.id);
+  }
+
+  @Post(':pageId/duplicate')
+  @UseGuards(SpacePermissionGuard)
+  @ApiOperation({ summary: 'Duplicate a page' })
+  duplicate(@Param('pageId') pageId: string, @CurrentUser() user: any) {
+    return this.pagesService.duplicate(pageId, user.id);
   }
 
   @Patch(':pageId/move')
@@ -59,9 +74,9 @@ export class PagesController {
 
   @Get(':pageId/versions')
   @UseGuards(SpacePermissionGuard)
-  @ApiOperation({ summary: 'Get page version history' })
-  getVersions(@Param('pageId') pageId: string) {
-    return this.pagesService.getVersions(pageId);
+  @ApiOperation({ summary: 'Get page version history (paginated)' })
+  getVersions(@Param('pageId') pageId: string, @Query() pagination: PaginationDto) {
+    return this.pagesService.getVersions(pageId, pagination.skip, pagination.take);
   }
 
   @Get(':pageId/versions/:versionId')

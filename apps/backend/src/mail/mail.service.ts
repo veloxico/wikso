@@ -1,4 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
@@ -6,7 +8,9 @@ export class MailService {
   private logger = new Logger(MailService.name);
   private transporter: nodemailer.Transporter;
 
-  constructor() {
+  constructor(
+    @Optional() @InjectQueue('emails') private emailsQueue?: Queue,
+  ) {
     const host = process.env.MAIL_HOST || process.env.SMTP_HOST || 'localhost';
     const port = parseInt(process.env.MAIL_PORT || process.env.SMTP_PORT || '587');
     const user = process.env.MAIL_USER || process.env.SMTP_USER;
@@ -20,6 +24,23 @@ export class MailService {
   }
 
   private async send(to: string, subject: string, html: string) {
+    // If BullMQ queue is available, enqueue for async processing
+    if (this.emailsQueue) {
+      try {
+        await this.emailsQueue.add('send', { to, subject, html }, {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+          removeOnComplete: 100,
+          removeOnFail: 500,
+        });
+        return;
+      } catch (err) {
+        this.logger.warn(`Failed to enqueue email to ${to}: ${err.message}`);
+        // Fall through to synchronous send
+      }
+    }
+
+    // Fallback: send synchronously
     try {
       await this.transporter.sendMail({
         from: process.env.MAIL_FROM || process.env.SMTP_FROM || 'noreply@example.com',

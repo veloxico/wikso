@@ -14,6 +14,7 @@ describe('CommentsService', () => {
       create: jest.Mock;
       findUnique: jest.Mock;
       findMany: jest.Mock;
+      count: jest.Mock;
       update: jest.Mock;
       delete: jest.Mock;
     };
@@ -30,6 +31,7 @@ describe('CommentsService', () => {
         create: jest.fn(),
         findUnique: jest.fn(),
         findMany: jest.fn(),
+        count: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
       },
@@ -283,7 +285,7 @@ describe('CommentsService', () => {
   // findByPage
   // ---------------------------------------------------------------------------
   describe('findByPage', () => {
-    it('should return root comments with nested children ordered by createdAt', async () => {
+    it('should return paginated root comments with nested children', async () => {
       const pageId = 'page-1';
       const commentsTree = [
         {
@@ -310,10 +312,14 @@ describe('CommentsService', () => {
       ];
 
       prisma.comment.findMany.mockResolvedValue(commentsTree);
+      prisma.comment.count.mockResolvedValue(2);
 
       const result = await service.findByPage(pageId);
 
-      expect(result).toEqual(commentsTree);
+      expect(result.data).toEqual(commentsTree);
+      expect(result.total).toBe(2);
+      expect(result.skip).toBe(0);
+      expect(result.take).toBe(50);
       expect(prisma.comment.findMany).toHaveBeenCalledWith({
         where: { pageId, parentId: null },
         include: {
@@ -324,6 +330,8 @@ describe('CommentsService', () => {
           },
         },
         orderBy: { createdAt: 'asc' },
+        skip: 0,
+        take: 50,
       });
     });
   });
@@ -356,6 +364,7 @@ describe('CommentsService', () => {
       expect(prisma.comment.update).toHaveBeenCalledWith({
         where: { id: commentId },
         data: { content: updateDto.content },
+        include: { author: { select: { id: true, name: true, avatarUrl: true } } },
       });
     });
 

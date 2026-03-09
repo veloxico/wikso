@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { CreateSpaceDto } from './dto/create-space.dto';
@@ -10,9 +11,19 @@ import { SpaceRole } from '@prisma/client';
 export class SpacesService {
   constructor(
     private prisma: PrismaService,
+    private redis: RedisService,
     private notificationsService: NotificationsService,
     private webhooksService: WebhooksService,
   ) {}
+
+  /** Invalidate spaces list cache for a user */
+  private async invalidateSpacesCache(userId: string) {
+    try {
+      await this.redis.del(`cache:spaces:${userId}`);
+    } catch {
+      // Non-critical
+    }
+  }
 
   async create(dto: CreateSpaceDto, userId: string) {
     const exists = await this.prisma.space.findUnique({ where: { slug: dto.slug } });
@@ -26,6 +37,9 @@ export class SpacesService {
       data: { spaceId: space.id, userId, role: SpaceRole.ADMIN },
     });
 
+    // Invalidate cache
+    await this.invalidateSpacesCache(userId);
+
     // Fire webhook
     await this.webhooksService.fireEvent('space.created', {
       spaceId: space.id,
@@ -38,7 +52,16 @@ export class SpacesService {
   }
 
   async findAll(userId: string) {
-    return this.prisma.space.findMany({
+    // Try Redis cache first
+    const cacheKey = `cache:spaces:${userId}`;
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch {
+      // Cache miss or error — proceed to DB
+    }
+
+    const spaces = await this.prisma.space.findMany({
       where: {
         OR: [
           { type: 'PUBLIC' },
@@ -48,6 +71,15 @@ export class SpacesService {
       },
       include: { owner: { select: { id: true, name: true, avatarUrl: true } } },
     });
+
+    // Cache for 120 seconds
+    try {
+      await this.redis.set(cacheKey, JSON.stringify(spaces), 120);
+    } catch {
+      // Non-critical
+    }
+
+    return spaces;
   }
 
   async findBySlug(slug: string) {
@@ -60,6 +92,9 @@ export class SpacesService {
   }
 
   async update(slug: string, dto: UpdateSpaceDto) {
+    const existing = await this.prisma.space.findUnique({ where: { slug } });
+    if (!existing) throw new NotFoundException('Space not found');
+
     const space = await this.prisma.space.update({ where: { slug }, data: dto });
 
     await this.webhooksService.fireEvent('space.updated', {
@@ -73,14 +108,14 @@ export class SpacesService {
 
   async delete(slug: string) {
     const space = await this.prisma.space.findUnique({ where: { slug } });
+    if (!space) throw new NotFoundException('Space not found');
+
     await this.prisma.space.delete({ where: { slug } });
 
-    if (space) {
-      await this.webhooksService.fireEvent('space.deleted', {
-        spaceId: space.id,
-        name: space.name,
-      });
-    }
+    await this.webhooksService.fireEvent('space.deleted', {
+      spaceId: space.id,
+      name: space.name,
+    });
 
     return { message: 'Space deleted' };
   }
@@ -132,6 +167,9 @@ export class SpacesService {
       data: { spaceId: space.id, userId, role },
     });
 
+    // Invalidate cache for the new member
+    await this.invalidateSpacesCache(userId);
+
     // Notify the new member
     try {
       await this.notificationsService.create(userId, 'space.member_added', {
@@ -158,6 +196,9 @@ export class SpacesService {
     await this.prisma.spacePermission.deleteMany({
       where: { spaceId: space.id, userId },
     });
+
+    // Invalidate cache for the removed member
+    await this.invalidateSpacesCache(userId);
 
     // Notify the removed member
     try {

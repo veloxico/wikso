@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { PagesService } from './pages.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { SearchService } from '../search/search.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
@@ -72,15 +73,20 @@ describe('PagesService', () => {
       create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       delete: jest.fn(),
     },
     pageVersion: {
       create: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      count: jest.fn(),
     },
     spacePermission: {
       findMany: jest.fn(),
+    },
+    pageTag: {
+      createMany: jest.fn(),
     },
     $queryRaw: jest.fn(),
   };
@@ -98,11 +104,18 @@ describe('PagesService', () => {
     fireEvent: jest.fn(),
   };
 
+  const mockRedisService = {
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue(undefined),
+    del: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PagesService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: RedisService, useValue: mockRedisService },
         { provide: SearchService, useValue: mockSearchService },
         { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: WebhooksService, useValue: mockWebhooksService },
@@ -360,6 +373,7 @@ describe('PagesService', () => {
         contentJson: { type: 'doc', content: [{ type: 'heading' }] },
       };
 
+      mockPrisma.page.findUnique.mockResolvedValue(mockPage);
       mockPrisma.page.update.mockResolvedValue({
         ...mockPageWithSpace,
         title: dto.title,
@@ -414,6 +428,7 @@ describe('PagesService', () => {
     it('should not create a version when contentJson is not provided', async () => {
       const dto = { title: 'Only Title Changed' };
 
+      mockPrisma.page.findUnique.mockResolvedValue(mockPage);
       mockPrisma.page.update.mockResolvedValue({
         ...mockPageWithSpace,
         title: dto.title,
@@ -430,6 +445,7 @@ describe('PagesService', () => {
     it('should create a version when contentJson is explicitly set to an empty object', async () => {
       const dto = { contentJson: {} };
 
+      mockPrisma.page.findUnique.mockResolvedValue(mockPage);
       mockPrisma.page.update.mockResolvedValue({
         ...mockPageWithSpace,
         contentJson: {},
@@ -454,6 +470,7 @@ describe('PagesService', () => {
     it('should skip notifications when page has no space', async () => {
       const dto = { title: 'No Space Page' };
 
+      mockPrisma.page.findUnique.mockResolvedValue(mockPage);
       mockPrisma.page.update.mockResolvedValue({
         ...mockPage,
         space: null,
@@ -473,18 +490,37 @@ describe('PagesService', () => {
   // delete
   // ---------------------------------------------------------------------------
   describe('delete', () => {
-    it('should remove from search, delete from DB, and fire webhook', async () => {
+    it('should soft-delete the page, children, remove from search, and fire webhook', async () => {
       mockPrisma.page.findUnique.mockResolvedValue(mockPageWithSpace);
+      mockPrisma.page.update.mockResolvedValue(mockPageWithSpace);
+      mockPrisma.page.updateMany.mockResolvedValue({ count: 0 });
       mockSearchService.removePage.mockResolvedValue(undefined);
-      mockPrisma.page.delete.mockResolvedValue(mockPage);
       mockWebhooksService.fireEvent.mockResolvedValue(undefined);
 
-      const result = await service.delete('page-1');
+      const result = await service.delete('page-1', 'user-1');
 
-      expect(mockSearchService.removePage).toHaveBeenCalledWith('page-1');
-      expect(mockPrisma.page.delete).toHaveBeenCalledWith({
+      // Verifies page lookup with space
+      expect(mockPrisma.page.findUnique).toHaveBeenCalledWith({
         where: { id: 'page-1' },
+        include: { space: true },
       });
+
+      // Verifies soft-delete (update, not delete)
+      expect(mockPrisma.page.update).toHaveBeenCalledWith({
+        where: { id: 'page-1' },
+        data: expect.objectContaining({ deletedBy: 'user-1' }),
+      });
+
+      // Verifies children soft-delete
+      expect(mockPrisma.page.updateMany).toHaveBeenCalledWith({
+        where: { parentId: 'page-1', deletedAt: null },
+        data: expect.objectContaining({ deletedBy: 'user-1' }),
+      });
+
+      // Verifies search removal
+      expect(mockSearchService.removePage).toHaveBeenCalledWith('page-1');
+
+      // Verifies webhook was fired
       expect(mockWebhooksService.fireEvent).toHaveBeenCalledWith(
         'page.deleted',
         expect.objectContaining({
@@ -492,22 +528,20 @@ describe('PagesService', () => {
           title: mockPage.title,
         }),
       );
-      expect(result).toEqual({ message: 'Page deleted' });
+
+      expect(result).toEqual({ message: 'Page moved to trash' });
     });
 
-    it('should still delete from search and DB when page lookup returns null (no webhook)', async () => {
+    it('should throw NotFoundException when page is not found', async () => {
       mockPrisma.page.findUnique.mockResolvedValue(null);
-      mockSearchService.removePage.mockResolvedValue(undefined);
-      mockPrisma.page.delete.mockResolvedValue(undefined);
 
-      const result = await service.delete('page-1');
+      await expect(service.delete('page-1', 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
 
-      expect(mockSearchService.removePage).toHaveBeenCalledWith('page-1');
-      expect(mockPrisma.page.delete).toHaveBeenCalledWith({
-        where: { id: 'page-1' },
-      });
+      expect(mockPrisma.page.update).not.toHaveBeenCalled();
+      expect(mockSearchService.removePage).not.toHaveBeenCalled();
       expect(mockWebhooksService.fireEvent).not.toHaveBeenCalled();
-      expect(result).toEqual({ message: 'Page deleted' });
     });
   });
 
@@ -518,6 +552,7 @@ describe('PagesService', () => {
     it('should update parentId and position', async () => {
       const dto = { parentId: 'new-parent', position: 3 };
 
+      mockPrisma.page.findUnique.mockResolvedValue(mockPageWithSpace);
       mockPrisma.page.update.mockResolvedValue({
         ...mockPage,
         parentId: dto.parentId,
@@ -540,6 +575,7 @@ describe('PagesService', () => {
     it('should update only parentId when position is not provided', async () => {
       const dto = { parentId: 'new-parent' };
 
+      mockPrisma.page.findUnique.mockResolvedValue(mockPageWithSpace);
       mockPrisma.page.update.mockResolvedValue({
         ...mockPage,
         parentId: 'new-parent',
@@ -556,6 +592,7 @@ describe('PagesService', () => {
     it('should update only position when parentId is not provided', async () => {
       const dto = { position: 5 };
 
+      mockPrisma.page.findUnique.mockResolvedValue(mockPageWithSpace);
       mockPrisma.page.update.mockResolvedValue({
         ...mockPage,
         position: 5,
@@ -572,6 +609,7 @@ describe('PagesService', () => {
     it('should allow setting parentId to null to move page to root', async () => {
       const dto = { parentId: null };
 
+      mockPrisma.page.findUnique.mockResolvedValue(mockPageWithSpace);
       mockPrisma.page.update.mockResolvedValue({
         ...mockPage,
         parentId: null,
@@ -590,13 +628,14 @@ describe('PagesService', () => {
   // getVersions
   // ---------------------------------------------------------------------------
   describe('getVersions', () => {
-    it('should return versions ordered by createdAt descending', async () => {
+    it('should return paginated versions ordered by createdAt descending', async () => {
       const versions = [
         { ...mockVersion, id: 'v2', createdAt: new Date('2025-02-01') },
         { ...mockVersion, id: 'v1', createdAt: new Date('2025-01-01') },
       ];
 
       mockPrisma.pageVersion.findMany.mockResolvedValue(versions);
+      mockPrisma.pageVersion.count.mockResolvedValue(2);
 
       const result = await service.getVersions('page-1');
 
@@ -606,17 +645,24 @@ describe('PagesService', () => {
         include: {
           author: { select: { id: true, name: true, avatarUrl: true } },
         },
+        skip: 0,
+        take: 20,
       });
-      expect(result).toHaveLength(2);
-      expect(result[0].id).toBe('v2');
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0].id).toBe('v2');
+      expect(result.total).toBe(2);
+      expect(result.skip).toBe(0);
+      expect(result.take).toBe(20);
     });
 
-    it('should return an empty array when no versions exist', async () => {
+    it('should return an empty paginated result when no versions exist', async () => {
       mockPrisma.pageVersion.findMany.mockResolvedValue([]);
+      mockPrisma.pageVersion.count.mockResolvedValue(0);
 
       const result = await service.getVersions('page-1');
 
-      expect(result).toEqual([]);
+      expect(result.data).toEqual([]);
+      expect(result.total).toBe(0);
     });
   });
 
@@ -681,10 +727,10 @@ describe('PagesService', () => {
         where: { id: 'version-1', pageId: 'page-1' },
       });
 
-      // Verifies the page was updated with the version content
+      // Verifies the page was updated with the version content (yjsState cleared)
       expect(mockPrisma.page.update).toHaveBeenCalledWith({
         where: { id: 'page-1' },
-        data: { contentJson: versionToRestore.contentJson },
+        data: { contentJson: versionToRestore.contentJson, yjsState: null },
         include: { space: true },
       });
 
@@ -737,7 +783,7 @@ describe('PagesService', () => {
 
       expect(mockPrisma.page.update).toHaveBeenCalledWith({
         where: { id: 'page-1' },
-        data: { contentJson: {} },
+        data: { contentJson: {}, yjsState: null },
         include: { space: true },
       });
 

@@ -47,6 +47,11 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
+    // Check if first-run setup is needed (empty database)
+    api.get('/setup/status')
+      .then((res) => { if (res.data.setupRequired) router.replace('/setup'); })
+      .catch(() => {});
+
     api.get('/auth/providers')
       .then((res) => setProviders(res.data))
       .catch(() => setProviders({ github: false, google: false, saml: false }));
@@ -54,7 +59,7 @@ export default function LoginPage() {
     api.get('/auth/settings/public')
       .then((res) => setRegistrationEnabled(res.data.registrationEnabled))
       .catch(() => setRegistrationEnabled(true));
-  }, []);
+  }, [router]);
 
   const hasOAuth = providers && (providers.github || providers.google || providers.saml);
   const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -113,7 +118,7 @@ export default function LoginPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => { window.location.href = `${base}/api/auth/github`; }}
+                    onClick={() => { window.location.href = `${base}/api/v1/auth/github`; }}
                   >
                     GitHub
                   </Button>
@@ -122,7 +127,7 @@ export default function LoginPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => { window.location.href = `${base}/api/auth/google`; }}
+                    onClick={() => { window.location.href = `${base}/api/v1/auth/google`; }}
                   >
                     Google
                   </Button>
@@ -131,7 +136,7 @@ export default function LoginPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => { window.location.href = `${base}/api/auth/saml`; }}
+                    onClick={() => { window.location.href = `${base}/api/v1/auth/saml`; }}
                   >
                     SSO (SAML)
                   </Button>

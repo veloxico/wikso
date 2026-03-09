@@ -143,6 +143,54 @@ function SortablePageNode({ page, slug, level, searchQuery, onDeletePage }: Page
   );
 }
 
+/** Lightweight page node for search results — no DndContext/useSortable dependency. */
+function SearchPageNode({ page, slug, searchQuery, onDeletePage }: Omit<PageTreeNodeProps, 'level'>) {
+  const pathname = usePathname();
+  const isActive = pathname === `/spaces/${slug}/pages/${page.id}`;
+
+  const titleContent = useMemo(() => {
+    if (!searchQuery) return page.title;
+    const idx = page.title.toLowerCase().indexOf(searchQuery.toLowerCase());
+    if (idx === -1) return page.title;
+    const before = page.title.slice(0, idx);
+    const match = page.title.slice(idx, idx + searchQuery.length);
+    const after = page.title.slice(idx + searchQuery.length);
+    return (
+      <>
+        {before}<mark className="bg-yellow-200 dark:bg-yellow-800 rounded-sm px-0.5">{match}</mark>{after}
+      </>
+    );
+  }, [page.title, searchQuery]);
+
+  return (
+    <div
+      className={cn(
+        'group flex items-center gap-1 rounded-md px-2 py-1.5 text-sm transition-colors',
+        isActive
+          ? 'bg-accent text-accent-foreground'
+          : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground'
+      )}
+      style={{ paddingLeft: '4px' }}
+    >
+      <FileText className="h-4 w-4 shrink-0" />
+      <Link href={`/spaces/${slug}/pages/${page.id}`} className="flex-1 truncate">
+        {titleContent}
+      </Link>
+      {onDeletePage && (
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDeletePage(page); }}
+          className="shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+        >
+          <Trash2 className="h-3 w-3" />
+        </button>
+      )}
+      {page.status === 'DRAFT' && (
+        <span className="text-[9px] uppercase tracking-wider text-amber-600 dark:text-amber-400 font-medium">D</span>
+      )}
+    </div>
+  );
+}
+
 interface PageTreeProps {
   pages: Page[];
   slug: string;
@@ -219,10 +267,10 @@ export function PageTree({ pages, slug }: PageTreeProps) {
       )}
 
       {isSearching ? (
-        // Flat search results
+        // Flat search results — no DndContext needed
         <div className="space-y-0.5">
           {filteredPages.map((page) => (
-            <SortablePageNode key={page.id} page={page} slug={slug} level={0} searchQuery={search} onDeletePage={setPageToDelete} />
+            <SearchPageNode key={page.id} page={page} slug={slug} searchQuery={search} onDeletePage={setPageToDelete} />
           ))}
           {filteredPages.length === 0 && (
             <p className="px-3 py-4 text-xs text-muted-foreground text-center">

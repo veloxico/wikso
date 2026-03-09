@@ -85,6 +85,8 @@ model Page {
   status      PageStatus @default(DRAFT)
   authorId    String
   position    Int        @default(0)
+  deletedAt   DateTime?
+  deletedBy   String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
@@ -99,6 +101,9 @@ model Page {
   tags        PageTag[]
   favorites   Favorite[]
   recentPages RecentPage[]
+  pageViews   PageView[]
+
+  @@index([spaceId, deletedAt])
 }
 
 model PageVersion {
@@ -251,6 +256,17 @@ model PageTemplate {
 
   space   Space? @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   creator User?  @relation(fields: [creatorId], references: [id], onDelete: SetNull)
+}
+
+model PageView {
+  id        String   @id @default(uuid())
+  pageId    String
+  userId    String?
+  createdAt DateTime @default(now())
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, createdAt])
 }
 
 enum GlobalRole {

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { AuthService } from '../auth/auth.service';
 import { MailService } from '../mail/mail.service';
+import { PagesService } from '../pages/pages.service';
 import { GlobalRole, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as nodemailer from 'nodemailer';
@@ -16,6 +17,7 @@ export class AdminService {
     private settingsService: SettingsService,
     private authService: AuthService,
     private mailService: MailService,
+    private pagesService: PagesService,
   ) {}
 
   // ─── Users ─────────────────────────────────────────────
@@ -191,13 +193,24 @@ export class AdminService {
   // ─── Stats ─────────────────────────────────────────────
 
   async getStats() {
-    const [usersCount, spacesCount, pagesCount, commentsCount] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.space.count(),
-      this.prisma.page.count(),
-      this.prisma.comment.count(),
-    ]);
-    return { usersCount, spacesCount, pagesCount, commentsCount };
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const [usersCount, spacesCount, pagesCount, commentsCount, views7d, views30d, activeUsers7d] =
+      await Promise.all([
+        this.prisma.user.count(),
+        this.prisma.space.count(),
+        this.prisma.page.count({ where: { deletedAt: null } }),
+        this.prisma.comment.count(),
+        this.prisma.pageView.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+        this.prisma.pageView.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+        this.prisma.pageView
+          .groupBy({ by: ['userId'], where: { createdAt: { gte: sevenDaysAgo }, userId: { not: null } } })
+          .then((g) => g.length),
+      ]);
+
+    return { usersCount, spacesCount, pagesCount, commentsCount, views7d, views30d, activeUsers7d };
   }
 
   // ─── Auth Providers ────────────────────────────────────
@@ -268,6 +281,40 @@ export class AdminService {
     } catch (err: any) {
       return { success: false, message: err.message };
     }
+  }
+
+  // ─── Trash ───────────────────────────────────────────────
+
+  async getTrash(skip = 0, take = 20, search?: string) {
+    const where: Prisma.PageWhereInput = {
+      deletedAt: { not: null },
+    };
+    if (search) {
+      where.title = { contains: search, mode: 'insensitive' };
+    }
+
+    const [pages, total] = await Promise.all([
+      this.prisma.page.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { deletedAt: 'desc' },
+        include: {
+          space: { select: { id: true, name: true, slug: true } },
+          author: { select: { id: true, name: true } },
+        },
+      }),
+      this.prisma.page.count({ where }),
+    ]);
+    return { pages, total };
+  }
+
+  async restorePage(pageId: string) {
+    return this.pagesService.restore(pageId);
+  }
+
+  async permanentDeletePage(pageId: string) {
+    return this.pagesService.permanentDelete(pageId);
   }
 
   // ─── Webhooks ──────────────────────────────────────────

@@ -22,7 +22,8 @@ export function createMentionExtension(spaceSlug: string) {
       items: async ({ query }: { query: string }): Promise<MentionUser[]> => {
         try {
           const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') || '' : '';
-          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+          const envUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+          const baseUrl = envUrl.endsWith('/api/v1') ? envUrl : envUrl.endsWith('/api') ? `${envUrl}/v1` : `${envUrl}/api/v1`;
           const res = await fetch(
             `${baseUrl}/spaces/${spaceSlug}/members/search?q=${encodeURIComponent(query)}`,
             {

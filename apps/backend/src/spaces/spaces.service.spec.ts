@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { SpacesService } from './spaces.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { CreateSpaceDto } from './dto/create-space.dto';
@@ -95,6 +96,12 @@ const mockWebhooksService = () => ({
   fireEvent: jest.fn(),
 });
 
+const mockRedisService = () => ({
+  get: jest.fn().mockResolvedValue(null),
+  set: jest.fn().mockResolvedValue(undefined),
+  del: jest.fn().mockResolvedValue(undefined),
+});
+
 // ---------------------------------------------------------------------------
 // Test suite
 // ---------------------------------------------------------------------------
@@ -110,6 +117,7 @@ describe('SpacesService', () => {
       providers: [
         SpacesService,
         { provide: PrismaService, useFactory: mockPrismaService },
+        { provide: RedisService, useFactory: mockRedisService },
         { provide: NotificationsService, useFactory: mockNotificationsService },
         { provide: WebhooksService, useFactory: mockWebhooksService },
       ],
@@ -232,6 +240,7 @@ describe('SpacesService', () => {
 
     it('should update the space and fire a webhook', async () => {
       const updatedSpace = { ...mockSpace, ...dto };
+      prisma.space.findUnique.mockResolvedValue(mockSpace);
       prisma.space.update.mockResolvedValue(updatedSpace);
       webhooks.fireEvent.mockResolvedValue(undefined);
 
@@ -274,14 +283,13 @@ describe('SpacesService', () => {
       expect(result).toEqual({ message: 'Space deleted' });
     });
 
-    it('should not fire a webhook when the space was not found before deletion', async () => {
+    it('should throw NotFoundException when the space does not exist', async () => {
       prisma.space.findUnique.mockResolvedValue(null);
-      prisma.space.delete.mockResolvedValue(undefined);
 
-      const result = await service.delete('ghost');
+      await expect(service.delete('ghost')).rejects.toThrow(NotFoundException);
 
+      expect(prisma.space.delete).not.toHaveBeenCalled();
       expect(webhooks.fireEvent).not.toHaveBeenCalled();
-      expect(result).toEqual({ message: 'Space deleted' });
     });
   });
 

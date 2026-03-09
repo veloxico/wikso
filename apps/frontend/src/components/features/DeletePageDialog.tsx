@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -50,15 +49,18 @@ export function DeletePageDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{t('pages.deletePageTitle')}</AlertDialogTitle>
+          <AlertDialogTitle>{t('pages.moveToTrashTitle')}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t('pages.deletePageDescription').replace('{title}', pageTitle)}
+            {t('pages.moveToTrashDescription', { title: pageTitle })}
           </AlertDialogDescription>
           {childCount > 0 && (
             <p className="text-sm text-destructive font-medium mt-1">
-              {t('pages.deletePageWithChildren').replace('{count}', String(childCount))}
+              {t('pages.deletePageWithChildren', { count: childCount })}
             </p>
           )}
+          <p className="text-xs text-muted-foreground mt-2">
+            {t('pages.trashHint')}
+          </p>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={deletePage.isPending}>
@@ -70,7 +72,8 @@ export function DeletePageDialog({
             disabled={deletePage.isPending}
           >
             {deletePage.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            {deletePage.isPending ? t('common.deleting') : t('pages.deletePage')}
+            <Trash2 className="h-4 w-4 mr-1" />
+            {deletePage.isPending ? t('common.deleting') : t('pages.moveToTrash')}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

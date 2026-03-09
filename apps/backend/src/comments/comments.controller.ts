@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CommentsService } from './comments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Comments')
 @ApiBearerAuth()
@@ -20,9 +21,9 @@ export class CommentsController {
   }
 
   @Get('pages/:pageId/comments')
-  @ApiOperation({ summary: 'Get comments for a page' })
-  findByPage(@Param('pageId') pageId: string) {
-    return this.commentsService.findByPage(pageId);
+  @ApiOperation({ summary: 'Get comments for a page (paginated)' })
+  findByPage(@Param('pageId') pageId: string, @Query() pagination: PaginationDto) {
+    return this.commentsService.findByPage(pageId, pagination.skip, pagination.take);
   }
 
   @Patch('comments/:id')

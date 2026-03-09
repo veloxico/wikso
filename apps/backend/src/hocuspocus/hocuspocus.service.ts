@@ -143,8 +143,8 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
       onAuthenticate: async (data) => {
         const { token } = data;
         if (!token) {
-          this.logger.warn('Hocuspocus connection without token');
-          return { user: null };
+          this.logger.warn('Hocuspocus connection without token — rejecting');
+          throw new Error('Authentication required');
         }
         try {
           const cleanToken = token.toString().replace('Bearer ', '');

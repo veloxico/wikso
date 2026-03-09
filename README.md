@@ -59,12 +59,7 @@ That's it! Open:
 | **MinIO Console** | [http://localhost:9001](http://localhost:9001) |
 | **Meilisearch** | [http://localhost:7700](http://localhost:7700) |
 
-Default admin credentials (created on first start):
-
-```
-Email:    admin@example.com
-Password: Admin1234!
-```
+On first launch, open the frontend URL — you'll be guided through a setup wizard to create your admin account. No default credentials needed.
 
 ## Local Development
 
@@ -105,9 +100,9 @@ cp apps/frontend/.env.example apps/frontend/.env.local
 
 ```bash
 cd apps/backend
-npx prisma migrate deploy   # Apply migrations
+npx prisma db push           # Apply schema to database
 npx prisma generate          # Generate Prisma client
-npx ts-node src/seed-admin.ts  # Create admin user (optional)
+# npx ts-node src/seed-admin.ts  # (Optional) Seed admin via CLI — alternatively use the setup wizard in browser
 cd ../..
 ```
 

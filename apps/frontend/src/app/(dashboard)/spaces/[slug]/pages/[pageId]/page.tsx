@@ -3,8 +3,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Save, Clock, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal } from 'lucide-react';
-import { usePage, useUpdatePage } from '@/hooks/usePages';
+import { Save, Clock, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal, Copy } from 'lucide-react';
+import { usePage, useUpdatePage, useDuplicatePage } from '@/hooks/usePages';
 import { useSpace } from '@/hooks/useSpaces';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCheckFavorite, useToggleFavorite } from '@/hooks/useFavorites';
@@ -24,6 +24,7 @@ import { Comments } from '@/components/features/Comments';
 import { Breadcrumbs } from '@/components/features/Breadcrumbs';
 import { PageExport } from '@/components/features/PageExport';
 import { KeyboardShortcutsDialog } from '@/components/features/KeyboardShortcuts';
+import { TagManager } from '@/components/features/TagManager';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -65,6 +66,9 @@ export default function PageEditorPage() {
   // Favorites
   const { data: favoriteStatus } = useCheckFavorite(pageId);
   const toggleFavorite = useToggleFavorite();
+
+  // Duplicate
+  const duplicatePage = useDuplicatePage(slug);
 
   // Record page visit for recent pages
   const recordVisit = useRecordPageVisit();
@@ -234,6 +238,13 @@ export default function PageEditorPage() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
+                    onClick={() => duplicatePage.mutate(pageId)}
+                    disabled={duplicatePage.isPending}
+                  >
+                    <Copy className="h-4 w-4" />
+                    {t('pages.duplicate')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onClick={() => setShowDeleteDialog(true)}
                   >
@@ -245,6 +256,20 @@ export default function PageEditorPage() {
             )}
           </div>
         </div>
+
+        {/* Tags */}
+        {page?.tags && (
+          <div className="mb-4">
+            <TagManager
+              slug={slug}
+              pageId={pageId}
+              pageTags={(page.tags as any[]).filter((pt: any) => pt.tag).map((pt: any) => ({
+                tagId: pt.tagId,
+                tag: { id: pt.tag.id, name: pt.tag.name },
+              }))}
+            />
+          </div>
+        )}
 
         {/* Collaborative Editor (Yjs + Hocuspocus) */}
         <CollaborativeEditor

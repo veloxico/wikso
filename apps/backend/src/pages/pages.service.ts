@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { SearchService } from '../search/search.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
@@ -18,12 +19,24 @@ function slugify(text: string): string {
 
 @Injectable()
 export class PagesService {
+  private logger = new Logger(PagesService.name);
+
   constructor(
     private prisma: PrismaService,
+    private redis: RedisService,
     private searchService: SearchService,
     private notificationsService: NotificationsService,
     private webhooksService: WebhooksService,
   ) {}
+
+  /** Invalidate tree cache for a space slug */
+  private async invalidateTreeCache(spaceSlug: string) {
+    try {
+      await this.redis.del(`cache:tree:${spaceSlug}`);
+    } catch {
+      // Non-critical
+    }
+  }
 
   async create(spaceSlug: string, dto: CreatePageDto, authorId: string) {
     const space = await this.prisma.space.findUnique({ where: { slug: spaceSlug } });
@@ -50,6 +63,9 @@ export class PagesService {
     // Index in search
     await this.searchService.indexPage(page, { slug: spaceSlug, name: space.name });
 
+    // Invalidate tree cache
+    await this.invalidateTreeCache(spaceSlug);
+
     // Notify all space members (except the author)
     await this.notifySpaceMembers(space.id, authorId, 'page.created', {
       pageId: page.id,
@@ -70,6 +86,15 @@ export class PagesService {
   }
 
   async getTree(spaceSlug: string) {
+    // Try Redis cache first
+    const cacheKey = `cache:tree:${spaceSlug}`;
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch {
+      // Cache miss or error — proceed to DB
+    }
+
     const space = await this.prisma.space.findUnique({ where: { slug: spaceSlug } });
     if (!space) throw new NotFoundException('Space not found');
 
@@ -77,16 +102,26 @@ export class PagesService {
       WITH RECURSIVE page_tree AS (
         SELECT id, title, slug, "parentId", position, status, "authorId", "createdAt", "updatedAt", 0 as depth
         FROM "Page"
-        WHERE "spaceId" = ${space.id} AND "parentId" IS NULL
+        WHERE "spaceId" = ${space.id} AND "parentId" IS NULL AND "deletedAt" IS NULL
         UNION ALL
         SELECT p.id, p.title, p.slug, p."parentId", p.position, p.status, p."authorId", p."createdAt", p."updatedAt", pt.depth + 1
         FROM "Page" p
         INNER JOIN page_tree pt ON p."parentId" = pt.id
+        WHERE p."deletedAt" IS NULL
       )
       SELECT * FROM page_tree ORDER BY depth, position
     `;
 
-    return this.buildTree(pages);
+    const tree = this.buildTree(pages);
+
+    // Cache for 60 seconds
+    try {
+      await this.redis.set(cacheKey, JSON.stringify(tree), 60);
+    } catch {
+      // Non-critical
+    }
+
+    return tree;
   }
 
   private buildTree(pages: any[]) {
@@ -117,15 +152,18 @@ export class PagesService {
         tags: { include: { tag: true } },
       },
     });
-    if (!page) throw new NotFoundException('Page not found');
+    if (!page || page.deletedAt) throw new NotFoundException('Page not found');
     return page;
   }
 
   async update(pageId: string, dto: UpdatePageDto, userId: string) {
+    const existing = await this.prisma.page.findUnique({ where: { id: pageId } });
+    if (!existing) throw new NotFoundException('Page not found');
+
     const page = await this.prisma.page.update({
       where: { id: pageId },
       data: {
-        ...(dto.title && { title: dto.title }),
+        ...(dto.title !== undefined && dto.title !== '' && { title: dto.title }),
         ...(dto.contentJson !== undefined && { contentJson: dto.contentJson }),
         ...(dto.status && { status: dto.status }),
       },
@@ -139,6 +177,11 @@ export class PagesService {
     }
 
     await this.searchService.indexPage(page, page.space ? { slug: page.space.slug, name: page.space.name } : undefined);
+
+    // Invalidate tree cache
+    if (page.space) {
+      await this.invalidateTreeCache(page.space.slug);
+    }
 
     // Notify space members about the update
     if (page.space) {
@@ -160,42 +203,129 @@ export class PagesService {
     return page;
   }
 
-  async delete(pageId: string) {
+  /** Soft-delete: move page to trash */
+  async delete(pageId: string, userId: string) {
     const page = await this.prisma.page.findUnique({
       where: { id: pageId },
       include: { space: true },
     });
+    if (!page || page.deletedAt) throw new NotFoundException('Page not found');
+
+    await this.prisma.page.update({
+      where: { id: pageId },
+      data: { deletedAt: new Date(), deletedBy: userId },
+    });
+
+    // Also soft-delete children
+    await this.prisma.page.updateMany({
+      where: { parentId: pageId, deletedAt: null },
+      data: { deletedAt: new Date(), deletedBy: userId },
+    });
+
+    // Remove from search index
+    await this.searchService.removePage(pageId);
+
+    // Invalidate tree cache
+    if (page.space) {
+      await this.invalidateTreeCache(page.space.slug);
+    }
+
+    // Fire webhook
+    await this.webhooksService.fireEvent('page.deleted', {
+      pageId,
+      title: page.title,
+    });
+
+    return { message: 'Page moved to trash' };
+  }
+
+  /** List trashed pages in a space */
+  async getTrash(spaceSlug: string) {
+    const space = await this.prisma.space.findUnique({ where: { slug: spaceSlug } });
+    if (!space) throw new NotFoundException('Space not found');
+
+    return this.prisma.page.findMany({
+      where: { spaceId: space.id, deletedAt: { not: null } },
+      include: {
+        author: { select: { id: true, name: true, avatarUrl: true } },
+      },
+      orderBy: { deletedAt: 'desc' },
+    });
+  }
+
+  /** Restore page from trash */
+  async restore(pageId: string) {
+    const page = await this.prisma.page.findUnique({
+      where: { id: pageId },
+      include: { space: true },
+    });
+    if (!page) throw new NotFoundException('Page not found');
+    if (!page.deletedAt) throw new NotFoundException('Page is not in trash');
+
+    await this.prisma.page.update({
+      where: { id: pageId },
+      data: { deletedAt: null, deletedBy: null },
+    });
+
+    // Re-index in search
+    await this.searchService.indexPage(page, page.space ? { slug: page.space.slug, name: page.space.name } : undefined);
+
+    // Invalidate tree cache
+    if (page.space) {
+      await this.invalidateTreeCache(page.space.slug);
+    }
+
+    return { message: 'Page restored' };
+  }
+
+  /** Permanently delete a page from trash (admin only) */
+  async permanentDelete(pageId: string) {
+    const page = await this.prisma.page.findUnique({ where: { id: pageId } });
+    if (!page) throw new NotFoundException('Page not found');
+    if (!page.deletedAt) throw new ForbiddenException('Page must be in trash before permanent deletion');
 
     await this.searchService.removePage(pageId);
     await this.prisma.page.delete({ where: { id: pageId } });
 
-    // Fire webhook
-    if (page) {
-      await this.webhooksService.fireEvent('page.deleted', {
-        pageId,
-        title: page.title,
-      });
-    }
-
-    return { message: 'Page deleted' };
+    return { message: 'Page permanently deleted' };
   }
 
   async move(pageId: string, dto: MovePageDto) {
-    return this.prisma.page.update({
+    const existing = await this.prisma.page.findUnique({
+      where: { id: pageId },
+      include: { space: true },
+    });
+    if (!existing) throw new NotFoundException('Page not found');
+
+    const result = await this.prisma.page.update({
       where: { id: pageId },
       data: {
         ...(dto.parentId !== undefined && { parentId: dto.parentId }),
         ...(dto.position !== undefined && { position: dto.position }),
       },
     });
+
+    // Invalidate tree cache
+    if (existing.space) {
+      await this.invalidateTreeCache(existing.space.slug);
+    }
+
+    return result;
   }
 
-  async getVersions(pageId: string) {
-    return this.prisma.pageVersion.findMany({
-      where: { pageId },
-      orderBy: { createdAt: 'desc' },
-      include: { author: { select: { id: true, name: true, avatarUrl: true } } },
-    });
+  async getVersions(pageId: string, skip = 0, take = 20) {
+    const [data, total] = await Promise.all([
+      this.prisma.pageVersion.findMany({
+        where: { pageId },
+        orderBy: { createdAt: 'desc' },
+        include: { author: { select: { id: true, name: true, avatarUrl: true } } },
+        skip,
+        take,
+      }),
+      this.prisma.pageVersion.count({ where: { pageId } }),
+    ]);
+
+    return { data, total, skip, take };
   }
 
   async getVersion(pageId: string, versionId: string) {
@@ -209,9 +339,14 @@ export class PagesService {
   async restoreVersion(pageId: string, versionId: string, userId: string) {
     const version = await this.getVersion(pageId, versionId);
 
+    // Clear yjsState so Hocuspocus rebuilds from contentJson on next connection.
+    // Without this, the editor would still load the old Yjs binary state.
     const page = await this.prisma.page.update({
       where: { id: pageId },
-      data: { contentJson: version.contentJson || {} },
+      data: {
+        contentJson: version.contentJson || {},
+        yjsState: null,
+      },
       include: { space: true },
     });
 
@@ -223,6 +358,88 @@ export class PagesService {
     await this.searchService.indexPage(page, page.space ? { slug: page.space.slug, name: page.space.name } : undefined);
 
     return page;
+  }
+
+  /** Duplicate a page */
+  async duplicate(pageId: string, userId: string) {
+    const page = await this.prisma.page.findUnique({
+      where: { id: pageId },
+      include: { space: true, tags: true },
+    });
+    if (!page || page.deletedAt) throw new NotFoundException('Page not found');
+
+    const slug = slugify(page.title) + '-copy-' + Date.now().toString(36);
+    const copy = await this.prisma.page.create({
+      data: {
+        title: `${page.title} (Copy)`,
+        slug,
+        contentJson: page.contentJson || {},
+        parentId: page.parentId,
+        status: 'DRAFT',
+        spaceId: page.spaceId,
+        authorId: userId,
+      },
+    });
+
+    // Copy tags
+    if (page.tags.length > 0) {
+      await this.prisma.pageTag.createMany({
+        data: page.tags.map((pt) => ({ pageId: copy.id, tagId: pt.tagId })),
+      });
+    }
+
+    // Create initial version
+    await this.prisma.pageVersion.create({
+      data: { pageId: copy.id, contentJson: page.contentJson || {}, authorId: userId },
+    });
+
+    // Index in search
+    if (page.space) {
+      await this.searchService.indexPage(copy, { slug: page.space.slug, name: page.space.name });
+    }
+
+    return copy;
+  }
+
+  /** Get popular pages by view count */
+  async getPopular(spaceSlug: string, period: string = '7d') {
+    // Try Redis cache first (5 min TTL)
+    const cacheKey = `cache:popular:${spaceSlug}:${period}`;
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch {
+      // Cache miss or error — proceed to DB
+    }
+
+    const space = await this.prisma.space.findUnique({ where: { slug: spaceSlug } });
+    if (!space) throw new NotFoundException('Space not found');
+
+    const days = period === '30d' ? 30 : period === '14d' ? 14 : 7;
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const popular: any[] = await this.prisma.$queryRaw`
+      SELECT p.id, p.title, p.slug, p."authorId", p."createdAt", p."updatedAt",
+             COUNT(pv.id)::int as "viewCount"
+      FROM "Page" p
+      INNER JOIN "PageView" pv ON pv."pageId" = p.id
+      WHERE p."spaceId" = ${space.id}
+        AND p."deletedAt" IS NULL
+        AND pv."createdAt" >= ${since}
+      GROUP BY p.id
+      ORDER BY "viewCount" DESC
+      LIMIT 20
+    `;
+
+    // Cache for 5 minutes
+    try {
+      await this.redis.set(cacheKey, JSON.stringify(popular), 300);
+    } catch {
+      // Non-critical
+    }
+
+    return popular;
   }
 
   /** Notify all members of a space except the actor */

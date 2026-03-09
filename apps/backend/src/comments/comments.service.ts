@@ -5,6 +5,17 @@ import { WebhooksService } from '../webhooks/webhooks.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 
+/** Extract mentioned user IDs from @[Name](userId) patterns */
+function parseMentions(content: string): string[] {
+  const regex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+  const ids: string[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(content)) !== null) {
+    ids.push(match[2]);
+  }
+  return [...new Set(ids)];
+}
+
 @Injectable()
 export class CommentsService {
   constructor(
@@ -55,6 +66,22 @@ export class CommentsService {
             });
           }
         }
+
+        // Parse @mentions and notify mentioned users
+        const mentionedIds = parseMentions(dto.content);
+        const alreadyNotified = new Set([authorId, page.authorId]);
+        for (const mentionedId of mentionedIds) {
+          if (alreadyNotified.has(mentionedId)) continue;
+          alreadyNotified.add(mentionedId);
+          await this.notificationsService.create(mentionedId, 'comment.mention', {
+            commentId: comment.id,
+            pageId,
+            pageTitle: page.title,
+            authorName: comment.author?.name || 'Someone',
+            content: dto.content.substring(0, 100),
+            spaceSlug: page.space?.slug,
+          });
+        }
       }
 
       // Fire webhook
@@ -71,18 +98,25 @@ export class CommentsService {
     return comment;
   }
 
-  async findByPage(pageId: string) {
-    return this.prisma.comment.findMany({
-      where: { pageId, parentId: null },
-      include: {
-        author: { select: { id: true, name: true, avatarUrl: true } },
-        children: {
-          include: { author: { select: { id: true, name: true, avatarUrl: true } } },
-          orderBy: { createdAt: 'asc' },
+  async findByPage(pageId: string, skip = 0, take = 50) {
+    const [data, total] = await Promise.all([
+      this.prisma.comment.findMany({
+        where: { pageId, parentId: null },
+        include: {
+          author: { select: { id: true, name: true, avatarUrl: true } },
+          children: {
+            include: { author: { select: { id: true, name: true, avatarUrl: true } } },
+            orderBy: { createdAt: 'asc' },
+          },
         },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+        orderBy: { createdAt: 'asc' },
+        skip,
+        take,
+      }),
+      this.prisma.comment.count({ where: { pageId, parentId: null } }),
+    ]);
+
+    return { data, total, skip, take };
   }
 
   async update(id: string, dto: UpdateCommentDto, userId: string) {
@@ -93,6 +127,7 @@ export class CommentsService {
     return this.prisma.comment.update({
       where: { id },
       data: { content: dto.content },
+      include: { author: { select: { id: true, name: true, avatarUrl: true } } },
     });
   }
 

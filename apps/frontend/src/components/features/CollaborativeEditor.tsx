@@ -82,18 +82,17 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
   const [showColorPicker, setShowColorPicker] = useState<'text' | 'highlight' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Use refs + state for Yjs/Hocuspocus to survive React Strict Mode double-mount.
-  // `providerState` is tracked via useState so that changes trigger editor re-creation.
-  const ydocRef = useRef<Y.Doc | null>(null);
+  // A fresh Y.Doc is created for each pageId so old page content
+  // never bleeds into a different page when navigating.
   const providerRef = useRef<HocuspocusProvider | null>(null);
   const [providerState, setProviderState] = useState<HocuspocusProvider | null>(null);
-
-  if (!ydocRef.current) {
-    ydocRef.current = new Y.Doc();
-  }
+  const [ydoc, setYdoc] = useState<Y.Doc>(() => new Y.Doc());
 
   useEffect(() => {
-    const ydoc = ydocRef.current!;
+    // Create a fresh Y.Doc for each page.
+    const newDoc = new Y.Doc();
+    setYdoc(newDoc);
+
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:1234';
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') || '' : '';
 
@@ -110,7 +109,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       provider = new HocuspocusProvider({
         url: wsUrl,
         name: `page:${pageId}`,
-        document: ydoc,
+        document: newDoc,
         token,
         autoConnect: false,
         onConnect() { if (!destroyed) setStatus('connected'); },
@@ -145,12 +144,12 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       }
       providerRef.current = null;
       setProviderState(null);
+      newDoc.destroy();
       setSynced(false);
       setStatus('connecting');
     };
   }, [pageId]);
 
-  const ydoc = ydocRef.current;
   const provider = providerState;
 
   const handleImageUpload = useCallback(async (file: File) => {
@@ -162,9 +161,9 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       // Use permanent proxy URL instead of expiring signed URL.
-      // GET /api/attachments/:id/file streams the file directly from S3 — no expiration.
+      // GET /api/v1/attachments/:id/file streams the file directly from S3 — no expiration.
       // Relative path works because Next.js rewrites /api/* to the backend.
-      const permanentUrl = `/api/attachments/${data.id}/file`;
+      const permanentUrl = `/api/v1/attachments/${data.id}/file`;
       editorRef.current.chain().focus().setImage({ src: permanentUrl, alt: file.name }).run();
     } catch {
       const reader = new FileReader();

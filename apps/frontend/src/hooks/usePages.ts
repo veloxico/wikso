@@ -81,10 +81,40 @@ export function useDeletePage(slug: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pages', slug] });
-      toast.success(t('toasts.pageDeleted'));
+      queryClient.invalidateQueries({ queryKey: ['trash', slug] });
+      toast.success(t('toasts.pageMovedToTrash'));
     },
     onError: () => {
       toast.error(t('toasts.pageDeleteFailed'));
     },
+  });
+}
+
+export function useDuplicatePage(slug: string) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (pageId: string) => {
+      const { data } = await api.post(`/spaces/${slug}/pages/${pageId}/duplicate`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pages', slug] });
+      toast.success(t('toasts.pageDuplicated'));
+    },
+    onError: () => {
+      toast.error(t('toasts.pageDuplicateFailed'));
+    },
+  });
+}
+
+export function usePopularPages(slug: string, period: string = '7d') {
+  return useQuery({
+    queryKey: ['pages', slug, 'popular', period],
+    queryFn: async () => {
+      const { data } = await api.get(`/spaces/${slug}/pages/popular?period=${period}`);
+      return data;
+    },
+    enabled: !!slug,
   });
 }

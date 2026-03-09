@@ -2,6 +2,9 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@
 import { PrismaService } from '../../prisma/prisma.service';
 import { SpaceRole } from '@prisma/client';
 
+/** HTTP methods considered read-only (safe for public access). */
+const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
 @Injectable()
 export class SpacePermissionGuard implements CanActivate {
   constructor(private prisma: PrismaService) {}
@@ -12,21 +15,37 @@ export class SpacePermissionGuard implements CanActivate {
     const slug = request.params.slug;
 
     if (!slug || !user) return false;
+
+    // Global admin bypasses all checks
     if (user.role === 'ADMIN') return true;
 
     const space = await this.prisma.space.findUnique({ where: { slug } });
     if (!space) return false;
 
-    if (space.ownerId === user.id) return true;
-    if (space.type === 'PUBLIC') return true;
+    request.space = space;
 
+    // Owner has full access
+    if (space.ownerId === user.id) return true;
+
+    const isReadOnly = READ_METHODS.has(request.method);
+
+    // Public spaces: grant read-only access to any authenticated user.
+    // Write operations still require an explicit permission record.
+    if (space.type === 'PUBLIC' && isReadOnly) return true;
+
+    // Check explicit space permission
     const perm = await this.prisma.spacePermission.findFirst({
       where: { spaceId: space.id, userId: user.id },
     });
 
     if (!perm) throw new ForbiddenException('No access to this space');
+
+    // VIEWER / GUEST roles only get read access
+    if ((perm.role === SpaceRole.VIEWER || perm.role === SpaceRole.GUEST) && !isReadOnly) {
+      throw new ForbiddenException('Insufficient permissions for this operation');
+    }
+
     request.spacePermission = perm;
-    request.space = space;
     return true;
   }
 }

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -20,11 +21,15 @@ import { SettingsModule } from './settings/settings.module';
 import { RecentPagesModule } from './recent-pages/recent-pages.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { TemplatesModule } from './templates/templates.module';
+import { HealthModule } from './health/health.module';
+import { TagsModule } from './tags/tags.module';
+import { JobsModule } from './jobs/jobs.module';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
     PrismaModule,
     RedisModule,
     AuthModule,
@@ -44,8 +49,15 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     RecentPagesModule,
     FavoritesModule,
     TemplatesModule,
+    HealthModule,
+    TagsModule,
+    JobsModule,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: AuditLogInterceptor,

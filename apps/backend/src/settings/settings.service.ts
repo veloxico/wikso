@@ -1,16 +1,38 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { SystemSettings } from '@prisma/client';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 
+const CACHE_KEY = 'cache:settings';
+const CACHE_TTL = 300; // 5 minutes
+
 @Injectable()
 export class SettingsService {
-  private cache: SystemSettings | null = null;
+  private logger = new Logger(SettingsService.name);
+  /** In-memory fallback if Redis is unavailable */
+  private memoryCache: SystemSettings | null = null;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
 
   async getSettings(): Promise<SystemSettings> {
-    if (this.cache) return this.cache;
+    // Try Redis cache first
+    try {
+      const cached = await this.redis.get(CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        this.memoryCache = parsed;
+        return parsed;
+      }
+    } catch {
+      // Redis unavailable — try memory cache
+    }
+
+    // Try in-memory fallback
+    if (this.memoryCache) return this.memoryCache;
 
     let settings = await this.prisma.systemSettings.findUnique({
       where: { id: 'singleton' },
@@ -26,7 +48,14 @@ export class SettingsService {
       });
     }
 
-    this.cache = settings;
+    // Cache in Redis and memory
+    this.memoryCache = settings;
+    try {
+      await this.redis.set(CACHE_KEY, JSON.stringify(settings), CACHE_TTL);
+    } catch {
+      // Non-critical
+    }
+
     return settings;
   }
 
@@ -35,7 +64,15 @@ export class SettingsService {
       where: { id: 'singleton' },
       data: dto,
     });
-    this.cache = settings;
+
+    // Update both caches
+    this.memoryCache = settings;
+    try {
+      await this.redis.set(CACHE_KEY, JSON.stringify(settings), CACHE_TTL);
+    } catch {
+      // Non-critical
+    }
+
     return settings;
   }
 
@@ -66,7 +103,12 @@ export class SettingsService {
     };
   }
 
-  invalidateCache() {
-    this.cache = null;
+  async invalidateCache() {
+    this.memoryCache = null;
+    try {
+      await this.redis.del(CACHE_KEY);
+    } catch {
+      // Non-critical
+    }
   }
 }

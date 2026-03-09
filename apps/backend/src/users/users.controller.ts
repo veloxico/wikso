@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Param, Body, Res,
+  Controller, Get, Post, Patch, Param, Body, Res, Query,
   UseGuards, UseInterceptors, UploadedFile, BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
@@ -78,6 +78,14 @@ export class UsersController {
       throw new BadRequestException('File size exceeds 5 MB limit');
     }
     return this.usersService.uploadAvatar(user.id, file);
+  }
+
+  @Get('search')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Search users by name (for @mentions)' })
+  searchUsers(@Query('q') query: string) {
+    return this.usersService.searchByName(query || '', 10);
   }
 
   @Get(':id/avatar')

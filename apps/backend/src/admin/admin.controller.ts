@@ -177,6 +177,30 @@ export class AdminController {
     return this.adminService.sendTestEmail(req.user.email);
   }
 
+  // ─── Trash ───────────────────────────────────────────────
+
+  @Get('trash')
+  @ApiOperation({ summary: 'List all trashed pages across all spaces' })
+  getTrash(
+    @Query('skip') skip?: number,
+    @Query('take') take?: number,
+    @Query('search') search?: string,
+  ) {
+    return this.adminService.getTrash(Number(skip) || 0, Number(take) || 20, search);
+  }
+
+  @Post('trash/:pageId/restore')
+  @ApiOperation({ summary: 'Restore a trashed page' })
+  restorePage(@Param('pageId') pageId: string) {
+    return this.adminService.restorePage(pageId);
+  }
+
+  @Delete('trash/:pageId')
+  @ApiOperation({ summary: 'Permanently delete a trashed page' })
+  permanentDeletePage(@Param('pageId') pageId: string) {
+    return this.adminService.permanentDeletePage(pageId);
+  }
+
   // ─── Webhooks ──────────────────────────────────────────
 
   @Get('webhooks')
