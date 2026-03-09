@@ -1,6 +1,6 @@
 services:
   backend:
-    image: veloxico/dokka-be:1.0.0
+    image: veloxico/dokka-be:1.1.0
     ports:
       - '3000:3000'
       - '1234:1234'
@@ -60,7 +60,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: veloxico/dokka-fe:1.0.0
+    image: veloxico/dokka-fe:1.1.0
     ports:
       - '3001:3000'
     environment:
