@@ -156,6 +156,24 @@ export class PagesService {
     return page;
   }
 
+  /** Walk up the parent chain and return ancestors from root to direct parent */
+  async getAncestors(pageId: string) {
+    const ancestors: { id: string; title: string; slug: string }[] = await this.prisma.$queryRaw`
+      WITH RECURSIVE ancestors AS (
+        SELECT id, title, slug, "parentId"
+        FROM "Page"
+        WHERE id = (SELECT "parentId" FROM "Page" WHERE id = ${pageId} AND "deletedAt" IS NULL)
+        UNION ALL
+        SELECT p.id, p.title, p.slug, p."parentId"
+        FROM "Page" p
+        INNER JOIN ancestors a ON p.id = a."parentId"
+      )
+      SELECT id, title, slug FROM ancestors
+    `;
+    // The recursive CTE returns child-first → root-last, so reverse
+    return ancestors.reverse();
+  }
+
   async update(pageId: string, dto: UpdatePageDto, userId: string) {
     const existing = await this.prisma.page.findUnique({ where: { id: pageId } });
     if (!existing || existing.deletedAt) throw new NotFoundException('Page not found');

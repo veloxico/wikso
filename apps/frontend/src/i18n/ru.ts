@@ -244,6 +244,7 @@ const ru = {
     preview: 'Предпросмотр',
     unknown: 'Неизвестно',
     byAuthor: 'автор: {name}',
+    createChildPage: 'Создать дочернюю страницу',
   },
   search: {
     title: 'Поиск',

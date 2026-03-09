@@ -244,6 +244,7 @@ const zh = {
     preview: '预览',
     unknown: '未知',
     byAuthor: '作者：{name}',
+    createChildPage: '创建子页面',
   },
   search: {
     title: '搜索',

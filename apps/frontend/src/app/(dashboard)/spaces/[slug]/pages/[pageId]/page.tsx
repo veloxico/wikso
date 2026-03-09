@@ -3,8 +3,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Save, Clock, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal, Copy } from 'lucide-react';
-import { usePage, useUpdatePage, useDuplicatePage } from '@/hooks/usePages';
+import { Save, Clock, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal, Copy, FilePlus } from 'lucide-react';
+import { usePage, useUpdatePage, useDuplicatePage, useCreatePage, usePageAncestors } from '@/hooks/usePages';
 import { useSpace } from '@/hooks/useSpaces';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCheckFavorite, useToggleFavorite } from '@/hooks/useFavorites';
@@ -47,7 +47,9 @@ export default function PageEditorPage() {
 
   const { data: page, isLoading } = usePage(slug, pageId);
   const { data: space } = useSpace(slug);
+  const { data: ancestors } = usePageAncestors(slug, pageId);
   const updatePage = useUpdatePage(slug, pageId);
+  const createChildPage = useCreatePage(slug);
   const { t, locale } = useTranslation();
   const [title, setTitle] = useState('');
   const [titleInitialized, setTitleInitialized] = useState(false);
@@ -123,6 +125,18 @@ export default function PageEditorPage() {
     setEditorInstance(editor);
   }, []);
 
+  const handleCreateChildPage = useCallback(async () => {
+    try {
+      const newPage = await createChildPage.mutateAsync({
+        title: t('pages.untitled'),
+        parentId: pageId,
+      });
+      router.push(`/spaces/${slug}/pages/${newPage.id}`);
+    } catch {
+      toast.error(t('pages.failedToCreate'));
+    }
+  }, [createChildPage, pageId, slug, router, t]);
+
   const handleToggleFavorite = useCallback(() => {
     toggleFavorite.mutate(pageId, {
       onSuccess: (data) => {
@@ -150,11 +164,15 @@ export default function PageEditorPage() {
 
       {/* Main content area — offset for TOC sidebar on large screens */}
       <div className="px-8 py-4 lg:mr-64">
-        {/* Breadcrumbs */}
+        {/* Breadcrumbs — full hierarchy: Space > ...ancestors > current page */}
         <Breadcrumbs
           className="mb-4"
           items={[
             { label: space?.name || slug, href: `/spaces/${slug}` },
+            ...(ancestors || []).map((a) => ({
+              label: a.title,
+              href: `/spaces/${slug}/pages/${a.id}`,
+            })),
             { label: page?.title || 'Page' },
           ]}
         />
@@ -237,6 +255,13 @@ export default function PageEditorPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={handleCreateChildPage}
+                    disabled={createChildPage.isPending}
+                  >
+                    <FilePlus className="h-4 w-4" />
+                    {t('pages.createChildPage')}
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => duplicatePage.mutate(pageId)}
                     disabled={duplicatePage.isPending}

@@ -72,6 +72,13 @@ export class PagesController {
     return this.pagesService.move(pageId, dto);
   }
 
+  @Get(':pageId/ancestors')
+  @UseGuards(SpacePermissionGuard)
+  @ApiOperation({ summary: 'Get page ancestors (root → direct parent)' })
+  getAncestors(@Param('pageId') pageId: string) {
+    return this.pagesService.getAncestors(pageId);
+  }
+
   @Get(':pageId/versions')
   @UseGuards(SpacePermissionGuard)
   @ApiOperation({ summary: 'Get page version history (paginated)' })

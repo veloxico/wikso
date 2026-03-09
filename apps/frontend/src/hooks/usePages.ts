@@ -108,6 +108,17 @@ export function useDuplicatePage(slug: string) {
   });
 }
 
+export function usePageAncestors(slug: string, pageId: string) {
+  return useQuery<{ id: string; title: string; slug: string }[]>({
+    queryKey: ['pages', slug, pageId, 'ancestors'],
+    queryFn: async () => {
+      const { data } = await api.get(`/spaces/${slug}/pages/${pageId}/ancestors`);
+      return data;
+    },
+    enabled: !!slug && !!pageId,
+  });
+}
+
 export function usePopularPages(slug: string, period: string = '7d') {
   return useQuery({
     queryKey: ['pages', slug, 'popular', period],

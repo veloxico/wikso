@@ -244,6 +244,7 @@ const en = {
     preview: 'Preview',
     unknown: 'Unknown',
     byAuthor: 'by {name}',
+    createChildPage: 'Create child page',
   },
   search: {
     title: 'Search',

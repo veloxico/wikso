@@ -41,10 +41,11 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
   const { data: pages, isLoading } = usePages(isExpanded ? space.slug : '');
   const createPage = useCreatePage(space.slug);
 
-  const handleNewPage = useCallback(async (contentJson?: object) => {
+  const handleNewPage = useCallback(async (contentJson?: object, parentId?: string) => {
     try {
       const newPage = await createPage.mutateAsync({
         title: t('pages.untitled'),
+        ...(parentId ? { parentId } : {}),
         ...(contentJson ? { contentJson: contentJson as Record<string, unknown> } : {}),
       });
       router.push(`/spaces/${space.slug}/pages/${newPage.id}`);
@@ -52,6 +53,10 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
       toast.error(t('pages.failedToCreate'));
     }
   }, [createPage, router, space.slug, t]);
+
+  const handleCreateChildPage = useCallback((parentId: string) => {
+    handleNewPage(undefined, parentId);
+  }, [handleNewPage]);
 
   const handleTemplateSelect = useCallback((content: object) => {
     handleNewPage(content);
@@ -141,7 +146,7 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
                 ))}
               </div>
             )}
-            {pages && <PageTree pages={pages} slug={space.slug} />}
+            {pages && <PageTree pages={pages} slug={space.slug} onCreateChildPage={handleCreateChildPage} />}
           </div>
         </div>
       )}

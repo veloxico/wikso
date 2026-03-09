@@ -244,6 +244,7 @@ const es = {
     preview: 'Vista previa',
     unknown: 'Desconocido',
     byAuthor: 'por {name}',
+    createChildPage: 'Crear subpágina',
   },
   search: {
     title: 'Buscar',

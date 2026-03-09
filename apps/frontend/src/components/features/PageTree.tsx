@@ -18,7 +18,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ChevronRight, FileText, GripVertical, Search, X, Trash2 } from 'lucide-react';
+import { ChevronRight, FileText, GripVertical, Search, X, Trash2, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -31,10 +31,12 @@ interface PageTreeNodeProps {
   level: number;
   searchQuery?: string;
   onDeletePage?: (page: Page) => void;
+  onCreateChildPage?: (parentId: string) => void;
 }
 
-function SortablePageNode({ page, slug, level, searchQuery, onDeletePage }: PageTreeNodeProps) {
+function SortablePageNode({ page, slug, level, searchQuery, onDeletePage, onCreateChildPage }: PageTreeNodeProps) {
   const pathname = usePathname();
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
   const hasChildren = page.children && page.children.length > 0;
   const isActive = pathname === `/spaces/${slug}/pages/${page.id}`;
@@ -112,6 +114,17 @@ function SortablePageNode({ page, slug, level, searchQuery, onDeletePage }: Page
           {titleContent}
         </Link>
 
+        {/* Create child page button (hover) */}
+        {onCreateChildPage && !searchQuery && (
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCreateChildPage(page.id); }}
+            className="shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all"
+            title={t('pages.createChildPage')}
+          >
+            <Plus className="h-3 w-3" />
+          </button>
+        )}
+
         {/* Delete button (hover) */}
         {onDeletePage && (
           <button
@@ -135,7 +148,7 @@ function SortablePageNode({ page, slug, level, searchQuery, onDeletePage }: Page
           strategy={verticalListSortingStrategy}
         >
           {page.children!.map((child) => (
-            <SortablePageNode key={child.id} page={child} slug={slug} level={level + 1} onDeletePage={onDeletePage} />
+            <SortablePageNode key={child.id} page={child} slug={slug} level={level + 1} onDeletePage={onDeletePage} onCreateChildPage={onCreateChildPage} />
           ))}
         </SortableContext>
       )}
@@ -194,9 +207,10 @@ function SearchPageNode({ page, slug, searchQuery, onDeletePage }: Omit<PageTree
 interface PageTreeProps {
   pages: Page[];
   slug: string;
+  onCreateChildPage?: (parentId: string) => void;
 }
 
-export function PageTree({ pages, slug }: PageTreeProps) {
+export function PageTree({ pages, slug, onCreateChildPage }: PageTreeProps) {
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const { t } = useTranslation();
@@ -284,7 +298,7 @@ export function PageTree({ pages, slug }: PageTreeProps) {
           <SortableContext items={pages.map((p) => p.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-0.5">
               {pages.map((page) => (
-                <SortablePageNode key={page.id} page={page} slug={slug} level={0} onDeletePage={setPageToDelete} />
+                <SortablePageNode key={page.id} page={page} slug={slug} level={0} onDeletePage={setPageToDelete} onCreateChildPage={onCreateChildPage} />
               ))}
             </div>
           </SortableContext>
