@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -52,13 +50,13 @@ services:
       start_period: 40s
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       minio:
-        condition: service_started
+        condition: service_healthy
       meilisearch:
-        condition: service_started
+        condition: service_healthy
     networks:
       - wiki-net
     restart: unless-stopped
@@ -76,7 +74,8 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:3000
       - NEXT_PUBLIC_WS_URL=ws://localhost:1234
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - wiki-net
     restart: unless-stopped
@@ -91,6 +90,11 @@ services:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - wiki-net
     restart: unless-stopped
@@ -101,6 +105,11 @@ services:
       - '6379:6379'
     volumes:
       - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - wiki-net
     restart: unless-stopped
@@ -116,6 +125,11 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
     volumes:
       - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - wiki-net
     restart: unless-stopped
@@ -128,6 +142,11 @@ services:
       MEILI_MASTER_KEY: masterKey
     volumes:
       - meilidata:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - wiki-net
     restart: unless-stopped

@@ -158,7 +158,7 @@ export class PagesService {
 
   async update(pageId: string, dto: UpdatePageDto, userId: string) {
     const existing = await this.prisma.page.findUnique({ where: { id: pageId } });
-    if (!existing) throw new NotFoundException('Page not found');
+    if (!existing || existing.deletedAt) throw new NotFoundException('Page not found');
 
     const page = await this.prisma.page.update({
       where: { id: pageId },
@@ -295,7 +295,7 @@ export class PagesService {
       where: { id: pageId },
       include: { space: true },
     });
-    if (!existing) throw new NotFoundException('Page not found');
+    if (!existing || existing.deletedAt) throw new NotFoundException('Page not found');
 
     const result = await this.prisma.page.update({
       where: { id: pageId },

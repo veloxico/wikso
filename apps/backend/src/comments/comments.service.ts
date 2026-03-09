@@ -25,6 +25,12 @@ export class CommentsService {
   ) {}
 
   async create(pageId: string, dto: CreateCommentDto, authorId: string) {
+    const targetPage = await this.prisma.page.findUnique({
+      where: { id: pageId },
+      select: { deletedAt: true },
+    });
+    if (!targetPage || targetPage.deletedAt) throw new NotFoundException('Page not found');
+
     const comment = await this.prisma.comment.create({
       data: { ...dto, pageId, authorId },
       include: { author: { select: { id: true, name: true, avatarUrl: true } } },

@@ -7,7 +7,7 @@ export class RecentPagesService {
 
   async list(userId: string, limit = 20) {
     return this.prisma.recentPage.findMany({
-      where: { userId },
+      where: { userId, page: { deletedAt: null } },
       orderBy: { visitedAt: 'desc' },
       take: limit,
       include: {

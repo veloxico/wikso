@@ -7,7 +7,7 @@ export class FavoritesService {
 
   async list(userId: string) {
     return this.prisma.favorite.findMany({
-      where: { userId },
+      where: { userId, page: { deletedAt: null } },
       include: {
         page: {
           include: {

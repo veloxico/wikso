@@ -95,8 +95,9 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
             try {
               const page = await this.prisma.page.findUnique({
                 where: { id: pageId },
-                select: { yjsState: true },
+                select: { yjsState: true, deletedAt: true },
               });
+              if (page?.deletedAt) return null;
               if (page?.yjsState) {
                 return new Uint8Array(page.yjsState);
               }

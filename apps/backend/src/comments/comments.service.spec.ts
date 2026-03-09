@@ -91,7 +91,10 @@ describe('CommentsService', () => {
 
     it('should create a comment and notify the page author', async () => {
       prisma.comment.create.mockResolvedValue(createdComment);
-      prisma.page.findUnique.mockResolvedValue(page);
+      // First call: soft-delete check, second call: notification lookup
+      prisma.page.findUnique
+        .mockResolvedValueOnce({ deletedAt: null })
+        .mockResolvedValueOnce(page);
       notificationsService.create.mockResolvedValue(undefined);
       webhooksService.fireEvent.mockResolvedValue(undefined);
 
@@ -148,7 +151,9 @@ describe('CommentsService', () => {
       };
 
       prisma.comment.create.mockResolvedValue(replyComment);
-      prisma.page.findUnique.mockResolvedValue(page);
+      prisma.page.findUnique
+        .mockResolvedValueOnce({ deletedAt: null })
+        .mockResolvedValueOnce(page);
       prisma.comment.findUnique.mockResolvedValue(parentComment);
       notificationsService.create.mockResolvedValue(undefined);
       webhooksService.fireEvent.mockResolvedValue(undefined);
@@ -185,7 +190,9 @@ describe('CommentsService', () => {
       const selfAuthoredPage = { ...page, authorId };
 
       prisma.comment.create.mockResolvedValue(createdComment);
-      prisma.page.findUnique.mockResolvedValue(selfAuthoredPage);
+      prisma.page.findUnique
+        .mockResolvedValueOnce({ deletedAt: null })
+        .mockResolvedValueOnce(selfAuthoredPage);
       webhooksService.fireEvent.mockResolvedValue(undefined);
 
       await service.create(pageId, dto, authorId);
@@ -218,7 +225,9 @@ describe('CommentsService', () => {
       };
 
       prisma.comment.create.mockResolvedValue(replyComment);
-      prisma.page.findUnique.mockResolvedValue(page);
+      prisma.page.findUnique
+        .mockResolvedValueOnce({ deletedAt: null })
+        .mockResolvedValueOnce(page);
       prisma.comment.findUnique.mockResolvedValue(parentComment);
       notificationsService.create.mockResolvedValue(undefined);
       webhooksService.fireEvent.mockResolvedValue(undefined);
@@ -255,7 +264,9 @@ describe('CommentsService', () => {
       };
 
       prisma.comment.create.mockResolvedValue(replyComment);
-      prisma.page.findUnique.mockResolvedValue(page);
+      prisma.page.findUnique
+        .mockResolvedValueOnce({ deletedAt: null })
+        .mockResolvedValueOnce(page);
       prisma.comment.findUnique.mockResolvedValue(parentComment);
       notificationsService.create.mockResolvedValue(undefined);
       webhooksService.fireEvent.mockResolvedValue(undefined);
@@ -273,11 +284,28 @@ describe('CommentsService', () => {
 
     it('should still return the comment even if notifications/webhooks throw', async () => {
       prisma.comment.create.mockResolvedValue(createdComment);
-      prisma.page.findUnique.mockRejectedValue(new Error('DB down'));
+      // First call: soft-delete check (must succeed), second call: notification lookup (can fail)
+      prisma.page.findUnique
+        .mockResolvedValueOnce({ deletedAt: null })
+        .mockRejectedValueOnce(new Error('DB down'));
 
       const result = await service.create(pageId, dto, authorId);
 
       expect(result).toEqual(createdComment);
+    });
+
+    it('should throw NotFoundException when the page is soft-deleted', async () => {
+      prisma.page.findUnique.mockResolvedValue({ deletedAt: new Date() });
+
+      await expect(service.create(pageId, dto, authorId)).rejects.toThrow(NotFoundException);
+      expect(prisma.comment.create).not.toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when the page does not exist', async () => {
+      prisma.page.findUnique.mockResolvedValue(null);
+
+      await expect(service.create(pageId, dto, authorId)).rejects.toThrow(NotFoundException);
+      expect(prisma.comment.create).not.toHaveBeenCalled();
     });
   });
 

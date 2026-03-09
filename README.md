@@ -40,26 +40,35 @@
 
 ## Quick Start (Docker)
 
-The fastest way to run Dokka — everything in containers:
+The fastest way to run Dokka — a single command, no manual steps. Works on **Linux**, **macOS**, and **Windows (WSL2)**.
+
+### Requirements
+
+- **Docker** >= 20.10 and **Docker Compose** v2 (`docker compose` — no hyphen)
+
+### Launch
 
 ```bash
-# Clone the repo
 git clone <your-repo-url> && cd confluence
-
-# Start all services
 docker compose up -d
 ```
 
-That's it! Open:
+That's it — all services start automatically with health checks. Docker Compose waits for PostgreSQL, Redis, MinIO and Meilisearch to become healthy before starting the backend, and waits for the backend to be healthy before starting the frontend.
 
 | Service | URL |
 |---------|-----|
 | **Frontend** | [http://localhost:3001](http://localhost:3001) |
-| **Backend API** | [http://localhost:3000](http://localhost:3000) |
+| **Backend API** | [http://localhost:3000/api/v1](http://localhost:3000/api/v1) |
 | **MinIO Console** | [http://localhost:9001](http://localhost:9001) |
 | **Meilisearch** | [http://localhost:7700](http://localhost:7700) |
 
-On first launch, open the frontend URL — you'll be guided through a setup wizard to create your admin account. No default credentials needed.
+### What happens automatically
+
+1. **PostgreSQL, Redis, MinIO, Meilisearch** start and pass health checks
+2. **Backend** runs Prisma migrations (`prisma migrate deploy`) on first boot
+3. **Backend** auto-creates the MinIO S3 bucket (`dokka-uploads`) if it doesn't exist
+4. **Frontend** starts after the backend is healthy
+5. **Setup Wizard** — on first launch, open the frontend URL and you'll be guided through creating your admin account. No default credentials or manual seeding required.
 
 ## Local Development
 
