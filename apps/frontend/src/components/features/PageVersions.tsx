@@ -50,7 +50,7 @@ export function PageVersions({ slug, pageId, currentContent, onPreview }: PageVe
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['versions', slug, pageId] });
-      queryClient.invalidateQueries({ queryKey: ['page', slug, pageId] });
+      queryClient.invalidateQueries({ queryKey: ['pages', slug, pageId] });
       toast.success(t('pages.versionRestored') || 'Version restored successfully');
     },
     onError: () => {

@@ -134,9 +134,14 @@ export class UsersService {
 
     // Delete previous avatar from S3 if exists
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (user?.avatarUrl) {
-      const prevKeyMatch = user.avatarUrl.match(/avatarStorageKey:(.+)/);
-      // We store the key in a separate field; fall back to no-op
+    if (user?.avatarStorageKey) {
+      try {
+        await this.s3.send(
+          new DeleteObjectCommand({ Bucket: this.bucket, Key: user.avatarStorageKey }),
+        );
+      } catch {
+        // Non-critical — old file cleanup failed, continue
+      }
     }
 
     await this.s3.send(

@@ -28,6 +28,7 @@ coverage
 *.pem
 *.tsbuildinfo
 next-env.d.ts
+_tmp_*
 
 # debug
 npm-debug.log*

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,16 @@ export function MobileSidebar() {
 
   const isAdminContext = pathname.startsWith('/admin');
 
+  // Close the sheet only when clicking on navigation links (<a> tags),
+  // not on interactive UI elements like buttons/dropdowns inside the sidebar.
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const anchor = target.closest('a');
+    if (anchor && anchor.href) {
+      setOpen(false);
+    }
+  }, []);
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -26,7 +36,7 @@ export function MobileSidebar() {
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-60 p-0">
-        <div onClick={() => setOpen(false)}>
+        <div onClick={handleClick}>
           {isAdminContext ? <AdminSidebar /> : <UnifiedSidebar />}
         </div>
       </SheetContent>

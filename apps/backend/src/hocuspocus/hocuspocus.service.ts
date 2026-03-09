@@ -183,11 +183,17 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
           select: { authorId: true },
         });
 
+        // authorId must reference a valid User — skip if page has no author
+        if (!page?.authorId) {
+          this.logger.warn(`Skipping auto-version for ${pageId}: no authorId`);
+          return;
+        }
+
         await this.prisma.pageVersion.create({
           data: {
             pageId,
             contentJson: contentJson as Prisma.InputJsonValue,
-            authorId: page?.authorId || 'system',
+            authorId: page.authorId,
           },
         });
 

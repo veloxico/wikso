@@ -82,9 +82,11 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
   const [showColorPicker, setShowColorPicker] = useState<'text' | 'highlight' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Use refs + useEffect for Yjs/Hocuspocus to survive React Strict Mode double-mount
+  // Use refs + state for Yjs/Hocuspocus to survive React Strict Mode double-mount.
+  // `providerState` is tracked via useState so that changes trigger editor re-creation.
   const ydocRef = useRef<Y.Doc | null>(null);
   const providerRef = useRef<HocuspocusProvider | null>(null);
+  const [providerState, setProviderState] = useState<HocuspocusProvider | null>(null);
 
   if (!ydocRef.current) {
     ydocRef.current = new Y.Doc();
@@ -132,6 +134,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
 
       provider.connect();
       providerRef.current = provider;
+      setProviderState(provider);
     }, 0);
 
     return () => {
@@ -141,13 +144,14 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
         provider.destroy();
       }
       providerRef.current = null;
+      setProviderState(null);
       setSynced(false);
       setStatus('connecting');
     };
   }, [pageId]);
 
   const ydoc = ydocRef.current;
-  const provider = providerRef.current;
+  const provider = providerState;
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!editorRef.current) return;

@@ -164,8 +164,11 @@ export function UnifiedSidebar() {
   const pathname = usePathname();
   const { user } = useAuthStore();
   const { t } = useTranslation();
-  const { collapsed, toggle } = useSidebarStore();
+  const { collapsed, toggle, hydrate } = useSidebarStore();
   const { data: spaces, isLoading: spacesLoading } = useSpaces();
+
+  // Hydrate sidebar collapsed state from localStorage on mount
+  useEffect(() => { hydrate(); }, [hydrate]);
   const { data: favorites } = useFavorites();
   const { data: recentPages } = useRecentPages();
 
