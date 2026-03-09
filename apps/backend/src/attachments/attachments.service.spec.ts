@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { AttachmentsService } from './attachments.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../settings/settings.service';
 
 // Mock S3 Client
 jest.mock('@aws-sdk/client-s3', () => {
@@ -38,6 +39,10 @@ describe('AttachmentsService', () => {
     },
   };
 
+  const mockSettingsService = {
+    getSettings: jest.fn().mockResolvedValue({ maxAttachmentSizeMb: 25 }),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -45,6 +50,7 @@ describe('AttachmentsService', () => {
       providers: [
         AttachmentsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: SettingsService, useValue: mockSettingsService },
       ],
     }).compile();
 
