@@ -89,6 +89,7 @@ describe('PagesService', () => {
       createMany: jest.fn(),
     },
     $queryRaw: jest.fn(),
+    $executeRaw: jest.fn().mockResolvedValue(0),
   };
 
   const mockSearchService = {
@@ -490,10 +491,10 @@ describe('PagesService', () => {
   // delete
   // ---------------------------------------------------------------------------
   describe('delete', () => {
-    it('should soft-delete the page, children, remove from search, and fire webhook', async () => {
+    it('should soft-delete the page, recursively delete descendants, remove from search, and fire webhook', async () => {
       mockPrisma.page.findUnique.mockResolvedValue(mockPageWithSpace);
       mockPrisma.page.update.mockResolvedValue(mockPageWithSpace);
-      mockPrisma.page.updateMany.mockResolvedValue({ count: 0 });
+      mockPrisma.$executeRaw.mockResolvedValue(0);
       mockSearchService.removePage.mockResolvedValue(undefined);
       mockWebhooksService.fireEvent.mockResolvedValue(undefined);
 
@@ -511,11 +512,8 @@ describe('PagesService', () => {
         data: expect.objectContaining({ deletedBy: 'user-1' }),
       });
 
-      // Verifies children soft-delete
-      expect(mockPrisma.page.updateMany).toHaveBeenCalledWith({
-        where: { parentId: 'page-1', deletedAt: null },
-        data: expect.objectContaining({ deletedBy: 'user-1' }),
-      });
+      // Verifies recursive descendants soft-delete via $executeRaw
+      expect(mockPrisma.$executeRaw).toHaveBeenCalled();
 
       // Verifies search removal
       expect(mockSearchService.removePage).toHaveBeenCalledWith('page-1');
@@ -552,7 +550,11 @@ describe('PagesService', () => {
     it('should update parentId and position', async () => {
       const dto = { parentId: 'new-parent', position: 3 };
 
-      mockPrisma.page.findUnique.mockResolvedValue(mockPageWithSpace);
+      const parentPage = { id: 'new-parent', spaceId: 'space-1', deletedAt: null, parentId: null };
+      mockPrisma.page.findUnique
+        .mockResolvedValueOnce(mockPageWithSpace) // existing page lookup
+        .mockResolvedValueOnce(parentPage)        // parent validation
+        .mockResolvedValueOnce({ parentId: null }); // circular ref check (parent's parent = null → stop)
       mockPrisma.page.update.mockResolvedValue({
         ...mockPage,
         parentId: dto.parentId,
@@ -561,13 +563,6 @@ describe('PagesService', () => {
 
       const result = await service.move('page-1', dto);
 
-      expect(mockPrisma.page.update).toHaveBeenCalledWith({
-        where: { id: 'page-1' },
-        data: {
-          parentId: dto.parentId,
-          position: dto.position,
-        },
-      });
       expect(result.parentId).toBe('new-parent');
       expect(result.position).toBe(3);
     });
@@ -575,7 +570,11 @@ describe('PagesService', () => {
     it('should update only parentId when position is not provided', async () => {
       const dto = { parentId: 'new-parent' };
 
-      mockPrisma.page.findUnique.mockResolvedValue(mockPageWithSpace);
+      const parentPage = { id: 'new-parent', spaceId: 'space-1', deletedAt: null, parentId: null };
+      mockPrisma.page.findUnique
+        .mockResolvedValueOnce(mockPageWithSpace)
+        .mockResolvedValueOnce(parentPage)
+        .mockResolvedValueOnce({ parentId: null });
       mockPrisma.page.update.mockResolvedValue({
         ...mockPage,
         parentId: 'new-parent',

@@ -42,6 +42,16 @@ export class PagesService {
     const space = await this.prisma.space.findUnique({ where: { slug: spaceSlug } });
     if (!space) throw new NotFoundException('Space not found');
 
+    // Validate parentId if provided
+    if (dto.parentId) {
+      const parent = await this.prisma.page.findUnique({
+        where: { id: dto.parentId },
+        select: { id: true, spaceId: true, deletedAt: true },
+      });
+      if (!parent || parent.deletedAt) throw new NotFoundException('Parent page not found');
+      if (parent.spaceId !== space.id) throw new ForbiddenException('Parent page must be in the same space');
+    }
+
     const slug = slugify(dto.title) + '-' + Date.now().toString(36);
     const page = await this.prisma.page.create({
       data: {
@@ -163,10 +173,12 @@ export class PagesService {
         SELECT id, title, slug, "parentId"
         FROM "Page"
         WHERE id = (SELECT "parentId" FROM "Page" WHERE id = ${pageId} AND "deletedAt" IS NULL)
+          AND "deletedAt" IS NULL
         UNION ALL
         SELECT p.id, p.title, p.slug, p."parentId"
         FROM "Page" p
         INNER JOIN ancestors a ON p.id = a."parentId"
+        WHERE p."deletedAt" IS NULL
       )
       SELECT id, title, slug FROM ancestors
     `;
@@ -234,11 +246,18 @@ export class PagesService {
       data: { deletedAt: new Date(), deletedBy: userId },
     });
 
-    // Also soft-delete children
-    await this.prisma.page.updateMany({
-      where: { parentId: pageId, deletedAt: null },
-      data: { deletedAt: new Date(), deletedBy: userId },
-    });
+    // Recursively soft-delete ALL descendants (children, grandchildren, etc.)
+    await this.prisma.$executeRaw`
+      WITH RECURSIVE descendants AS (
+        SELECT id FROM "Page" WHERE "parentId" = ${pageId} AND "deletedAt" IS NULL
+        UNION ALL
+        SELECT p.id FROM "Page" p
+        INNER JOIN descendants d ON p."parentId" = d.id
+        WHERE p."deletedAt" IS NULL
+      )
+      UPDATE "Page" SET "deletedAt" = NOW(), "deletedBy" = ${userId}
+      WHERE id IN (SELECT id FROM descendants)
+    `;
 
     // Remove from search index
     await this.searchService.removePage(pageId);
@@ -285,6 +304,18 @@ export class PagesService {
       data: { deletedAt: null, deletedBy: null },
     });
 
+    // Also restore all descendants
+    await this.prisma.$executeRaw`
+      WITH RECURSIVE descendants AS (
+        SELECT id FROM "Page" WHERE "parentId" = ${pageId}
+        UNION ALL
+        SELECT p.id FROM "Page" p
+        INNER JOIN descendants d ON p."parentId" = d.id
+      )
+      UPDATE "Page" SET "deletedAt" = NULL, "deletedBy" = NULL
+      WHERE id IN (SELECT id FROM descendants) AND "deletedAt" IS NOT NULL
+    `;
+
     // Re-index in search
     await this.searchService.indexPage(page, page.space ? { slug: page.space.slug, name: page.space.name } : undefined);
 
@@ -314,6 +345,35 @@ export class PagesService {
       include: { space: true },
     });
     if (!existing || existing.deletedAt) throw new NotFoundException('Page not found');
+
+    // Validate parentId if provided
+    if (dto.parentId !== undefined && dto.parentId !== null) {
+      if (dto.parentId === pageId) {
+        throw new ForbiddenException('A page cannot be its own parent');
+      }
+
+      const parent = await this.prisma.page.findUnique({
+        where: { id: dto.parentId },
+        select: { id: true, spaceId: true, deletedAt: true },
+      });
+      if (!parent || parent.deletedAt) throw new NotFoundException('Target parent page not found');
+      if (parent.spaceId !== existing.spaceId) {
+        throw new ForbiddenException('Cannot move page to a different space');
+      }
+
+      // Circular reference check — walk up from the target parent to root
+      let currentId: string | null = dto.parentId;
+      while (currentId) {
+        if (currentId === pageId) {
+          throw new ForbiddenException('Cannot move page under its own descendant');
+        }
+        const current = await this.prisma.page.findUnique({
+          where: { id: currentId },
+          select: { parentId: true },
+        });
+        currentId = current?.parentId || null;
+      }
+    }
 
     const result = await this.prisma.page.update({
       where: { id: pageId },

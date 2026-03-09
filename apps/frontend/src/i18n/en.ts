@@ -245,6 +245,13 @@ const en = {
     unknown: 'Unknown',
     byAuthor: 'by {name}',
     createChildPage: 'Create child page',
+    movePage: 'Move',
+    movePageTitle: 'Move Page',
+    movePageDescription: 'Select a new location for "{title}"',
+    movePageFailed: 'Failed to move page',
+    pageMoved: 'Page moved successfully',
+    movingPage: 'Moving...',
+    spaceRoot: 'Space root (top level)',
   },
   search: {
     title: 'Search',

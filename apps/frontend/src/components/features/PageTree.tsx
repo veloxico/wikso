@@ -18,11 +18,12 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ChevronRight, FileText, GripVertical, Search, X, Trash2, Plus } from 'lucide-react';
+import { ChevronRight, FileText, GripVertical, Search, X, Trash2, Plus, MoveHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
 import { DeletePageDialog } from '@/components/features/DeletePageDialog';
+import { MovePageDialog } from '@/components/features/MovePageDialog';
 import type { Page } from '@/types';
 
 interface PageTreeNodeProps {
@@ -32,9 +33,10 @@ interface PageTreeNodeProps {
   searchQuery?: string;
   onDeletePage?: (page: Page) => void;
   onCreateChildPage?: (parentId: string) => void;
+  onMovePage?: (page: Page) => void;
 }
 
-function SortablePageNode({ page, slug, level, searchQuery, onDeletePage, onCreateChildPage }: PageTreeNodeProps) {
+function SortablePageNode({ page, slug, level, searchQuery, onDeletePage, onCreateChildPage, onMovePage }: PageTreeNodeProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
@@ -125,6 +127,17 @@ function SortablePageNode({ page, slug, level, searchQuery, onDeletePage, onCrea
           </button>
         )}
 
+        {/* Move page button (hover) */}
+        {onMovePage && !searchQuery && (
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMovePage(page); }}
+            className="shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all"
+            title={t('pages.movePage') || 'Move'}
+          >
+            <MoveHorizontal className="h-3 w-3" />
+          </button>
+        )}
+
         {/* Delete button (hover) */}
         {onDeletePage && (
           <button
@@ -148,7 +161,7 @@ function SortablePageNode({ page, slug, level, searchQuery, onDeletePage, onCrea
           strategy={verticalListSortingStrategy}
         >
           {page.children!.map((child) => (
-            <SortablePageNode key={child.id} page={child} slug={slug} level={level + 1} onDeletePage={onDeletePage} onCreateChildPage={onCreateChildPage} />
+            <SortablePageNode key={child.id} page={child} slug={slug} level={level + 1} onDeletePage={onDeletePage} onCreateChildPage={onCreateChildPage} onMovePage={onMovePage} />
           ))}
         </SortableContext>
       )}
@@ -216,6 +229,7 @@ export function PageTree({ pages, slug, onCreateChildPage }: PageTreeProps) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [pageToDelete, setPageToDelete] = useState<Page | null>(null);
+  const [pageToMove, setPageToMove] = useState<Page | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -298,7 +312,7 @@ export function PageTree({ pages, slug, onCreateChildPage }: PageTreeProps) {
           <SortableContext items={pages.map((p) => p.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-0.5">
               {pages.map((page) => (
-                <SortablePageNode key={page.id} page={page} slug={slug} level={0} onDeletePage={setPageToDelete} onCreateChildPage={onCreateChildPage} />
+                <SortablePageNode key={page.id} page={page} slug={slug} level={0} onDeletePage={setPageToDelete} onCreateChildPage={onCreateChildPage} onMovePage={setPageToMove} />
               ))}
             </div>
           </SortableContext>
@@ -321,6 +335,19 @@ export function PageTree({ pages, slug, onCreateChildPage }: PageTreeProps) {
               window.location.href = `/spaces/${slug}`;
             }
           }}
+        />
+      )}
+
+      {/* Move Page Dialog */}
+      {pageToMove && (
+        <MovePageDialog
+          open={!!pageToMove}
+          onOpenChange={(open) => { if (!open) setPageToMove(null); }}
+          pageId={pageToMove.id}
+          pageTitle={pageToMove.title}
+          currentParentId={pageToMove.parentId}
+          slug={slug}
+          onMoved={() => setPageToMove(null)}
         />
       )}
     </div>

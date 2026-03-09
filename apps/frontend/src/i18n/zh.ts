@@ -245,6 +245,13 @@ const zh = {
     unknown: '未知',
     byAuthor: '作者：{name}',
     createChildPage: '创建子页面',
+    movePage: '移动',
+    movePageTitle: '移动页面',
+    movePageDescription: '为「{title}」选择新位置',
+    movePageFailed: '移动页面失败',
+    pageMoved: '页面移动成功',
+    movingPage: '移动中...',
+    spaceRoot: '空间根目录（顶层）',
   },
   search: {
     title: '搜索',

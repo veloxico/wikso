@@ -245,6 +245,13 @@ const es = {
     unknown: 'Desconocido',
     byAuthor: 'por {name}',
     createChildPage: 'Crear subpágina',
+    movePage: 'Mover',
+    movePageTitle: 'Mover página',
+    movePageDescription: 'Seleccione una nueva ubicación para "{title}"',
+    movePageFailed: 'Error al mover la página',
+    pageMoved: 'Página movida exitosamente',
+    movingPage: 'Moviendo...',
+    spaceRoot: 'Raíz del espacio (nivel superior)',
   },
   search: {
     title: 'Buscar',

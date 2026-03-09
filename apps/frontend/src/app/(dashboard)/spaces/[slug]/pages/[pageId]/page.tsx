@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Save, Clock, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal, Copy, FilePlus } from 'lucide-react';
+import { Save, Clock, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal, Copy, FilePlus, MoveHorizontal } from 'lucide-react';
 import { usePage, useUpdatePage, useDuplicatePage, useCreatePage, usePageAncestors } from '@/hooks/usePages';
 import { useSpace } from '@/hooks/useSpaces';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DeletePageDialog } from '@/components/features/DeletePageDialog';
+import { MovePageDialog } from '@/components/features/MovePageDialog';
 import { VersionHistoryDialog } from '@/components/features/VersionHistoryDialog';
 import { Comments } from '@/components/features/Comments';
 import { Breadcrumbs } from '@/components/features/Breadcrumbs';
@@ -62,6 +63,7 @@ export default function PageEditorPage() {
 
   // Dialogs
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showComments, setShowComments] = useState(false);
 
@@ -270,6 +272,12 @@ export default function PageEditorPage() {
                     {t('pages.duplicate')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
+                    onClick={() => setShowMoveDialog(true)}
+                  >
+                    <MoveHorizontal className="h-4 w-4" />
+                    {t('pages.movePage') || 'Move'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onClick={() => setShowDeleteDialog(true)}
                   >
@@ -330,6 +338,16 @@ export default function PageEditorPage() {
         pageTitle={title || page?.title || ''}
         slug={slug}
         onDeleted={() => router.push(`/spaces/${slug}`)}
+      />
+
+      {/* Move Page Dialog */}
+      <MovePageDialog
+        open={showMoveDialog}
+        onOpenChange={setShowMoveDialog}
+        pageId={pageId}
+        pageTitle={title || page?.title || ''}
+        currentParentId={page?.parentId}
+        slug={slug}
       />
 
       {/* Version History Dialog */}

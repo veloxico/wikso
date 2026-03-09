@@ -245,6 +245,13 @@ const ru = {
     unknown: 'Неизвестно',
     byAuthor: 'автор: {name}',
     createChildPage: 'Создать дочернюю страницу',
+    movePage: 'Переместить',
+    movePageTitle: 'Переместить страницу',
+    movePageDescription: 'Выберите новое расположение для «{title}»',
+    movePageFailed: 'Не удалось переместить страницу',
+    pageMoved: 'Страница перемещена',
+    movingPage: 'Перемещение...',
+    spaceRoot: 'Корень пространства (верхний уровень)',
   },
   search: {
     title: 'Поиск',
