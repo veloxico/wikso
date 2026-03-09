@@ -93,6 +93,39 @@ export class SpacesService {
     });
   }
 
+  async searchMembers(slug: string, query: string) {
+    const space = await this.findBySlug(slug);
+    const where: any = { spaceId: space.id };
+
+    if (query) {
+      where.user = {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { email: { contains: query, mode: 'insensitive' } },
+        ],
+      };
+    }
+
+    const members = await this.prisma.spacePermission.findMany({
+      where,
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
+      },
+      take: 10,
+    });
+
+    return members
+      .filter((m: any) => m.user)
+      .map((m: any) => ({
+        id: m.user.id,
+        name: m.user.name,
+        email: m.user.email,
+        avatarUrl: m.user.avatarUrl,
+      }));
+  }
+
   async addMember(slug: string, userId: string, role: SpaceRole) {
     const space = await this.findBySlug(slug);
     const permission = await this.prisma.spacePermission.create({

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import type { Attachment } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export function useAttachments(pageId: string) {
   return useQuery<Attachment[]>({
@@ -16,6 +17,7 @@ export function useAttachments(pageId: string) {
 
 export function useUploadAttachment(pageId: string) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
@@ -27,10 +29,10 @@ export function useUploadAttachment(pageId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attachments', pageId] });
-      toast.success('File uploaded');
+      toast.success(t('toasts.fileUploaded'));
     },
     onError: () => {
-      toast.error('Failed to upload file');
+      toast.error(t('toasts.fileUploadFailed'));
     },
   });
 }

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export interface SystemSettings {
   id: string;
@@ -32,6 +33,7 @@ export function useSystemSettings() {
 
 export function useUpdateSettings() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (dto: Partial<SystemSettings>) => {
       const { data } = await api.patch('/admin/settings', dto);
@@ -40,10 +42,10 @@ export function useUpdateSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] });
       queryClient.invalidateQueries({ queryKey: ['public', 'settings'] });
-      toast.success('Settings saved');
+      toast.success(t('toasts.settingsSaved'));
     },
     onError: () => {
-      toast.error('Failed to save settings');
+      toast.error(t('toasts.settingsSaveFailed'));
     },
   });
 }

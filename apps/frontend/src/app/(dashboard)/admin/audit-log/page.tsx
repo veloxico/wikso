@@ -13,25 +13,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const PAGE_SIZE = 20;
 
-const ACTION_OPTIONS = [
-  { value: '', label: 'All Actions' },
-  { value: 'CREATE', label: 'Create' },
-  { value: 'UPDATE', label: 'Update' },
-  { value: 'DELETE', label: 'Delete' },
-  { value: 'LOGIN', label: 'Login' },
-  { value: 'LOGOUT', label: 'Logout' },
-  { value: 'INVITE', label: 'Invite' },
+const getActionOptions = (t: (key: string) => string) => [
+  { value: '', label: t('admin.auditLog.allActions') },
+  { value: 'CREATE', label: t('admin.auditLog.create') },
+  { value: 'UPDATE', label: t('admin.auditLog.update') },
+  { value: 'DELETE', label: t('admin.auditLog.deleteAction') },
+  { value: 'LOGIN', label: t('admin.auditLog.login') },
+  { value: 'LOGOUT', label: t('admin.auditLog.logout') },
+  { value: 'INVITE', label: t('admin.auditLog.invite') },
 ];
 
 export default function AdminAuditLogPage() {
+  const { t, locale } = useTranslation();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
   const [action, setAction] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+
+  const actionOptions = getActionOptions(t);
 
   const filters = {
     ...(search && { search }),
@@ -46,7 +50,7 @@ export default function AdminAuditLogPage() {
     <div>
       <div className="mb-8 flex items-center gap-3">
         <ScrollText className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold">Audit Log</h1>
+        <h1 className="text-2xl font-bold">{t('admin.auditLog.title')}</h1>
       </div>
 
       {/* Filters */}
@@ -56,7 +60,7 @@ export default function AdminAuditLogPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search logs..."
+                placeholder={t('admin.auditLog.searchPlaceholder')}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -73,10 +77,10 @@ export default function AdminAuditLogPage() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="All Actions" />
+                <SelectValue placeholder={t('admin.auditLog.allActions')} />
               </SelectTrigger>
               <SelectContent>
-                {ACTION_OPTIONS.map((opt) => (
+                {actionOptions.map((opt) => (
                   <SelectItem key={opt.value || 'all'} value={opt.value || 'ALL'}>
                     {opt.label}
                   </SelectItem>
@@ -85,7 +89,7 @@ export default function AdminAuditLogPage() {
             </Select>
             <Input
               type="date"
-              placeholder="From"
+              placeholder={t('admin.auditLog.from')}
               value={dateFrom}
               onChange={(e) => {
                 setDateFrom(e.target.value);
@@ -94,7 +98,7 @@ export default function AdminAuditLogPage() {
             />
             <Input
               type="date"
-              placeholder="To"
+              placeholder={t('admin.auditLog.to')}
               value={dateTo}
               onChange={(e) => {
                 setDateTo(e.target.value);
@@ -144,7 +148,7 @@ export default function AdminAuditLogPage() {
                         <span className="text-muted-foreground">{entry.entityType}</span>
                       </p>
                       <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>{new Date(entry.createdAt).toLocaleString()}</span>
+                        <span>{new Date(entry.createdAt).toLocaleString(locale)}</span>
                         {entry.entityId && (
                           <span className="font-mono truncate max-w-[200px]">
                             ID: {entry.entityId}
@@ -157,7 +161,7 @@ export default function AdminAuditLogPage() {
               </div>
 
               <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Page {page + 1}</p>
+                <p className="text-sm text-muted-foreground">{t('common.pageNum', { num: page + 1 })}</p>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -181,7 +185,7 @@ export default function AdminAuditLogPage() {
           ) : (
             <div className="py-12 text-center">
               <ScrollText className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">No audit log entries found.</p>
+              <p className="text-sm text-muted-foreground">{t('admin.auditLog.noEntries')}</p>
             </div>
           )}
         </CardContent>

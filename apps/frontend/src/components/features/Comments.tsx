@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MessageSquare, Send, Trash2, Reply, CornerDownRight } from 'lucide-react';
 import { useComments, useCreateComment, useDeleteComment } from '@/hooks/useComments';
 import { useAuthStore } from '@/store/authStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Comment } from '@/types';
@@ -21,6 +22,7 @@ export function Comments({ pageId }: CommentsProps) {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
   const user = useAuthStore((s) => s.user);
+  const { t, locale } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +84,7 @@ export function Comments({ pageId }: CommentsProps) {
         <Input
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Add a comment..."
+          placeholder={t('comments.addComment')}
           className="flex-1"
         />
         <Button
@@ -99,7 +101,7 @@ export function Comments({ pageId }: CommentsProps) {
         <div className="py-8 text-center">
           <MessageSquare className="mx-auto mb-2 h-8 w-8 text-muted-foreground/30" />
           <p className="text-sm text-muted-foreground">
-            No comments yet. Be the first!
+            {t('comments.noComments')}
           </p>
         </div>
       )}
@@ -122,6 +124,8 @@ export function Comments({ pageId }: CommentsProps) {
           onDelete={handleDelete}
           isDeleting={deleteComment.isPending}
           isReplying={createComment.isPending}
+          t={t}
+          locale={locale}
         />
       ))}
     </div>
@@ -140,6 +144,8 @@ interface CommentItemProps {
   onDelete: (id: string) => void;
   isDeleting: boolean;
   isReplying: boolean;
+  t: (key: string, params?: Record<string, string | number>) => string;
+  locale: string;
 }
 
 function CommentItem({
@@ -154,6 +160,8 @@ function CommentItem({
   onDelete,
   isDeleting,
   isReplying,
+  t,
+  locale,
 }: CommentItemProps) {
   const authorName =
     (comment as any).author?.name ||
@@ -177,7 +185,7 @@ function CommentItem({
               {isOwner ? 'You' : authorName}
             </span>
             <span className="text-xs text-muted-foreground">
-              {new Date(comment.createdAt).toLocaleString()}
+              {new Date(comment.createdAt).toLocaleString(locale)}
             </span>
           </div>
 
@@ -195,7 +203,7 @@ function CommentItem({
               onClick={() => onStartReply(comment.id)}
             >
               <Reply className="h-3 w-3" />
-              Reply
+              {t('comments.reply')}
             </Button>
             {isOwner && (
               <Button
@@ -206,7 +214,7 @@ function CommentItem({
                 disabled={isDeleting}
               >
                 <Trash2 className="h-3 w-3" />
-                Delete
+                {t('comments.delete')}
               </Button>
             )}
           </div>
@@ -218,7 +226,7 @@ function CommentItem({
               <Input
                 value={replyContent}
                 onChange={(e) => onReplyContentChange(e.target.value)}
-                placeholder="Write a reply..."
+                placeholder={t('comments.writeReply')}
                 className="flex-1"
                 autoFocus
                 onKeyDown={(e) => {
@@ -234,10 +242,10 @@ function CommentItem({
                 onClick={() => onSubmitReply(comment.id)}
                 disabled={isReplying || !replyContent.trim()}
               >
-                Reply
+                {t('comments.reply')}
               </Button>
               <Button size="sm" variant="ghost" onClick={onCancelReply}>
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           )}
@@ -261,7 +269,7 @@ function CommentItem({
                           {replyIsOwner ? 'You' : replyAuthorName}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(reply.createdAt).toLocaleString()}
+                          {new Date(reply.createdAt).toLocaleString(locale)}
                         </span>
                         {replyIsOwner && (
                           <Button

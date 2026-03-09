@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,10 +9,14 @@ import {
   SheetContent,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Sidebar } from './Sidebar';
+import { UnifiedSidebar } from './UnifiedSidebar';
+import { AdminSidebar } from './AdminSidebar';
 
 export function MobileSidebar() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  const isAdminContext = pathname.startsWith('/admin');
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -22,7 +27,7 @@ export function MobileSidebar() {
       </SheetTrigger>
       <SheetContent side="left" className="w-60 p-0">
         <div onClick={() => setOpen(false)}>
-          <Sidebar />
+          {isAdminContext ? <AdminSidebar /> : <UnifiedSidebar />}
         </div>
       </SheetContent>
     </Sheet>

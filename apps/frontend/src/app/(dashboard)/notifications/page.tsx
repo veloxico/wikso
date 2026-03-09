@@ -12,69 +12,72 @@ import {
   Reply,
 } from 'lucide-react';
 import { useNotifications, useMarkAsRead, useMarkAllAsRead } from '@/hooks/useNotifications';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { Notification } from '@/types';
 
-const notificationConfig: Record<
+function getNotificationConfig(t: (key: string) => string): Record<
   string,
   { icon: React.ElementType; label: string; color: string }
-> = {
-  'comment.created': {
-    icon: MessageSquare,
-    label: 'New Comment',
-    color: 'text-blue-500',
-  },
-  'comment.reply': {
-    icon: Reply,
-    label: 'Reply to Comment',
-    color: 'text-cyan-500',
-  },
-  'page.created': {
-    icon: FileText,
-    label: 'New Page',
-    color: 'text-green-500',
-  },
-  'page.updated': {
-    icon: FileText,
-    label: 'Page Updated',
-    color: 'text-yellow-500',
-  },
-  'space.member_added': {
-    icon: UserPlus,
-    label: 'Added to Space',
-    color: 'text-purple-500',
-  },
-  'space.member_removed': {
-    icon: UserMinus,
-    label: 'Removed from Space',
-    color: 'text-red-500',
-  },
-  mention: {
-    icon: Users,
-    label: 'Mentioned',
-    color: 'text-indigo-500',
-  },
-};
+> {
+  return {
+    'comment.created': {
+      icon: MessageSquare,
+      label: t('notifications.types.commentCreated'),
+      color: 'text-blue-500',
+    },
+    'comment.reply': {
+      icon: Reply,
+      label: t('notifications.types.commentReply'),
+      color: 'text-cyan-500',
+    },
+    'page.created': {
+      icon: FileText,
+      label: t('notifications.types.pageCreated'),
+      color: 'text-green-500',
+    },
+    'page.updated': {
+      icon: FileText,
+      label: t('notifications.types.pageUpdated'),
+      color: 'text-yellow-500',
+    },
+    'space.member_added': {
+      icon: UserPlus,
+      label: t('notifications.types.memberAdded'),
+      color: 'text-purple-500',
+    },
+    'space.member_removed': {
+      icon: UserMinus,
+      label: t('notifications.types.memberRemoved'),
+      color: 'text-red-500',
+    },
+    mention: {
+      icon: Users,
+      label: t('notifications.types.mentioned'),
+      color: 'text-indigo-500',
+    },
+  };
+}
 
-function getNotificationMessage(notif: Notification): string {
+function getNotificationMessage(notif: Notification, t: (key: string, params?: Record<string, any>) => string): string {
   const payload = notif.payload as Record<string, any>;
 
   switch (notif.type) {
     case 'comment.created':
-      return `${payload.authorName || 'Someone'} commented on "${payload.pageTitle || 'a page'}"`;
+      return t('notifications.messages.commentCreated', { author: payload.authorName || 'Someone', page: payload.pageTitle || 'a page' });
     case 'comment.reply':
-      return `${payload.authorName || 'Someone'} replied to your comment on "${payload.pageTitle || 'a page'}"`;
+      return t('notifications.messages.commentReply', { author: payload.authorName || 'Someone', page: payload.pageTitle || 'a page' });
     case 'page.created':
-      return `New page "${payload.pageTitle || 'Untitled'}" created in ${payload.spaceName || 'a space'}`;
+      return t('notifications.messages.pageCreated', { page: payload.pageTitle || 'Untitled', space: payload.spaceName || 'a space' });
     case 'page.updated':
-      return `Page "${payload.pageTitle || 'Untitled'}" was updated in ${payload.spaceName || 'a space'}`;
+      return t('notifications.messages.pageUpdated', { page: payload.pageTitle || 'Untitled', space: payload.spaceName || 'a space' });
     case 'space.member_added':
-      return `You were added to space "${payload.spaceName || 'a space'}" as ${payload.role || 'member'}`;
+      return t('notifications.messages.memberAdded', { space: payload.spaceName || 'a space', role: payload.role || 'member' });
     case 'space.member_removed':
-      return `You were removed from space "${payload.spaceName || 'a space'}"`;
+      return t('notifications.messages.memberRemoved', { space: payload.spaceName || 'a space' });
     case 'mention':
-      return `You were mentioned in "${payload.pageTitle || 'a page'}"`;
+      return t('notifications.messages.mentioned', { page: payload.pageTitle || 'a page' });
     default:
       return notif.type.replace(/\./g, ': ');
   }
@@ -92,21 +95,21 @@ function getNotificationLink(notif: Notification): string | null {
   return null;
 }
 
-function formatRelativeTime(dateStr: string): string {
+function formatRelativeTime(dateStr: string, t: (key: string, params?: Record<string, any>) => string, locale: string): string {
   const now = Date.now();
   const diff = now - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('notifications.justNow');
+  if (mins < 60) return t('notifications.minutesAgo', { mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return t('notifications.hoursAgo', { hrs });
   const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString();
+  if (days < 7) return t('notifications.daysAgo', { days });
+  return new Date(dateStr).toLocaleDateString(locale);
 }
 
 // Group notifications by date
-function groupByDate(notifications: Notification[]): Map<string, Notification[]> {
+function groupByDate(notifications: Notification[], t: (key: string) => string, locale: string): Map<string, Notification[]> {
   const groups = new Map<string, Notification[]>();
   for (const n of notifications) {
     const date = new Date(n.createdAt);
@@ -116,11 +119,11 @@ function groupByDate(notifications: Notification[]): Map<string, Notification[]>
 
     let key: string;
     if (date.toDateString() === today.toDateString()) {
-      key = 'Today';
+      key = t('notifications.today');
     } else if (date.toDateString() === yesterday.toDateString()) {
-      key = 'Yesterday';
+      key = t('notifications.yesterday');
     } else {
-      key = date.toLocaleDateString('en-US', {
+      key = date.toLocaleDateString(locale, {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
@@ -138,9 +141,11 @@ export default function NotificationsPage() {
   const { data: notifications, isLoading } = useNotifications();
   const markAsRead = useMarkAsRead();
   const markAllAsRead = useMarkAllAsRead();
+  const { t, locale } = useTranslation();
 
+  const notificationConfig = getNotificationConfig(t);
   const unreadCount = notifications?.filter((n) => !n.read).length || 0;
-  const grouped = notifications ? groupByDate(notifications) : new Map();
+  const grouped = notifications ? groupByDate(notifications, t, locale) : new Map();
 
   const handleClick = (notif: Notification) => {
     if (!notif.read) markAsRead.mutate(notif.id);
@@ -153,10 +158,10 @@ export default function NotificationsPage() {
     <div className="mx-auto max-w-3xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Notifications</h1>
+          <h1 className="text-3xl font-bold">{t('notifications.title')}</h1>
           {unreadCount > 0 && (
             <p className="mt-1 text-sm text-muted-foreground">
-              {unreadCount} unread
+              {t('notifications.unread', { count: unreadCount })}
             </p>
           )}
         </div>
@@ -169,7 +174,7 @@ export default function NotificationsPage() {
             disabled={markAllAsRead.isPending}
           >
             <CheckCheck className="h-4 w-4" />
-            Mark all read
+            {t('notifications.markAllRead')}
           </Button>
         )}
       </div>
@@ -188,8 +193,8 @@ export default function NotificationsPage() {
       {notifications && notifications.length === 0 && (
         <div className="py-16 text-center">
           <Bell className="mx-auto mb-4 h-12 w-12 text-muted-foreground/30" />
-          <p className="text-lg font-medium">All caught up!</p>
-          <p className="text-muted-foreground">No notifications yet.</p>
+          <p className="text-lg font-medium">{t('notifications.allCaughtUp')}</p>
+          <p className="text-muted-foreground">{t('notifications.noNotifications')}</p>
         </div>
       )}
 
@@ -235,13 +240,13 @@ export default function NotificationsPage() {
                             {config.label}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {formatRelativeTime(notif.createdAt)}
+                            {formatRelativeTime(notif.createdAt, t, locale)}
                           </span>
                         </div>
-                        <p className="mt-0.5 text-sm">{getNotificationMessage(notif)}</p>
+                        <p className="mt-0.5 text-sm">{getNotificationMessage(notif, t)}</p>
                         {link && (
                           <p className="mt-1 text-xs text-primary hover:underline">
-                            View →
+                            {t('notifications.view')}
                           </p>
                         )}
                       </div>

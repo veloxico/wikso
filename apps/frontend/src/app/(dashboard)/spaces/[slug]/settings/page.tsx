@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -15,15 +15,19 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSpace } from '@/hooks/useSpaces';
 import { AddMemberDialog } from '@/components/features/AddMemberDialog';
+import { DeleteSpaceDialog } from '@/components/features/DeleteSpaceDialog';
 import { api } from '@/lib/api';
+import { useTranslation } from '@/hooks/useTranslation';
 
-const settingsSchema = z.object({
-  name: z.string().min(1).max(100),
-  description: z.string().max(500).optional(),
-  type: z.enum(['PUBLIC', 'PRIVATE', 'PERSONAL']),
-});
+function createSettingsSchema(t: (key: string) => string) {
+  return z.object({
+    name: z.string().min(1, t('validation.nameRequired')).max(100),
+    description: z.string().max(500).optional(),
+    type: z.enum(['PUBLIC', 'PRIVATE', 'PERSONAL']),
+  });
+}
 
-type SettingsValues = z.infer<typeof settingsSchema>;
+type SettingsValues = z.infer<ReturnType<typeof createSettingsSchema>>;
 
 interface SpaceMember {
   userId: string;
@@ -38,6 +42,9 @@ export default function SpaceSettingsPage() {
   const queryClient = useQueryClient();
   const slug = params.slug as string;
   const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(slug);
+  const { t } = useTranslation();
+
+  const settingsSchema = useMemo(() => createSettingsSchema(t), [t]);
 
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,15 +71,7 @@ export default function SpaceSettingsPage() {
     },
   });
 
-  const deleteSpace = useMutation({
-    mutationFn: async () => {
-      await api.delete(`/spaces/${slug}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['spaces'] });
-      router.push('/spaces');
-    },
-  });
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: members } = useQuery<SpaceMember[]>({
     queryKey: ['spaces', slug, 'members'],
@@ -89,8 +88,14 @@ export default function SpaceSettingsPage() {
     try {
       await updateSpace.mutateAsync(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update');
+      setError(err.response?.data?.message || t('spaces.settings.failedToUpdate'));
     }
+  };
+
+  const spaceTypeLabels: Record<string, string> = {
+    PUBLIC: t('common.public'),
+    PRIVATE: t('common.private'),
+    PERSONAL: t('common.personal'),
   };
 
   if (spaceLoading) {
@@ -108,10 +113,10 @@ export default function SpaceSettingsPage() {
     return (
       <div className="mx-auto max-w-2xl p-8">
         <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
-          <h2 className="mb-2 text-lg font-semibold">Failed to load space</h2>
-          <p className="mb-4 text-sm text-muted-foreground">Could not load space settings. The space may not exist or you may not have access.</p>
+          <h2 className="mb-2 text-lg font-semibold">{t('spaces.settings.loadFailed')}</h2>
+          <p className="mb-4 text-sm text-muted-foreground">{t('spaces.settings.loadFailedDescription')}</p>
           <Button variant="outline" onClick={() => router.push('/spaces')}>
-            Back to Spaces
+            {t('spaces.new.backToSpaces')}
           </Button>
         </div>
       </div>
@@ -122,43 +127,43 @@ export default function SpaceSettingsPage() {
     <div className="mx-auto max-w-2xl p-8">
       <Link href={`/spaces/${slug}`} className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="h-4 w-4" />
-        Back to space
+        {t('spaces.settings.backToSpace')}
       </Link>
 
-      <h1 className="mb-6 text-3xl font-bold">Space Settings</h1>
+      <h1 className="mb-6 text-3xl font-bold">{t('spaces.settings.title')}</h1>
 
       {/* General */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>General</CardTitle>
+          <CardTitle>{t('spaces.settings.general')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">{t('common.name')}</Label>
               <Input id="name" {...register('name')} />
               {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('common.description')}</Label>
               <Input id="description" {...register('description')} />
             </div>
             <div className="space-y-2">
-              <Label>Type</Label>
+              <Label>{t('common.type')}</Label>
               <div className="flex gap-3">
-                {(['PUBLIC', 'PRIVATE', 'PERSONAL'] as const).map((t) => (
-                  <label key={t} className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" value={t} {...register('type')} className="accent-primary" />
-                    <span className="text-sm capitalize">{t.toLowerCase()}</span>
+                {(['PUBLIC', 'PRIVATE', 'PERSONAL'] as const).map((spaceType) => (
+                  <label key={spaceType} className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" value={spaceType} {...register('type')} className="accent-primary" />
+                    <span className="text-sm">{spaceTypeLabels[spaceType]}</span>
                   </label>
                 ))}
               </div>
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
-            {success && <p className="text-sm text-green-500">Settings saved!</p>}
+            {success && <p className="text-sm text-green-500">{t('spaces.settings.saved')}</p>}
             <Button type="submit" className="gap-2" disabled={isSubmitting}>
               <Save className="h-4 w-4" />
-              Save
+              {t('spaces.settings.save')}
             </Button>
           </form>
         </CardContent>
@@ -167,7 +172,7 @@ export default function SpaceSettingsPage() {
       {/* Members */}
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Members</CardTitle>
+          <CardTitle>{t('spaces.settings.members')}</CardTitle>
           <AddMemberDialog slug={slug} />
         </CardHeader>
         <CardContent>
@@ -184,7 +189,7 @@ export default function SpaceSettingsPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No members yet.</p>
+            <p className="text-sm text-muted-foreground">{t('spaces.settings.noMembers')}</p>
           )}
         </CardContent>
       </Card>
@@ -192,25 +197,30 @@ export default function SpaceSettingsPage() {
       {/* Danger Zone */}
       <Card className="border-destructive/50">
         <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardTitle className="text-destructive">{t('spaces.settings.dangerZone')}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="mb-4 text-sm text-muted-foreground">Deleting a space removes all pages and data permanently.</p>
+          <p className="mb-4 text-sm text-muted-foreground">{t('spaces.settings.deleteWarning')}</p>
           <Button
             variant="destructive"
             className="gap-2"
-            onClick={() => {
-              if (confirm('Are you sure? This cannot be undone.')) {
-                deleteSpace.mutate();
-              }
-            }}
-            disabled={deleteSpace.isPending}
+            onClick={() => setShowDeleteDialog(true)}
           >
             <Trash2 className="h-4 w-4" />
-            Delete Space
+            {t('spaces.settings.deleteSpace')}
           </Button>
         </CardContent>
       </Card>
+
+      {/* Delete Space Confirmation Dialog */}
+      {space && (
+        <DeleteSpaceDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          slug={slug}
+          spaceName={space.name}
+        />
+      )}
     </div>
   );
 }

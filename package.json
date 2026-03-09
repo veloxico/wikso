@@ -15,5 +15,10 @@
     "prettier": "^3.4.2",
     "turbo": "^2.5.0"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "pnpm@9.15.0",
+  "pnpm": {
+    "patchedDependencies": {
+      "@tiptap/react@3.20.1": "patches/@tiptap__react@3.20.1.patch"
+    }
+  }
 }

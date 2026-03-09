@@ -11,12 +11,15 @@ model User {
   id            String     @id @default(uuid())
   email         String     @unique
   name          String
-  avatarUrl     String?
-  passwordHash  String?
+  avatarUrl        String?
+  avatarStorageKey String?
+  passwordHash     String?
   emailVerified Boolean    @default(false)
   role          GlobalRole @default(VIEWER)
   status        UserStatus @default(ACTIVE)
   invitedBy     String?
+  locale        String?
+  timezone      String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -29,6 +32,9 @@ model User {
   spacePerms    SpacePermission[]
   pagePerms     PagePermission[]
   pageVersions  PageVersion[]
+  favorites     Favorite[]
+  recentPages   RecentPage[]
+  templates     PageTemplate[]
 }
 
 model OAuthAccount {
@@ -56,6 +62,7 @@ model Space {
   owner       User              @relation(fields: [ownerId], references: [id])
   pages       Page[]
   permissions SpacePermission[]
+  templates   PageTemplate[]
 }
 
 model SpacePermission {
@@ -90,6 +97,8 @@ model Page {
   attachments Attachment[]
   permissions PagePermission[]
   tags        PageTag[]
+  favorites   Favorite[]
+  recentPages RecentPage[]
 }
 
 model PageVersion {
@@ -201,6 +210,47 @@ model SystemSettings {
   sessionTimeoutMinutes     Int      @default(10080)
   maxAttachmentSizeMb       Int      @default(25)
   updatedAt                 DateTime @updatedAt
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  pageId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pageId])
+}
+
+model RecentPage {
+  id        String   @id @default(uuid())
+  userId    String
+  pageId    String
+  visitedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pageId])
+}
+
+model PageTemplate {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+  contentJson Json
+  category    String  @default("General")
+  icon        String?
+  isDefault   Boolean @default(false)
+  spaceId     String?
+  creatorId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  space   Space? @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  creator User?  @relation(fields: [creatorId], references: [id], onDelete: SetNull)
 }
 
 enum GlobalRole {

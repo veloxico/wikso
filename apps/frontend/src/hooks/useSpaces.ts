@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import type { Space } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export function useSpaces() {
   return useQuery<Space[]>({
@@ -33,6 +34,7 @@ interface CreateSpaceInput {
 
 export function useCreateSpace() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (input: CreateSpaceInput) => {
       const { data } = await api.post('/spaces', input);
@@ -40,16 +42,17 @@ export function useCreateSpace() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
-      toast.success('Space created');
+      toast.success(t('toasts.spaceCreated'));
     },
     onError: () => {
-      toast.error('Failed to create space');
+      toast.error(t('toasts.spaceCreateFailed'));
     },
   });
 }
 
 export function useUpdateSpace(slug: string) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (input: { name?: string; description?: string }) => {
       const { data } = await api.patch(`/spaces/${slug}`, input);
@@ -58,16 +61,17 @@ export function useUpdateSpace(slug: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
       queryClient.invalidateQueries({ queryKey: ['spaces', slug] });
-      toast.success('Space updated');
+      toast.success(t('toasts.spaceUpdated'));
     },
     onError: () => {
-      toast.error('Failed to update space');
+      toast.error(t('toasts.spaceUpdateFailed'));
     },
   });
 }
 
 export function useDeleteSpace() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (slug: string) => {
       const { data } = await api.delete(`/spaces/${slug}`);
@@ -75,16 +79,17 @@ export function useDeleteSpace() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
-      toast.success('Space deleted');
+      toast.success(t('toasts.spaceDeleted'));
     },
     onError: () => {
-      toast.error('Failed to delete space');
+      toast.error(t('toasts.spaceDeleteFailed'));
     },
   });
 }
 
 export function useAddMember(slug: string) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (input: { userId: string; role: string }) => {
       const { data } = await api.post(`/spaces/${slug}/members`, input);
@@ -92,16 +97,17 @@ export function useAddMember(slug: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces', slug, 'members'] });
-      toast.success('Member added');
+      toast.success(t('toasts.memberAdded'));
     },
     onError: () => {
-      toast.error('Failed to add member');
+      toast.error(t('toasts.memberAddFailed'));
     },
   });
 }
 
 export function useRemoveMember(slug: string) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (userId: string) => {
       const { data } = await api.delete(`/spaces/${slug}/members/${userId}`);
@@ -109,10 +115,10 @@ export function useRemoveMember(slug: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces', slug, 'members'] });
-      toast.success('Member removed');
+      toast.success(t('toasts.memberRemoved'));
     },
     onError: () => {
-      toast.error('Failed to remove member');
+      toast.error(t('toasts.memberRemoveFailed'));
     },
   });
 }

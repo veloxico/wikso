@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { Paperclip, Download, Trash2, Upload, File, Image, FileText as FileIcon } from 'lucide-react';
 import { useAttachments, useUploadAttachment, useDeleteAttachment, getDownloadUrl } from '@/hooks/useAttachments';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +29,7 @@ export function Attachments({ pageId }: AttachmentsProps) {
   const deleteAttachment = useDeleteAttachment(pageId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const { t } = useTranslation();
 
   const handleUpload = (files: FileList | null) => {
     if (!files) return;
@@ -53,7 +55,7 @@ export function Attachments({ pageId }: AttachmentsProps) {
       <div className="flex items-center justify-between">
         <h4 className="flex items-center gap-2 text-sm font-semibold">
           <Paperclip className="h-4 w-4" />
-          Attachments
+          {t('attachments.title')}
           {attachments && attachments.length > 0 && (
             <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{attachments.length}</span>
           )}
@@ -66,7 +68,7 @@ export function Attachments({ pageId }: AttachmentsProps) {
           disabled={uploadAttachment.isPending}
         >
           <Upload className="h-3.5 w-3.5" />
-          {uploadAttachment.isPending ? 'Uploading...' : 'Upload'}
+          {uploadAttachment.isPending ? t('attachments.uploading') : t('attachments.upload')}
         </Button>
         <input
           ref={fileInputRef}
@@ -91,7 +93,7 @@ export function Attachments({ pageId }: AttachmentsProps) {
           handleUpload(e.dataTransfer.files);
         }}
       >
-        {dragOver ? 'Drop files here' : 'Drag & drop files here'}
+        {dragOver ? t('attachments.dropFiles') : t('attachments.dragAndDrop')}
       </div>
 
       {/* File list */}

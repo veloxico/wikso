@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SpacesService } from './spaces.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -53,6 +53,13 @@ export class SpacesController {
   @ApiOperation({ summary: 'Get space members' })
   getMembers(@Param('slug') slug: string) {
     return this.spacesService.getMembers(slug);
+  }
+
+  @Get(':slug/members/search')
+  @UseGuards(SpacePermissionGuard)
+  @ApiOperation({ summary: 'Search space members by name or email' })
+  searchMembers(@Param('slug') slug: string, @Query('q') query: string) {
+    return this.spacesService.searchMembers(slug, query || '');
   }
 
   @Post(':slug/members')

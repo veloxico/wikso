@@ -1,0 +1,73 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index 4ac88d00fad7a89916c0e0541d7c803b27837d10..debe5e0ae2503fa40344e699a7e669f04eb6ec50 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -738,9 +738,14 @@ var ReactRenderer = class {
+       this.element.classList.add(...className.split(" "));
+     }
+     if (this.editor.isInitialized) {
+-      (0, import_react_dom2.flushSync)(() => {
+-        this.render();
+-      });
++      setTimeout(() => {
++        if (this.destroyed) {
++          return;
++        }
++        (0, import_react_dom2.flushSync)(() => {
++          this.render();
++        });
++      }, 0);
+     } else {
+       queueMicrotask(() => {
+         if (this.destroyed) {
+diff --git a/dist/index.js b/dist/index.js
+index b0abf6a9c25334e892c1be7c983f7618a8c3a0db..2acf56ba990a8096fa295fdddc761249b4ac8316 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -676,9 +676,14 @@ var ReactRenderer = class {
+       this.element.classList.add(...className.split(" "));
+     }
+     if (this.editor.isInitialized) {
+-      flushSync(() => {
+-        this.render();
+-      });
++      setTimeout(() => {
++        if (this.destroyed) {
++          return;
++        }
++        flushSync(() => {
++          this.render();
++        });
++      }, 0);
+     } else {
+       queueMicrotask(() => {
+         if (this.destroyed) {
+diff --git a/src/ReactRenderer.tsx b/src/ReactRenderer.tsx
+index 7471a22847a54351a43fca36596588dc1334032a..4a162cb0e0417615eae4535b0edb75fb39e7f7bb 100644
+--- a/src/ReactRenderer.tsx
++++ b/src/ReactRenderer.tsx
+@@ -182,13 +182,18 @@ export class ReactRenderer<R = unknown, P extends Record<string, any> = object>
+       this.element.classList.add(...className.split(' '))
+     }
+ 
+-    // If the editor is already initialized, we will need to
+-    // synchronously render the component to ensure it renders
+-    // together with Prosemirror's rendering.
++    // Defer flushSync out of React lifecycle methods (breaks React 19+).
++    // setTimeout(fn, 0) ensures we are in a new macrotask, outside the
++    // React commit phase, so flushSync is safe to call.
+     if (this.editor.isInitialized) {
+-      flushSync(() => {
+-        this.render()
+-      })
++      setTimeout(() => {
++        if (this.destroyed) {
++          return
++        }
++        flushSync(() => {
++          this.render()
++        })
++      }, 0)
+     } else {
+       queueMicrotask(() => {
+         if (this.destroyed) {

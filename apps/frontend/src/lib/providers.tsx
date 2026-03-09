@@ -5,17 +5,20 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useAuthStore } from '@/store/authStore';
+import { useLanguageStore } from '@/store/languageStore';
 
 interface ProvidersProps {
   children: ReactNode;
 }
 
 export function Providers({ children }: ProvidersProps) {
-  const hydrate = useAuthStore((s) => s.hydrate);
+  const hydrateAuth = useAuthStore((s) => s.hydrate);
+  const hydrateLanguage = useLanguageStore((s) => s.hydrate);
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    hydrateAuth();
+    hydrateLanguage();
+  }, [hydrateAuth, hydrateLanguage]);
 
   const [queryClient] = useState(
     () =>

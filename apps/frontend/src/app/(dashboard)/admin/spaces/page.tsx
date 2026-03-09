@@ -5,10 +5,12 @@ import { FolderOpen, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAdminSpaces, useDeleteAdminSpace } from '@/hooks/useAdmin';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const PAGE_SIZE = 10;
 
 export default function AdminSpacesPage() {
+  const { t, locale } = useTranslation();
   const [page, setPage] = useState(0);
   const { data: spaces, isLoading } = useAdminSpaces(page * PAGE_SIZE, PAGE_SIZE);
   const deleteSpace = useDeleteAdminSpace();
@@ -17,7 +19,7 @@ export default function AdminSpacesPage() {
     <div>
       <div className="mb-8 flex items-center gap-3">
         <FolderOpen className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold">Space Management</h1>
+        <h1 className="text-2xl font-bold">{t('admin.spaces.title')}</h1>
       </div>
 
       <Card>
@@ -34,13 +36,13 @@ export default function AdminSpacesPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left">
-                      <th className="pb-3 font-medium text-muted-foreground">Name</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Slug</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Type</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Owner</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Pages</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Created</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Actions</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.spaces.nameColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.spaces.slugColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.spaces.typeColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.spaces.ownerColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.spaces.pagesColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.spaces.createdColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.spaces.actionsColumn')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -58,13 +60,13 @@ export default function AdminSpacesPage() {
                                 : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                             }`}
                           >
-                            {space.type}
+                            {space.type === 'PUBLIC' ? t('common.public') : space.type === 'PRIVATE' ? t('common.private') : t('common.personal')}
                           </span>
                         </td>
                         <td className="py-3 text-muted-foreground">{space.owner?.name || '—'}</td>
                         <td className="py-3 text-muted-foreground">{space._count?.pages ?? 0}</td>
                         <td className="py-3 text-muted-foreground">
-                          {new Date(space.createdAt).toLocaleDateString()}
+                          {new Date(space.createdAt).toLocaleDateString(locale)}
                         </td>
                         <td className="py-3">
                           <Button
@@ -72,7 +74,7 @@ export default function AdminSpacesPage() {
                             size="sm"
                             className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                             onClick={() => {
-                              if (confirm(`Delete space "${space.name}"? All pages will be lost.`)) {
+                              if (confirm(t('admin.spaces.confirmDelete', { name: space.name }))) {
                                 deleteSpace.mutate(space.id);
                               }
                             }}
@@ -87,7 +89,7 @@ export default function AdminSpacesPage() {
               </div>
 
               <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Page {page + 1}</p>
+                <p className="text-sm text-muted-foreground">{t('common.pageNum', { num: page + 1 })}</p>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
                     <ChevronLeft className="h-4 w-4" />

@@ -5,10 +5,12 @@ import { Webhook, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAdminWebhooks, useToggleWebhook } from '@/hooks/useAdmin';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const PAGE_SIZE = 20;
 
 export default function AdminWebhooksPage() {
+  const { t, locale } = useTranslation();
   const [page, setPage] = useState(0);
   const { data: webhooks, isLoading } = useAdminWebhooks(page * PAGE_SIZE, PAGE_SIZE);
   const toggleWebhook = useToggleWebhook();
@@ -17,7 +19,7 @@ export default function AdminWebhooksPage() {
     <div>
       <div className="mb-8 flex items-center gap-3">
         <Webhook className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold">Webhooks</h1>
+        <h1 className="text-2xl font-bold">{t('admin.webhooks.title')}</h1>
       </div>
 
       <Card>
@@ -34,11 +36,11 @@ export default function AdminWebhooksPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left">
-                      <th className="pb-3 font-medium text-muted-foreground">URL</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Events</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Status</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Created</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Actions</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.webhooks.urlColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.webhooks.eventsColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.webhooks.statusColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.webhooks.createdColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.webhooks.actionsColumn')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -69,11 +71,11 @@ export default function AdminWebhooksPage() {
                                 : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
                             }`}
                           >
-                            {webhook.active ? 'Active' : 'Inactive'}
+                            {webhook.active ? t('common.active') : t('common.inactive')}
                           </span>
                         </td>
                         <td className="py-3 text-muted-foreground">
-                          {new Date(webhook.createdAt).toLocaleDateString()}
+                          {new Date(webhook.createdAt).toLocaleDateString(locale)}
                         </td>
                         <td className="py-3">
                           <Button
@@ -86,7 +88,7 @@ export default function AdminWebhooksPage() {
                               })
                             }
                           >
-                            {webhook.active ? 'Disable' : 'Enable'}
+                            {webhook.active ? t('common.disable') : t('common.enable')}
                           </Button>
                         </td>
                       </tr>
@@ -96,7 +98,7 @@ export default function AdminWebhooksPage() {
               </div>
 
               <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Page {page + 1}</p>
+                <p className="text-sm text-muted-foreground">{t('common.pageNum', { num: page + 1 })}</p>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -120,7 +122,7 @@ export default function AdminWebhooksPage() {
           ) : (
             <div className="py-12 text-center">
               <Webhook className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">No webhooks configured yet.</p>
+              <p className="text-sm text-muted-foreground">{t('admin.webhooks.noWebhooks')}</p>
             </div>
           )}
         </CardContent>

@@ -29,10 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const PAGE_SIZE = 10;
 
 export default function AdminUsersPage() {
+  const { t, locale } = useTranslation();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -74,11 +76,11 @@ export default function AdminUsersPage() {
       <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Users className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl font-bold">User Management</h1>
+          <h1 className="text-2xl font-bold">{t('admin.users.title')}</h1>
         </div>
         <Button onClick={() => setShowInvite(!showInvite)} className="gap-2">
           <UserPlus className="h-4 w-4" />
-          Invite User
+          {t('admin.users.inviteUser')}
         </Button>
       </div>
 
@@ -86,17 +88,17 @@ export default function AdminUsersPage() {
       {showInvite && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Invite New User</CardTitle>
+            <CardTitle>{t('admin.users.inviteNewUser')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Input
-                placeholder="email@example.com"
+                placeholder={t('admin.users.emailPlaceholder')}
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
               />
               <Input
-                placeholder="Name (optional)"
+                placeholder={t('admin.users.nameOptional')}
                 value={inviteName}
                 onChange={(e) => setInviteName(e.target.value)}
               />
@@ -105,18 +107,18 @@ export default function AdminUsersPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="EDITOR">Editor</SelectItem>
-                  <SelectItem value="VIEWER">Viewer</SelectItem>
+                  <SelectItem value="ADMIN">{t('roles.admin')}</SelectItem>
+                  <SelectItem value="EDITOR">{t('roles.editor')}</SelectItem>
+                  <SelectItem value="VIEWER">{t('roles.viewer')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleInvite} disabled={inviteUser.isPending}>
-                {inviteUser.isPending ? 'Sending...' : 'Send Invitation'}
+                {inviteUser.isPending ? t('common.sending') : t('admin.users.sendInvitation')}
               </Button>
               <Button variant="outline" onClick={() => setShowInvite(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           </CardContent>
@@ -128,7 +130,7 @@ export default function AdminUsersPage() {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by name or email..."
+            placeholder={t('admin.users.searchPlaceholder')}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -139,23 +141,23 @@ export default function AdminUsersPage() {
         </div>
         <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v === 'all' ? '' : v); setPage(0); }}>
           <SelectTrigger className="w-32">
-            <SelectValue placeholder="Role" />
+            <SelectValue placeholder={t('admin.users.roleColumn')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Roles</SelectItem>
-            <SelectItem value="ADMIN">Admin</SelectItem>
-            <SelectItem value="EDITOR">Editor</SelectItem>
-            <SelectItem value="VIEWER">Viewer</SelectItem>
+            <SelectItem value="all">{t('admin.users.allRoles')}</SelectItem>
+            <SelectItem value="ADMIN">{t('roles.admin')}</SelectItem>
+            <SelectItem value="EDITOR">{t('roles.editor')}</SelectItem>
+            <SelectItem value="VIEWER">{t('roles.viewer')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v === 'all' ? '' : v); setPage(0); }}>
           <SelectTrigger className="w-36">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t('admin.users.statusColumn')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="ACTIVE">Active</SelectItem>
-            <SelectItem value="SUSPENDED">Suspended</SelectItem>
+            <SelectItem value="all">{t('admin.users.allStatuses')}</SelectItem>
+            <SelectItem value="ACTIVE">{t('common.active')}</SelectItem>
+            <SelectItem value="SUSPENDED">{t('common.suspended')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -175,12 +177,12 @@ export default function AdminUsersPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left">
-                      <th className="pb-3 font-medium text-muted-foreground">Name</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Email</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Role</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Status</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Joined</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Actions</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.nameColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.emailColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.roleColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.statusColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.joinedColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.actionsColumn')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -206,9 +208,9 @@ export default function AdminUsersPage() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="ADMIN">Admin</SelectItem>
-                              <SelectItem value="EDITOR">Editor</SelectItem>
-                              <SelectItem value="VIEWER">Viewer</SelectItem>
+                              <SelectItem value="ADMIN">{t('roles.admin')}</SelectItem>
+                              <SelectItem value="EDITOR">{t('roles.editor')}</SelectItem>
+                              <SelectItem value="VIEWER">{t('roles.viewer')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </td>
@@ -220,11 +222,11 @@ export default function AdminUsersPage() {
                                 : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                             }`}
                           >
-                            {user.status === 'SUSPENDED' ? 'Suspended' : 'Active'}
+                            {user.status === 'SUSPENDED' ? t('common.suspended') : t('common.active')}
                           </span>
                         </td>
                         <td className="py-3 text-muted-foreground">
-                          {new Date(user.createdAt).toLocaleDateString()}
+                          {new Date(user.createdAt).toLocaleDateString(locale)}
                         </td>
                         <td className="py-3">
                           <div className="flex gap-1">
@@ -233,7 +235,7 @@ export default function AdminUsersPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0 text-orange-500 hover:text-orange-600"
-                                title="Suspend user"
+                                title={t('admin.users.suspendUser')}
                                 onClick={() => suspendUser.mutate(user.id)}
                               >
                                 <Ban className="h-4 w-4" />
@@ -243,7 +245,7 @@ export default function AdminUsersPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0 text-green-500 hover:text-green-600"
-                                title="Activate user"
+                                title={t('admin.users.activateUser')}
                                 onClick={() => activateUser.mutate(user.id)}
                               >
                                 <CheckCircle2 className="h-4 w-4" />
@@ -253,9 +255,9 @@ export default function AdminUsersPage() {
                               variant="ghost"
                               size="sm"
                               className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                              title="Delete user"
+                              title={t('admin.users.deleteUser')}
                               onClick={() => {
-                                if (confirm('Delete this user? This action cannot be undone.')) {
+                                if (confirm(t('admin.users.confirmDeleteUser'))) {
                                   deleteUser.mutate(user.id);
                                 }
                               }}
@@ -273,9 +275,7 @@ export default function AdminUsersPage() {
               {/* Pagination */}
               <div className="mt-4 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Showing {page * PAGE_SIZE + 1}
-                  {'\u2013'}
-                  {page * PAGE_SIZE + (users?.length || 0)}
+                  {t('common.showing', { from: page * PAGE_SIZE + 1, to: page * PAGE_SIZE + (users?.length || 0) })}
                 </p>
                 <div className="flex gap-2">
                   <Button

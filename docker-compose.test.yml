@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: dokka_test
+    ports:
+      - '5433:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks:
+      - test-net
+
+  redis-test:
+    image: redis:7-alpine
+    ports:
+      - '6380:6379'
+    networks:
+      - test-net
+
+  minio-test:
+    image: minio/minio
+    command: server /data --console-address ":9003"
+    ports:
+      - '9002:9000'
+      - '9003:9003'
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    tmpfs:
+      - /data
+    networks:
+      - test-net
+
+  meilisearch-test:
+    image: getmeili/meilisearch:v1.6
+    ports:
+      - '7701:7700'
+    environment:
+      MEILI_MASTER_KEY: testMasterKey
+    tmpfs:
+      - /meili_data
+    networks:
+      - test-net
+
+networks:
+  test-net:
+    driver: bridge

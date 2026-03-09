@@ -45,73 +45,75 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* ===== Confluence-inspired Light Theme ===== */
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(0.29 0.05 260);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.29 0.05 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
+  --popover-foreground: oklch(0.29 0.05 260);
+  --primary: oklch(0.44 0.19 260);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.97 0.003 260);
+  --secondary-foreground: oklch(0.29 0.05 260);
+  --muted: oklch(0.97 0.003 260);
+  --muted-foreground: oklch(0.55 0.03 260);
+  --accent: oklch(0.94 0.03 260);
+  --accent-foreground: oklch(0.29 0.05 260);
+  --destructive: oklch(0.55 0.22 27);
+  --border: oklch(0.91 0.005 260);
+  --input: oklch(0.91 0.005 260);
+  --ring: oklch(0.44 0.19 260);
+  --chart-1: oklch(0.44 0.19 260);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: oklch(0.985 0.002 260);
+  --sidebar-foreground: oklch(0.29 0.05 260);
+  --sidebar-primary: oklch(0.44 0.19 260);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.94 0.03 260);
+  --sidebar-accent-foreground: oklch(0.29 0.05 260);
+  --sidebar-border: oklch(0.91 0.005 260);
+  --sidebar-ring: oklch(0.44 0.19 260);
 }
 
+/* ===== Anthropic-inspired Dark Theme ===== */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --background: oklch(0.18 0 0);
+  --foreground: oklch(0.92 0.01 80);
+  --card: oklch(0.2 0 0);
+  --card-foreground: oklch(0.92 0.01 80);
+  --popover: oklch(0.2 0 0);
+  --popover-foreground: oklch(0.92 0.01 80);
+  --primary: oklch(0.75 0.09 55);
+  --primary-foreground: oklch(0.18 0 0);
+  --secondary: oklch(0.25 0 0);
+  --secondary-foreground: oklch(0.92 0.01 80);
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.68 0.02 55);
+  --accent: oklch(0.23 0.02 55);
+  --accent-foreground: oklch(0.92 0.01 80);
+  --destructive: oklch(0.68 0.14 22);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
+  --ring: oklch(0.75 0.09 55);
+  --chart-1: oklch(0.75 0.09 55);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar: oklch(0.2 0 0);
+  --sidebar-foreground: oklch(0.92 0.01 80);
+  --sidebar-primary: oklch(0.75 0.09 55);
+  --sidebar-primary-foreground: oklch(0.18 0 0);
+  --sidebar-accent: oklch(0.23 0.02 55);
+  --sidebar-accent-foreground: oklch(0.92 0.01 80);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.75 0.09 55);
 }
 
 @layer base {
@@ -121,4 +123,743 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ===== Dokka Editor Styles ===== */
+
+/* Table styles */
+.dokka-editor table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  overflow: hidden;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.dokka-editor td,
+.dokka-editor th {
+  border: 2px solid var(--border);
+  box-sizing: border-box;
+  min-width: 1em;
+  padding: 6px 8px;
+  position: relative;
+  vertical-align: top;
+}
+
+.dokka-editor th {
+  background-color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+}
+
+.dokka-editor .selectedCell:after {
+  background: color-mix(in oklch, var(--primary) 15%, transparent);
+  content: '';
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.dokka-editor .column-resize-handle {
+  background-color: var(--primary);
+  bottom: -2px;
+  pointer-events: none;
+  position: absolute;
+  right: -2px;
+  top: 0;
+  width: 4px;
+}
+
+.dokka-editor .tableWrapper {
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.dokka-editor table .resize-cursor {
+  cursor: col-resize;
+}
+
+/* Image styles */
+.dokka-editor .editor-image {
+  border-radius: 0.5rem;
+  cursor: default;
+  display: block;
+  margin: 1rem auto;
+  max-width: 100%;
+  height: auto;
+}
+
+.dokka-editor .ProseMirror-selectednode .editor-image,
+.dokka-editor img.ProseMirror-selectednode {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Link styles */
+.dokka-editor .editor-link {
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dokka-editor .editor-link:hover {
+  color: color-mix(in oklch, var(--primary), black 20%);
+}
+
+/* Task list styles */
+.dokka-editor ul[data-type='taskList'] {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.dokka-editor ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.dokka-editor ul[data-type='taskList'] li > label {
+  flex: 0 0 auto;
+  margin-top: 0.25rem;
+  user-select: none;
+}
+
+.dokka-editor ul[data-type='taskList'] li > label input[type='checkbox'] {
+  cursor: pointer;
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--primary);
+}
+
+.dokka-editor ul[data-type='taskList'] li > div {
+  flex: 1 1 auto;
+}
+
+.dokka-editor ul[data-type='taskList'] li[data-checked='true'] > div {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* Code block styles */
+.dokka-editor pre {
+  background: var(--muted);
+  border-radius: 0.5rem;
+  color: var(--foreground);
+  font-family: var(--font-mono), monospace;
+  padding: 1rem;
+  margin: 0.75rem 0;
+  overflow-x: auto;
+}
+
+.dokka-editor pre code {
+  background: none;
+  color: inherit;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+/* Blockquote styles */
+.dokka-editor blockquote {
+  border-left: 4px solid var(--primary);
+  margin: 1rem 0;
+  padding-left: 1rem;
+  color: var(--muted-foreground);
+}
+
+/* Horizontal rule */
+.dokka-editor hr {
+  border: none;
+  border-top: 2px solid var(--border);
+  margin: 1.5rem 0;
+}
+
+/* Placeholder styles */
+.dokka-editor .is-empty::before {
+  color: var(--muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Collaboration caret */
+.collaboration-cursor__caret {
+  border-left: 1px solid #0d0d0d;
+  border-right: 1px solid #0d0d0d;
+  margin-left: -1px;
+  margin-right: -1px;
+  pointer-events: none;
+  position: relative;
+  word-break: normal;
+}
+
+.collaboration-cursor__label {
+  border-radius: 3px 3px 3px 0;
+  color: #fff;
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 600;
+  left: -1px;
+  line-height: normal;
+  padding: 0.1rem 0.3rem;
+  position: absolute;
+  top: -1.4em;
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* Highlight colors */
+.dokka-editor mark {
+  border-radius: 0.15rem;
+  padding: 0.1rem 0.2rem;
+}
+
+/* ===== Resizable Image Styles ===== */
+.resizable-image-wrapper {
+  margin: 1rem 0;
+}
+
+.resizable-image-wrapper.resizable-image-left {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.resizable-image-wrapper.resizable-image-center {
+  display: flex;
+  justify-content: center;
+}
+
+.resizable-image-wrapper.resizable-image-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.resizable-image-wrapper.resizable-image-full {
+  display: block;
+}
+
+.resizable-image-wrapper.resizable-image-full .editor-image {
+  width: 100% !important;
+}
+
+.resizable-image-container {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.resizable-image-container.selected {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Floating toolbar */
+.resizable-image-toolbar {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--popover);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+  opacity: 0;
+  animation: fadeIn 0.15s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.resizable-image-toolbar .toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.resizable-image-toolbar .toolbar-btn:hover {
+  background: var(--accent);
+}
+
+.resizable-image-toolbar .toolbar-btn.active {
+  background: var(--accent);
+  color: var(--primary);
+}
+
+.resizable-image-toolbar .toolbar-btn-danger:hover {
+  background: oklch(0.93 0.04 25);
+  color: oklch(0.577 0.245 27.325);
+}
+
+.dark .resizable-image-toolbar .toolbar-btn-danger:hover {
+  background: oklch(0.25 0.04 25);
+  color: oklch(0.704 0.191 22.216);
+}
+
+.resizable-image-toolbar .toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 2px;
+}
+
+/* Resize handles */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.resize-handle-left {
+  left: -4px;
+}
+
+.resize-handle-right {
+  right: -4px;
+}
+
+.resize-handle-bar {
+  width: 4px;
+  height: 40px;
+  max-height: 50%;
+  border-radius: 2px;
+  background: color-mix(in oklch, var(--primary) 60%, transparent);
+  transition: background 0.15s ease, height 0.15s ease;
+}
+
+.resize-handle:hover .resize-handle-bar {
+  background: var(--primary);
+  height: 50px;
+}
+
+/* Caption */
+.resizable-image-caption {
+  text-align: center;
+  padding: 0.375rem 0;
+  line-height: 1.4;
+}
+
+.resizable-image-caption .caption-input {
+  width: 100%;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0.125rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.resizable-image-caption .caption-text {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+  cursor: text;
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+}
+
+.resizable-image-caption .caption-placeholder {
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* ===== Mention Styles ===== */
+.dokka-editor .mention {
+  background-color: color-mix(in oklch, var(--primary) 12%, transparent);
+  color: var(--primary);
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dokka-editor .mention:hover {
+  background-color: color-mix(in oklch, var(--primary) 20%, transparent);
+}
+
+.dark .dokka-editor .mention {
+  background-color: color-mix(in oklch, var(--primary) 20%, transparent);
+  color: var(--primary);
+}
+
+.dark .dokka-editor .mention:hover {
+  background-color: color-mix(in oklch, var(--primary) 30%, transparent);
+}
+
+/* Mention list popup */
+.mention-list {
+  background: var(--popover);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  max-height: 280px;
+  overflow-y: auto;
+  min-width: 240px;
+}
+
+.mention-list-empty {
+  background: var(--popover);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 0.75rem 1rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  min-width: 200px;
+}
+
+.mention-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: var(--foreground);
+  transition: background 0.1s ease;
+}
+
+.mention-list-item:hover,
+.mention-list-item.is-selected {
+  background: var(--accent);
+}
+
+.mention-avatar {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: color-mix(in oklch, var(--primary) 15%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.mention-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mention-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mention-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mention-email {
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Callout Block Styles ===== */
+.dokka-editor .callout {
+  border-radius: 0.5rem;
+  padding: 1rem 1rem 1rem 0.75rem;
+  margin: 0.75rem 0;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.dokka-editor .callout-icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.15rem;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  transition: opacity 0.15s ease;
+}
+
+.dokka-editor .callout-icon:hover {
+  opacity: 0.7;
+}
+
+.dokka-editor .callout-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.dokka-editor .callout-content > *:first-child {
+  margin-top: 0;
+}
+
+.dokka-editor .callout-content > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Info callout */
+.dokka-editor .callout-info {
+  background-color: oklch(0.93 0.03 250);
+  border-left: 4px solid oklch(0.55 0.15 250);
+}
+
+.dokka-editor .callout-info .callout-icon {
+  color: oklch(0.55 0.15 250);
+}
+
+/* Warning callout */
+.dokka-editor .callout-warning {
+  background-color: oklch(0.95 0.05 85);
+  border-left: 4px solid oklch(0.7 0.15 70);
+}
+
+.dokka-editor .callout-warning .callout-icon {
+  color: oklch(0.7 0.15 70);
+}
+
+/* Success callout */
+.dokka-editor .callout-success {
+  background-color: oklch(0.93 0.04 155);
+  border-left: 4px solid oklch(0.55 0.15 155);
+}
+
+.dokka-editor .callout-success .callout-icon {
+  color: oklch(0.55 0.15 155);
+}
+
+/* Error callout */
+.dokka-editor .callout-error {
+  background-color: oklch(0.93 0.04 25);
+  border-left: 4px solid oklch(0.6 0.2 25);
+}
+
+.dokka-editor .callout-error .callout-icon {
+  color: oklch(0.6 0.2 25);
+}
+
+/* Dark mode callouts */
+.dark .dokka-editor .callout-info {
+  background-color: oklch(0.25 0.04 250);
+  border-left-color: oklch(0.6 0.18 250);
+}
+
+.dark .dokka-editor .callout-info .callout-icon {
+  color: oklch(0.7 0.18 250);
+}
+
+.dark .dokka-editor .callout-warning {
+  background-color: oklch(0.25 0.04 70);
+  border-left-color: oklch(0.7 0.18 70);
+}
+
+.dark .dokka-editor .callout-warning .callout-icon {
+  color: oklch(0.8 0.15 70);
+}
+
+.dark .dokka-editor .callout-success {
+  background-color: oklch(0.25 0.04 155);
+  border-left-color: oklch(0.6 0.18 155);
+}
+
+.dark .dokka-editor .callout-success .callout-icon {
+  color: oklch(0.7 0.18 155);
+}
+
+.dark .dokka-editor .callout-error {
+  background-color: oklch(0.25 0.04 25);
+  border-left-color: oklch(0.65 0.2 25);
+}
+
+.dark .dokka-editor .callout-error .callout-icon {
+  color: oklch(0.75 0.2 25);
+}
+
+/* ===== Code Block Syntax Highlighting ===== */
+
+/* Language selector dropdown */
+.dokka-editor .code-block-wrapper {
+  position: relative;
+}
+
+.dokka-editor .code-block-language-select {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  z-index: 1;
+}
+
+/* GitHub Light Theme for lowlight */
+.dokka-editor pre code .hljs-comment,
+.dokka-editor pre code .hljs-quote {
+  color: oklch(0.55 0.02 250);
+  font-style: italic;
+}
+
+.dokka-editor pre code .hljs-keyword,
+.dokka-editor pre code .hljs-selector-tag,
+.dokka-editor pre code .hljs-addition {
+  color: oklch(0.5 0.2 330);
+}
+
+.dokka-editor pre code .hljs-number,
+.dokka-editor pre code .hljs-string,
+.dokka-editor pre code .hljs-meta .hljs-meta-string,
+.dokka-editor pre code .hljs-literal,
+.dokka-editor pre code .hljs-doctag,
+.dokka-editor pre code .hljs-regexp {
+  color: oklch(0.5 0.15 250);
+}
+
+.dokka-editor pre code .hljs-title,
+.dokka-editor pre code .hljs-section,
+.dokka-editor pre code .hljs-name,
+.dokka-editor pre code .hljs-selector-id,
+.dokka-editor pre code .hljs-selector-class {
+  color: oklch(0.55 0.2 30);
+}
+
+.dokka-editor pre code .hljs-attribute,
+.dokka-editor pre code .hljs-attr,
+.dokka-editor pre code .hljs-variable,
+.dokka-editor pre code .hljs-template-variable,
+.dokka-editor pre code .hljs-class .hljs-title,
+.dokka-editor pre code .hljs-type {
+  color: oklch(0.55 0.18 55);
+}
+
+.dokka-editor pre code .hljs-symbol,
+.dokka-editor pre code .hljs-bullet,
+.dokka-editor pre code .hljs-subst,
+.dokka-editor pre code .hljs-meta,
+.dokka-editor pre code .hljs-meta .hljs-keyword,
+.dokka-editor pre code .hljs-selector-attr,
+.dokka-editor pre code .hljs-selector-pseudo,
+.dokka-editor pre code .hljs-link {
+  color: oklch(0.5 0.18 150);
+}
+
+.dokka-editor pre code .hljs-built_in,
+.dokka-editor pre code .hljs-deletion {
+  color: oklch(0.55 0.2 25);
+}
+
+.dokka-editor pre code .hljs-formula {
+  background: oklch(0.95 0.02 250);
+}
+
+.dokka-editor pre code .hljs-emphasis {
+  font-style: italic;
+}
+
+.dokka-editor pre code .hljs-strong {
+  font-weight: bold;
+}
+
+/* Dark mode syntax highlighting */
+.dark .dokka-editor pre code .hljs-comment,
+.dark .dokka-editor pre code .hljs-quote {
+  color: oklch(0.55 0.02 250);
+}
+
+.dark .dokka-editor pre code .hljs-keyword,
+.dark .dokka-editor pre code .hljs-selector-tag,
+.dark .dokka-editor pre code .hljs-addition {
+  color: oklch(0.7 0.18 330);
+}
+
+.dark .dokka-editor pre code .hljs-number,
+.dark .dokka-editor pre code .hljs-string,
+.dark .dokka-editor pre code .hljs-meta .hljs-meta-string,
+.dark .dokka-editor pre code .hljs-literal,
+.dark .dokka-editor pre code .hljs-doctag,
+.dark .dokka-editor pre code .hljs-regexp {
+  color: oklch(0.7 0.14 220);
+}
+
+.dark .dokka-editor pre code .hljs-title,
+.dark .dokka-editor pre code .hljs-section,
+.dark .dokka-editor pre code .hljs-name,
+.dark .dokka-editor pre code .hljs-selector-id,
+.dark .dokka-editor pre code .hljs-selector-class {
+  color: oklch(0.75 0.18 45);
+}
+
+.dark .dokka-editor pre code .hljs-attribute,
+.dark .dokka-editor pre code .hljs-attr,
+.dark .dokka-editor pre code .hljs-variable,
+.dark .dokka-editor pre code .hljs-template-variable,
+.dark .dokka-editor pre code .hljs-class .hljs-title,
+.dark .dokka-editor pre code .hljs-type {
+  color: oklch(0.75 0.15 65);
+}
+
+.dark .dokka-editor pre code .hljs-symbol,
+.dark .dokka-editor pre code .hljs-bullet,
+.dark .dokka-editor pre code .hljs-subst,
+.dark .dokka-editor pre code .hljs-meta,
+.dark .dokka-editor pre code .hljs-meta .hljs-keyword,
+.dark .dokka-editor pre code .hljs-selector-attr,
+.dark .dokka-editor pre code .hljs-selector-pseudo,
+.dark .dokka-editor pre code .hljs-link {
+  color: oklch(0.7 0.15 160);
+}
+
+.dark .dokka-editor pre code .hljs-built_in,
+.dark .dokka-editor pre code .hljs-deletion {
+  color: oklch(0.7 0.2 25);
+}
+
+.dark .dokka-editor pre code .hljs-formula {
+  background: oklch(0.25 0.02 250);
 }

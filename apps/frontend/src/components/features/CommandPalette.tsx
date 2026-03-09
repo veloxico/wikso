@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
 import { Search, LayoutDashboard, Plus, Bell, User, Shield, FileText } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -13,6 +14,7 @@ interface CommandPaletteProps {
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter();
   const [search, setSearch] = useState('');
+  const { t } = useTranslation();
 
   const navigate = useCallback(
     (path: string) => {
@@ -41,58 +43,58 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             <Command.Input
               value={search}
               onValueChange={setSearch}
-              placeholder="Type a command or search..."
+              placeholder={t('commandPalette.placeholder')}
               className="flex h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               autoFocus
             />
           </div>
           <Command.List className="max-h-80 overflow-y-auto p-2">
             <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
-              No results found.
+              {t('commandPalette.noResults')}
             </Command.Empty>
 
-            <Command.Group heading="Navigation" className="text-xs font-medium text-muted-foreground px-2 py-1.5">
+            <Command.Group heading={t('commandPalette.navigation')} className="text-xs font-medium text-muted-foreground px-2 py-1.5">
               <Command.Item
                 onSelect={() => navigate('/spaces')}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent aria-selected:bg-accent"
               >
                 <LayoutDashboard className="h-4 w-4" />
-                Spaces
+                {t('commandPalette.spaces')}
               </Command.Item>
               <Command.Item
                 onSelect={() => navigate('/spaces/new')}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent aria-selected:bg-accent"
               >
                 <Plus className="h-4 w-4" />
-                New Space
+                {t('commandPalette.newSpace')}
               </Command.Item>
               <Command.Item
                 onSelect={() => navigate('/search')}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent aria-selected:bg-accent"
               >
                 <FileText className="h-4 w-4" />
-                Search Pages
+                {t('search.title')}
               </Command.Item>
               <Command.Item
                 onSelect={() => navigate('/notifications')}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent aria-selected:bg-accent"
               >
                 <Bell className="h-4 w-4" />
-                Notifications
+                {t('notifications.title')}
               </Command.Item>
               <Command.Item
                 onSelect={() => navigate('/profile')}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent aria-selected:bg-accent"
               >
                 <User className="h-4 w-4" />
-                Profile
+                {t('profile.title')}
               </Command.Item>
               <Command.Item
                 onSelect={() => navigate('/admin')}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent aria-selected:bg-accent"
               >
                 <Shield className="h-4 w-4" />
-                Admin
+                {t('commandPalette.admin')}
               </Command.Item>
             </Command.Group>
           </Command.List>

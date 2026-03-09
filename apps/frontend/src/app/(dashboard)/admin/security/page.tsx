@@ -6,6 +6,7 @@ import { useSystemSettings, useUpdateSettings } from '@/hooks/useSettings';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/hooks/useTranslation';
 
 function Toggle({ checked, onChange, label, description }: {
   checked: boolean;
@@ -41,6 +42,7 @@ function Toggle({ checked, onChange, label, description }: {
 export default function AdminSecurityPage() {
   const { data: settings, isLoading } = useSystemSettings();
   const updateSettings = useUpdateSettings();
+  const { t } = useTranslation();
 
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
   const [emailVerificationRequired, setEmailVerificationRequired] = useState(false);
@@ -92,24 +94,24 @@ export default function AdminSecurityPage() {
     <div>
       <div className="mb-8 flex items-center gap-3">
         <Shield className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold">Security & Access</h1>
+        <h1 className="text-2xl font-bold">{t('admin.security.title')}</h1>
       </div>
 
       <div className="space-y-6">
         {/* Registration Toggle */}
         <Card>
           <CardHeader>
-            <CardTitle>Registration</CardTitle>
+            <CardTitle>{t('admin.security.registration')}</CardTitle>
             <CardDescription>
-              Control whether new users can self-register or only admins can add users.
+              {t('admin.security.registrationDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Toggle
               checked={registrationEnabled}
               onChange={setRegistrationEnabled}
-              label="Allow public registration"
-              description="When disabled, only admins can add users via the invite system."
+              label={t('admin.security.allowPublicRegistration')}
+              description={t('admin.security.allowPublicRegistrationDescription')}
             />
           </CardContent>
         </Card>
@@ -117,9 +119,9 @@ export default function AdminSecurityPage() {
         {/* Email Domain Whitelist */}
         <Card>
           <CardHeader>
-            <CardTitle>Email Domain Whitelist</CardTitle>
+            <CardTitle>{t('admin.security.emailDomainWhitelist')}</CardTitle>
             <CardDescription>
-              Restrict registration to specific email domains. Leave empty to allow all domains.
+              {t('admin.security.emailDomainWhitelistDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -131,7 +133,7 @@ export default function AdminSecurityPage() {
                 onKeyDown={(e) => e.key === 'Enter' && addDomain()}
               />
               <Button variant="outline" onClick={addDomain}>
-                Add
+                {t('admin.security.add')}
               </Button>
             </div>
             {allowedDomains.length > 0 && (
@@ -151,7 +153,7 @@ export default function AdminSecurityPage() {
             )}
             {allowedDomains.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                No restrictions — all email domains are allowed.
+                {t('admin.security.noRestrictions')}
               </p>
             )}
           </CardContent>
@@ -160,14 +162,14 @@ export default function AdminSecurityPage() {
         {/* Email Verification */}
         <Card>
           <CardHeader>
-            <CardTitle>Email Verification</CardTitle>
+            <CardTitle>{t('admin.security.emailVerification')}</CardTitle>
           </CardHeader>
           <CardContent>
             <Toggle
               checked={emailVerificationRequired}
               onChange={setEmailVerificationRequired}
-              label="Require email verification"
-              description="Users must verify their email address before they can log in."
+              label={t('admin.security.requireEmailVerification')}
+              description={t('admin.security.requireEmailVerificationDescription')}
             />
           </CardContent>
         </Card>
@@ -175,12 +177,12 @@ export default function AdminSecurityPage() {
         {/* Password Policy */}
         <Card>
           <CardHeader>
-            <CardTitle>Password Policy</CardTitle>
+            <CardTitle>{t('admin.security.passwordPolicy')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
               <label className="text-sm font-medium whitespace-nowrap">
-                Minimum password length:
+                {t('admin.security.minPasswordLength')}
               </label>
               <Input
                 type="number"
@@ -190,13 +192,13 @@ export default function AdminSecurityPage() {
                 onChange={(e) => setPasswordMinLength(Number(e.target.value))}
                 className="w-24"
               />
-              <span className="text-sm text-muted-foreground">characters</span>
+              <span className="text-sm text-muted-foreground">{t('admin.security.characters')}</span>
             </div>
           </CardContent>
         </Card>
 
         <Button onClick={handleSave} disabled={updateSettings.isPending} size="lg">
-          {updateSettings.isPending ? 'Saving...' : 'Save Security Settings'}
+          {updateSettings.isPending ? t('common.saving') : t('admin.security.saveSecuritySettings')}
         </Button>
       </div>
     </div>

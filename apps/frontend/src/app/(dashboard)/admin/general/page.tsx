@@ -7,11 +7,13 @@ import { useSystemSettings, useUpdateSettings } from '@/hooks/useSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AdminGeneralPage() {
   const { data: stats, isLoading: statsLoading } = useAdminStats();
   const { data: settings, isLoading: settingsLoading } = useSystemSettings();
   const updateSettings = useUpdateSettings();
+  const { t } = useTranslation();
 
   const [siteName, setSiteName] = useState('');
   const [siteDescription, setSiteDescription] = useState('');
@@ -24,17 +26,17 @@ export default function AdminGeneralPage() {
   }, [settings]);
 
   const statCards = [
-    { label: 'Users', value: stats?.totalUsers, icon: Users, color: 'text-blue-500' },
-    { label: 'Spaces', value: stats?.totalSpaces, icon: BarChart3, color: 'text-green-500' },
-    { label: 'Pages', value: stats?.totalPages, icon: Activity, color: 'text-purple-500' },
-    { label: 'Comments', value: stats?.totalComments, icon: MessageSquare, color: 'text-orange-500' },
+    { label: t('admin.general.users'), value: stats?.totalUsers, icon: Users, color: 'text-blue-500' },
+    { label: t('admin.general.spaces'), value: stats?.totalSpaces, icon: BarChart3, color: 'text-green-500' },
+    { label: t('admin.general.pages'), value: stats?.totalPages, icon: Activity, color: 'text-purple-500' },
+    { label: t('admin.general.comments'), value: stats?.totalComments, icon: MessageSquare, color: 'text-orange-500' },
   ];
 
   return (
     <div>
       <div className="mb-8 flex items-center gap-3">
         <Settings className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold">General Settings</h1>
+        <h1 className="text-2xl font-bold">{t('admin.general.title')}</h1>
       </div>
 
       {/* Stats */}
@@ -64,7 +66,7 @@ export default function AdminGeneralPage() {
       {/* Site Settings */}
       <Card>
         <CardHeader>
-          <CardTitle>Site Configuration</CardTitle>
+          <CardTitle>{t('admin.general.siteConfig')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {settingsLoading ? (
@@ -75,7 +77,7 @@ export default function AdminGeneralPage() {
           ) : (
             <>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Site Name</label>
+                <label className="text-sm font-medium mb-1.5 block">{t('admin.general.siteName')}</label>
                 <Input
                   value={siteName}
                   onChange={(e) => setSiteName(e.target.value)}
@@ -83,7 +85,7 @@ export default function AdminGeneralPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Site Description</label>
+                <label className="text-sm font-medium mb-1.5 block">{t('admin.general.siteDescription')}</label>
                 <Input
                   value={siteDescription}
                   onChange={(e) => setSiteDescription(e.target.value)}
@@ -94,7 +96,7 @@ export default function AdminGeneralPage() {
                 onClick={() => updateSettings.mutate({ siteName, siteDescription })}
                 disabled={updateSettings.isPending}
               >
-                {updateSettings.isPending ? 'Saving...' : 'Save Settings'}
+                {updateSettings.isPending ? t('common.saving') : t('admin.general.saveSettings')}
               </Button>
             </>
           )}

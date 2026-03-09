@@ -4,8 +4,10 @@ import { Mail, CheckCircle2, XCircle, Send } from 'lucide-react';
 import { useEmailStatus, useTestEmail } from '@/hooks/useAdmin';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AdminEmailPage() {
+  const { t, locale } = useTranslation();
   const { data: emailStatus, isLoading } = useEmailStatus();
   const testEmail = useTestEmail();
 
@@ -13,14 +15,14 @@ export default function AdminEmailPage() {
     <div>
       <div className="mb-8 flex items-center gap-3">
         <Mail className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold">Email Configuration</h1>
+        <h1 className="text-2xl font-bold">{t('admin.email.title')}</h1>
       </div>
 
       <div className="space-y-6">
         {/* SMTP Status */}
         <Card>
           <CardContent className="pt-6">
-            <h2 className="mb-4 text-lg font-semibold">SMTP Status</h2>
+            <h2 className="mb-4 text-lg font-semibold">{t('admin.email.smtpStatus')}</h2>
             {isLoading ? (
               <div className="space-y-3">
                 <div className="h-12 animate-pulse rounded bg-muted" />
@@ -36,12 +38,12 @@ export default function AdminEmailPage() {
                   )}
                   <div>
                     <p className="font-medium">
-                      {emailStatus.configured ? 'SMTP Configured' : 'SMTP Not Configured'}
+                      {emailStatus.configured ? t('admin.email.smtpConfigured') : t('admin.email.smtpNotConfigured')}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {emailStatus.configured
-                        ? 'Email service is ready to send messages.'
-                        : 'Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS environment variables.'}
+                        ? t('admin.email.smtpReady')
+                        : t('admin.email.smtpSetup')}
                     </p>
                   </div>
                 </div>
@@ -50,15 +52,15 @@ export default function AdminEmailPage() {
                   <div className="rounded-lg border border-border p-4">
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                       <div>
-                        <p className="text-xs font-medium text-muted-foreground">Host</p>
+                        <p className="text-xs font-medium text-muted-foreground">{t('admin.email.host')}</p>
                         <p className="text-sm font-mono">{emailStatus.host || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs font-medium text-muted-foreground">Port</p>
+                        <p className="text-xs font-medium text-muted-foreground">{t('admin.email.port')}</p>
                         <p className="text-sm font-mono">{emailStatus.port || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs font-medium text-muted-foreground">From</p>
+                        <p className="text-xs font-medium text-muted-foreground">{t('admin.email.from')}</p>
                         <p className="text-sm font-mono">{emailStatus.from || '—'}</p>
                       </div>
                     </div>
@@ -66,7 +68,7 @@ export default function AdminEmailPage() {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Unable to load email status.</p>
+              <p className="text-sm text-muted-foreground">{t('admin.email.unableToLoad')}</p>
             )}
           </CardContent>
         </Card>
@@ -74,9 +76,9 @@ export default function AdminEmailPage() {
         {/* Test Email */}
         <Card>
           <CardContent className="pt-6">
-            <h2 className="mb-2 text-lg font-semibold">Send Test Email</h2>
+            <h2 className="mb-2 text-lg font-semibold">{t('admin.email.sendTestEmail')}</h2>
             <p className="mb-4 text-sm text-muted-foreground">
-              Send a test email to your admin email address to verify the SMTP configuration.
+              {t('admin.email.testEmailDescription')}
             </p>
             <Button
               onClick={() => testEmail.mutate()}
@@ -84,7 +86,7 @@ export default function AdminEmailPage() {
               className="gap-2"
             >
               <Send className="h-4 w-4" />
-              {testEmail.isPending ? 'Sending...' : 'Send Test Email'}
+              {testEmail.isPending ? t('common.sending') : t('admin.email.sendTestEmail')}
             </Button>
           </CardContent>
         </Card>

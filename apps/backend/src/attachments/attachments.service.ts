@@ -105,4 +105,25 @@ export class AttachmentsService implements OnModuleInit {
 
     return { url, filename: attachment.filename, mimeType: attachment.mimeType };
   }
+
+  /**
+   * Stream file content directly from S3.
+   * Returns the S3 response body (readable stream), content type, and filename.
+   * This is used for permanent URLs that don't expire (unlike signed URLs).
+   */
+  async getFileStream(id: string) {
+    const attachment = await this.prisma.attachment.findUnique({ where: { id } });
+    if (!attachment) throw new NotFoundException('Attachment not found');
+
+    const response = await this.s3.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: attachment.storageKey }),
+    );
+
+    return {
+      stream: response.Body,
+      mimeType: attachment.mimeType,
+      filename: attachment.filename,
+      size: attachment.size,
+    };
+  }
 }

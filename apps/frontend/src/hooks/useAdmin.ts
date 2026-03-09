@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import type { User } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 // ─── Interfaces ──────────────────────────────────────────
 
@@ -105,6 +106,7 @@ export function useAdminUsers(
 
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
       const { data } = await api.patch(`/admin/users/${userId}/role`, { role });
@@ -112,14 +114,15 @@ export function useUpdateUserRole() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      toast.success('User role updated');
+      toast.success(t('toasts.userRoleUpdated'));
     },
-    onError: () => toast.error('Failed to update user role'),
+    onError: () => toast.error(t('toasts.userRoleUpdateFailed')),
   });
 }
 
 export function useDeleteUser() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (userId: string) => {
       const { data } = await api.delete(`/admin/users/${userId}`);
@@ -128,14 +131,15 @@ export function useDeleteUser() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
-      toast.success('User deleted');
+      toast.success(t('toasts.userDeleted'));
     },
-    onError: () => toast.error('Failed to delete user'),
+    onError: () => toast.error(t('toasts.userDeleteFailed')),
   });
 }
 
 export function useSuspendUser() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (userId: string) => {
       const { data } = await api.patch(`/admin/users/${userId}/suspend`);
@@ -143,14 +147,15 @@ export function useSuspendUser() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      toast.success('User suspended');
+      toast.success(t('toasts.userSuspended'));
     },
-    onError: () => toast.error('Failed to suspend user'),
+    onError: () => toast.error(t('toasts.userSuspendFailed')),
   });
 }
 
 export function useActivateUser() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (userId: string) => {
       const { data } = await api.patch(`/admin/users/${userId}/activate`);
@@ -158,14 +163,15 @@ export function useActivateUser() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      toast.success('User activated');
+      toast.success(t('toasts.userActivated'));
     },
-    onError: () => toast.error('Failed to activate user'),
+    onError: () => toast.error(t('toasts.userActivateFailed')),
   });
 }
 
 export function useInviteUser() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (dto: { email: string; role?: string; name?: string }) => {
       const { data } = await api.post('/admin/users/invite', dto);
@@ -174,16 +180,17 @@ export function useInviteUser() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
-      toast.success('Invitation sent');
+      toast.success(t('toasts.invitationSent'));
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message || 'Failed to invite user');
+      toast.error(err?.response?.data?.message || t('toasts.inviteFailed'));
     },
   });
 }
 
 export function useBulkInvite() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (dto: { emails: string[]; role?: string }) => {
       const { data } = await api.post('/admin/users/invite/bulk', dto);
@@ -192,9 +199,9 @@ export function useBulkInvite() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
-      toast.success('Bulk invitations sent');
+      toast.success(t('toasts.bulkInvitesSent'));
     },
-    onError: () => toast.error('Failed to send invitations'),
+    onError: () => toast.error(t('toasts.bulkInviteFailed')),
   });
 }
 
@@ -242,6 +249,7 @@ export function useAdminSpaces(skip = 0, take = 20) {
 
 export function useDeleteAdminSpace() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (spaceId: string) => {
       const { data } = await api.delete(`/admin/spaces/${spaceId}`);
@@ -250,9 +258,9 @@ export function useDeleteAdminSpace() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'spaces'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
-      toast.success('Space deleted');
+      toast.success(t('toasts.spaceDeleted'));
     },
-    onError: () => toast.error('Failed to delete space'),
+    onError: () => toast.error(t('toasts.spaceDeleteFailed')),
   });
 }
 
@@ -269,6 +277,7 @@ export function useEmailStatus() {
 }
 
 export function useTestEmail() {
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async () => {
       const { data } = await api.post('/admin/email/test');
@@ -278,7 +287,7 @@ export function useTestEmail() {
       if (data.success) toast.success(data.message);
       else toast.error(data.message);
     },
-    onError: () => toast.error('Failed to send test email'),
+    onError: () => toast.error(t('toasts.testEmailFailed')),
   });
 }
 
@@ -296,6 +305,7 @@ export function useAdminWebhooks(skip = 0, take = 20) {
 
 export function useToggleWebhook() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
       const { data } = await api.patch(`/admin/webhooks/${id}`, { active });
@@ -303,8 +313,8 @@ export function useToggleWebhook() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'webhooks'] });
-      toast.success('Webhook updated');
+      toast.success(t('toasts.webhookUpdated'));
     },
-    onError: () => toast.error('Failed to update webhook'),
+    onError: () => toast.error(t('toasts.webhookUpdateFailed')),
   });
 }

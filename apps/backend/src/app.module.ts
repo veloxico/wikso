@@ -17,6 +17,9 @@ import { MailModule } from './mail/mail.module';
 import { SetupModule } from './setup/setup.module';
 import { RedisModule } from './redis/redis.module';
 import { SettingsModule } from './settings/settings.module';
+import { RecentPagesModule } from './recent-pages/recent-pages.module';
+import { FavoritesModule } from './favorites/favorites.module';
+import { TemplatesModule } from './templates/templates.module';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 
 @Module({
@@ -38,6 +41,9 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     MailModule,
     SetupModule,
     SettingsModule,
+    RecentPagesModule,
+    FavoritesModule,
+    TemplatesModule,
   ],
   providers: [
     {

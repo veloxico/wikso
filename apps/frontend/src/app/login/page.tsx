@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,13 +14,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { AuthFooter } from '@/components/features/AuthFooter';
+import { useTranslation } from '@/hooks/useTranslation';
+import { LanguageSwitcher } from '@/components/features/LanguageSwitcher';
 
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-});
+function createLoginSchema(t: (key: string) => string) {
+  return z.object({
+    email: z.string().email(t('validation.emailInvalid')),
+    password: z.string().min(6, t('validation.passwordMin6')),
+  });
+}
 
-type LoginValues = z.infer<typeof loginSchema>;
+type LoginValues = z.infer<ReturnType<typeof createLoginSchema>>;
 
 interface AuthProviders {
   github: boolean;
@@ -31,9 +35,12 @@ interface AuthProviders {
 export default function LoginPage() {
   const router = useRouter();
   const { setUser, setTokens } = useAuthStore();
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [providers, setProviders] = useState<AuthProviders | null>(null);
   const [registrationEnabled, setRegistrationEnabled] = useState<boolean>(true);
+
+  const loginSchema = useMemo(() => createLoginSchema(t), [t]);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -62,7 +69,7 @@ export default function LoginPage() {
       setUser(user);
       router.push('/spaces');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to login');
+      setError(err.response?.data?.message || t('auth.login.failed'));
     }
   };
 
@@ -71,19 +78,19 @@ export default function LoginPage() {
       <div className="flex flex-col items-center gap-6">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl">Welcome back</CardTitle>
-          <CardDescription>Enter your email below to login to your account.</CardDescription>
+          <CardTitle className="text-2xl">{t('auth.login.title')}</CardTitle>
+          <CardDescription>{t('auth.login.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('common.email')}</Label>
               <Input id="email" type="email" placeholder="m@example.com" {...register('email')} />
               {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('common.password')}</Label>
               <Input id="password" type="password" {...register('password')} />
               {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
             </div>
@@ -91,7 +98,7 @@ export default function LoginPage() {
             {error && <p className="text-sm text-red-500">{error}</p>}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Logging in...' : 'Login'}
+              {isSubmitting ? t('auth.login.loggingIn') : t('auth.login.button')}
             </Button>
           </form>
         </CardContent>
@@ -99,7 +106,7 @@ export default function LoginPage() {
           {hasOAuth && (
             <>
               <div className="relative w-full text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:-translate-y-1/2 after:border-t after:border-gray-200 dark:after:border-gray-800">
-                <span className="relative z-10 bg-white px-2 text-gray-500 dark:bg-zinc-950 dark:text-gray-400">Or continue with</span>
+                <span className="relative z-10 bg-white px-2 text-gray-500 dark:bg-zinc-950 dark:text-gray-400">{t('common.orContinueWith')}</span>
               </div>
               <div className="grid w-full gap-2" style={{ gridTemplateColumns: `repeat(${[providers.github, providers.google, providers.saml].filter(Boolean).length}, 1fr)` }}>
                 {providers.github && (
@@ -133,17 +140,18 @@ export default function LoginPage() {
             </>
           )}
           <div className="flex flex-col items-center gap-2 text-sm text-gray-500">
-            <Link href="/forgot-password" className="hover:text-foreground underline">Forgot password?</Link>
+            <Link href="/forgot-password" className="hover:text-foreground underline">{t('auth.login.forgotPassword')}</Link>
             {registrationEnabled && (
               <p>
-                Don&apos;t have an account?{' '}
-                <Link href="/register" className="font-medium text-black dark:text-white underline">Sign up</Link>
+                {t('auth.login.noAccount')}{' '}
+                <Link href="/register" className="font-medium text-black dark:text-white underline">{t('auth.login.signUp')}</Link>
               </p>
             )}
           </div>
         </CardFooter>
       </Card>
       <AuthFooter />
+      <LanguageSwitcher compact />
       </div>
     </div>
   );

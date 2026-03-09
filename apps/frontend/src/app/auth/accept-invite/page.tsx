@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,30 +21,37 @@ import {
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { AuthFooter } from '@/components/features/AuthFooter';
+import { useTranslation } from '@/hooks/useTranslation';
+import { LanguageSwitcher } from '@/components/features/LanguageSwitcher';
 
-const acceptInviteSchema = z
-  .object({
-    name: z.string().min(2, 'Name must be at least 2 characters'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  });
+function createAcceptInviteSchema(t: (key: string) => string) {
+  return z
+    .object({
+      name: z.string().min(2, t('validation.nameMin2')),
+      password: z.string().min(6, t('validation.passwordMin6')),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('validation.passwordsDoNotMatch'),
+      path: ['confirmPassword'],
+    });
+}
 
-type AcceptInviteValues = z.infer<typeof acceptInviteSchema>;
+type AcceptInviteValues = z.infer<ReturnType<typeof createAcceptInviteSchema>>;
 
 function AcceptInviteForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const { setUser, setTokens } = useAuthStore();
+  const { t } = useTranslation();
 
   const [error, setError] = useState<string | null>(null);
   const [inviteData, setInviteData] = useState<{ email: string; name?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [invalid, setInvalid] = useState(false);
+
+  const acceptInviteSchema = useMemo(() => createAcceptInviteSchema(t), [t]);
 
   const {
     register,
@@ -92,7 +99,7 @@ function AcceptInviteForm() {
       setUser(user);
       router.push('/spaces');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to accept invitation');
+      setError(err.response?.data?.message || t('auth.acceptInvite.failed'));
     }
   };
 
@@ -116,21 +123,21 @@ function AcceptInviteForm() {
       <div className="flex flex-col items-center gap-6">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-2xl">Invalid Invitation</CardTitle>
+            <CardTitle className="text-2xl">{t('auth.acceptInvite.invalidTitle')}</CardTitle>
             <CardDescription>
-              This invitation link is invalid or has expired. Please contact your administrator for
-              a new invitation.
+              {t('auth.acceptInvite.invalidDescription')}
             </CardDescription>
           </CardHeader>
           <CardFooter>
             <Link href="/login" className="w-full">
               <Button variant="outline" className="w-full">
-                Go to Login
+                {t('auth.acceptInvite.goToLogin')}
               </Button>
             </Link>
           </CardFooter>
         </Card>
         <AuthFooter />
+        <LanguageSwitcher compact />
       </div>
     );
   }
@@ -139,28 +146,26 @@ function AcceptInviteForm() {
     <div className="flex flex-col items-center gap-6">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl">Accept Invitation</CardTitle>
+          <CardTitle className="text-2xl">{t('auth.acceptInvite.title')}</CardTitle>
           <CardDescription>
-            You&apos;ve been invited to join Dokka as{' '}
-            <span className="font-medium text-foreground">{inviteData?.email}</span>. Set up your
-            account below.
+            {t('auth.acceptInvite.description', { email: inviteData?.email || '' })}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">{t('common.name')}</Label>
               <Input id="name" placeholder="John Doe" {...register('name')} />
               {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('common.email')}</Label>
               <Input id="email" type="email" value={inviteData?.email || ''} disabled />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('common.password')}</Label>
               <Input id="password" type="password" {...register('password')} />
               {errors.password && (
                 <p className="text-sm text-red-500">{errors.password.message}</p>
@@ -168,7 +173,7 @@ function AcceptInviteForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">{t('auth.acceptInvite.confirmPassword')}</Label>
               <Input id="confirmPassword" type="password" {...register('confirmPassword')} />
               {errors.confirmPassword && (
                 <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
@@ -178,20 +183,21 @@ function AcceptInviteForm() {
             {error && <p className="text-sm text-red-500">{error}</p>}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Setting up...' : 'Create Account'}
+              {isSubmitting ? t('auth.acceptInvite.settingUp') : t('auth.acceptInvite.button')}
             </Button>
           </form>
         </CardContent>
         <CardFooter>
           <p className="text-center text-sm text-gray-500 w-full">
-            Already have an account?{' '}
+            {t('auth.register.hasAccount')}{' '}
             <Link href="/login" className="font-medium text-black dark:text-white underline">
-              Sign in
+              {t('auth.register.signIn')}
             </Link>
           </p>
         </CardFooter>
       </Card>
       <AuthFooter />
+      <LanguageSwitcher compact />
     </div>
   );
 }

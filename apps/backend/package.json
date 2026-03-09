@@ -18,6 +18,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e:docker": "dotenv -e test/.env.test -- jest --config ./test/jest-e2e.json --runInBand",
+    "test:docker": "dotenv -e test/.env.test -- jest --runInBand",
+    "test:all:docker": "dotenv -e test/.env.test -- jest --runInBand && dotenv -e test/.env.test -- jest --config ./test/jest-e2e.json --runInBand",
     "seed:admin": "ts-node src/seed-admin.ts"
   },
   "dependencies": {
@@ -71,6 +74,8 @@
     "@types/passport-local": "^1.0.38",
     "@types/supertest": "^6.0.2",
     "@types/uuid": "^10.0.0",
+    "dotenv": "^17.3.1",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

@@ -3,22 +3,23 @@
 import { Key, CheckCircle2, XCircle } from 'lucide-react';
 import { useAuthProviders, type AuthProviderInfo } from '@/hooks/useAdmin';
 import { Card, CardContent } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AdminAuthPage() {
+  const { t, locale } = useTranslation();
   const { data: authProviders, isLoading } = useAuthProviders();
 
   return (
     <div>
       <div className="mb-8 flex items-center gap-3">
         <Key className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold">Auth Providers</h1>
+        <h1 className="text-2xl font-bold">{t('admin.authProviders.title')}</h1>
       </div>
 
       <Card>
         <CardContent className="pt-6">
           <p className="mb-6 text-sm text-muted-foreground">
-            Provider credentials are configured via environment variables. This panel shows the
-            current configuration status.
+            {t('admin.authProviders.description')}
           </p>
 
           {isLoading ? (
@@ -52,12 +53,12 @@ export default function AdminAuthPage() {
                               : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
                           }`}
                         >
-                          {provider.enabled ? 'Enabled' : 'Not Configured'}
+                          {provider.enabled ? t('common.enabled') : t('common.notConfigured')}
                         </span>
                       </div>
                       {provider.callbackUrl && provider.callbackUrl !== 'Not configured' && (
                         <p className="text-xs text-muted-foreground truncate">
-                          Callback:{' '}
+                          {t('admin.authProviders.callback')}{' '}
                           <code className="bg-muted px-1 py-0.5 rounded">
                             {provider.callbackUrl}
                           </code>
@@ -65,13 +66,13 @@ export default function AdminAuthPage() {
                       )}
                       {provider.issuer && provider.issuer !== 'Not configured' && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Issuer:{' '}
+                          {t('admin.authProviders.issuer')}{' '}
                           <code className="bg-muted px-1 py-0.5 rounded">{provider.issuer}</code>
                         </p>
                       )}
                       {provider.certConfigured !== undefined && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Certificate: {provider.certConfigured ? '✓ Configured' : '✗ Missing'}
+                          {t('admin.authProviders.certificate')} {provider.certConfigured ? t('common.configured') : t('common.missing')}
                         </p>
                       )}
                     </div>
@@ -80,7 +81,7 @@ export default function AdminAuthPage() {
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Unable to load provider status.</p>
+            <p className="text-sm text-muted-foreground">{t('admin.authProviders.unableToLoad')}</p>
           )}
         </CardContent>
       </Card>

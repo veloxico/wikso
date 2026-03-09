@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import type { Page } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export function usePages(slug: string) {
   return useQuery<Page[]>({
@@ -34,6 +35,7 @@ interface CreatePageInput {
 
 export function useCreatePage(slug: string) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (input: CreatePageInput) => {
       const { data } = await api.post(`/spaces/${slug}/pages`, input);
@@ -41,10 +43,10 @@ export function useCreatePage(slug: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pages', slug] });
-      toast.success('Page created');
+      toast.success(t('toasts.pageCreated'));
     },
     onError: () => {
-      toast.error('Failed to create page');
+      toast.error(t('toasts.pageCreateFailed'));
     },
   });
 }
@@ -71,6 +73,7 @@ export function useUpdatePage(slug: string, pageId: string) {
 
 export function useDeletePage(slug: string) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: async (pageId: string) => {
       const { data } = await api.delete(`/spaces/${slug}/pages/${pageId}`);
@@ -78,10 +81,10 @@ export function useDeletePage(slug: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pages', slug] });
-      toast.success('Page deleted');
+      toast.success(t('toasts.pageDeleted'));
     },
     onError: () => {
-      toast.error('Failed to delete page');
+      toast.error(t('toasts.pageDeleteFailed'));
     },
   });
 }

@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface AddMemberDialogProps {
   slug: string;
@@ -33,6 +34,7 @@ export function AddMemberDialog({ slug }: AddMemberDialogProps) {
   const [role, setRole] = useState('EDITOR');
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   const addMember = useMutation({
     mutationFn: async () => {
@@ -46,7 +48,7 @@ export function AddMemberDialog({ slug }: AddMemberDialogProps) {
       setError(null);
     },
     onError: (err: any) => {
-      setError(err.response?.data?.message || 'Failed to add member');
+      setError(err.response?.data?.message || t('addMember.failedToAdd'));
     },
   });
 
@@ -55,35 +57,35 @@ export function AddMemberDialog({ slug }: AddMemberDialogProps) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <UserPlus className="h-4 w-4" />
-          Add Member
+          {t('addMember.title')}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Member</DialogTitle>
-          <DialogDescription>Add a user to this space with a specific role.</DialogDescription>
+          <DialogTitle>{t('addMember.title')}</DialogTitle>
+          <DialogDescription>{t('addMember.description')}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="userId">User ID or Email</Label>
+            <Label htmlFor="userId">{t('addMember.userIdLabel')}</Label>
             <Input
               id="userId"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
-              placeholder="Enter user ID or email"
+              placeholder={t('addMember.userIdPlaceholder')}
             />
           </div>
           <div className="space-y-2">
-            <Label>Role</Label>
+            <Label>{t('addMember.roleLabel')}</Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-                <SelectItem value="EDITOR">Editor</SelectItem>
-                <SelectItem value="VIEWER">Viewer</SelectItem>
-                <SelectItem value="GUEST">Guest</SelectItem>
+                <SelectItem value="ADMIN">{t('roles.admin')}</SelectItem>
+                <SelectItem value="EDITOR">{t('roles.editor')}</SelectItem>
+                <SelectItem value="VIEWER">{t('roles.viewer')}</SelectItem>
+                <SelectItem value="GUEST">{t('common.guest')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -91,12 +93,12 @@ export function AddMemberDialog({ slug }: AddMemberDialogProps) {
           {error && <p className="text-sm text-red-500">{error}</p>}
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t('common.cancel')}</Button>
             <Button
               onClick={() => addMember.mutate()}
               disabled={!userId.trim() || addMember.isPending}
             >
-              {addMember.isPending ? 'Adding...' : 'Add Member'}
+              {addMember.isPending ? t('addMember.adding') : t('addMember.button')}
             </Button>
           </div>
         </div>
