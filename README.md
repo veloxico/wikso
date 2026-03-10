@@ -2,6 +2,9 @@
 
 **Wikso** — open-source, self-hosted alternative to Confluence. Real-time collaborative editing, page trees, spaces, full-text search, version history, and more.
 
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/veloxico?style=flat&logo=githubsponsors&label=Sponsor)](https://github.com/sponsors/veloxico)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?style=flat&logo=buymeacoffee)](https://buymeacoffee.com/veloxico)
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -234,6 +237,18 @@ pnpm dev:backend      # Start only backend
 pnpm dev:frontend     # Start only frontend
 pnpm format           # Format code with Prettier
 ```
+
+## Support the Project
+
+If you find Wikso useful, consider supporting its development:
+
+| Network | Address |
+|---------|---------|
+| **BTC** | `bc1qt5zu44m43f2ca07tedwgund0dxhtpcqkl92afz` |
+| **ETH** | `0xaAbcc0B714742525BB97d0594bc4d1DD90Ef5601` |
+| **USDT (TRC-20)** | `TAhDQw64uCDdCXKLUmfyjAe1comFPVDj99` |
+| **USDT (ERC-20)** | `0xaAbcc0B714742525BB97d0594bc4d1DD90Ef5601` |
+| **TON** | `UQA5Z9Lasm_Ke61wYLSuXy7wQnrX7Pefd4RNbDyzBWY9VFjj` |
 
 ## License
 
