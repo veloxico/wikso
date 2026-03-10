@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, Optional } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException, Optional } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
@@ -53,9 +53,10 @@ export class WebhooksService {
     return this.prisma.webhook.findMany({ where: { userId } });
   }
 
-  async delete(id: string) {
+  async delete(id: string, userId: string) {
     const webhook = await this.prisma.webhook.findUnique({ where: { id } });
     if (!webhook) throw new NotFoundException('Webhook not found');
+    if (webhook.userId !== userId) throw new ForbiddenException('You can only delete your own webhooks');
     await this.prisma.webhook.delete({ where: { id } });
     return { message: 'Webhook deleted' };
   }

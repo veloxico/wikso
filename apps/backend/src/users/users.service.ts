@@ -20,7 +20,7 @@ export class UsersService {
   private bucket: string;
 
   constructor(private prisma: PrismaService) {
-    this.bucket = process.env.MINIO_BUCKET || process.env.S3_BUCKET || 'dokka-uploads';
+    this.bucket = process.env.MINIO_BUCKET || process.env.S3_BUCKET || 'wikso-uploads';
 
     const useSsl = process.env.MINIO_USE_SSL === 'true' || process.env.S3_USE_SSL === 'true';
     const rawEndpoint = process.env.MINIO_ENDPOINT || process.env.S3_ENDPOINT;
@@ -88,7 +88,7 @@ export class UsersService {
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      select: { id: true, email: true, name: true, avatarUrl: true, role: true, createdAt: true },
+      select: { id: true, email: true, name: true, avatarUrl: true, role: true, status: true, locale: true, timezone: true, createdAt: true },
     });
     if (!user) throw new NotFoundException('User not found');
     return user;
@@ -98,7 +98,7 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data: dto,
-      select: { id: true, email: true, name: true, avatarUrl: true, role: true, createdAt: true },
+      select: { id: true, email: true, name: true, avatarUrl: true, role: true, locale: true, timezone: true, createdAt: true },
     });
   }
 
@@ -147,18 +147,10 @@ export class UsersService {
     const ext = file.originalname.split('.').pop() || 'jpg';
     const storageKey = `avatars/${userId}/${uuid()}.${ext}`;
 
-    // Delete previous avatar from S3 if exists
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (user?.avatarStorageKey) {
-      try {
-        await this.s3.send(
-          new DeleteObjectCommand({ Bucket: this.bucket, Key: user.avatarStorageKey }),
-        );
-      } catch {
-        // Non-critical — old file cleanup failed, continue
-      }
-    }
+    const oldKey = user?.avatarStorageKey;
 
+    // Upload NEW avatar first (so we never lose both old and new)
     await this.s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,
@@ -169,12 +161,23 @@ export class UsersService {
     );
 
     // Store permanent proxy URL as avatarUrl
-    const avatarUrl = `/api/users/${userId}/avatar?v=${Date.now()}`;
+    const avatarUrl = `/api/v1/users/${userId}/avatar?v=${Date.now()}`;
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { avatarUrl, avatarStorageKey: storageKey },
-      select: { id: true, email: true, name: true, avatarUrl: true, role: true, createdAt: true },
+      select: { id: true, email: true, name: true, avatarUrl: true, role: true, locale: true, timezone: true, createdAt: true },
     });
+
+    // Delete OLD avatar from S3 after DB is updated (non-critical cleanup)
+    if (oldKey) {
+      try {
+        await this.s3.send(
+          new DeleteObjectCommand({ Bucket: this.bucket, Key: oldKey }),
+        );
+      } catch {
+        // Non-critical — old file cleanup failed
+      }
+    }
 
     return updated;
   }

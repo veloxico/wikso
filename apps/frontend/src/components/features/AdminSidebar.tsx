@@ -12,6 +12,7 @@ import {
   Key,
   Mail,
   Webhook,
+  Upload,
   ArrowLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -32,6 +33,7 @@ export function AdminSidebar() {
     { href: '/admin/auth', labelKey: 'admin.nav.authProviders', icon: Key },
     { href: '/admin/email', labelKey: 'admin.nav.email', icon: Mail },
     { href: '/admin/webhooks', labelKey: 'admin.nav.webhooks', icon: Webhook },
+    { href: '/admin/import', labelKey: 'admin.nav.import', icon: Upload },
   ];
 
   return (
@@ -42,7 +44,7 @@ export function AdminSidebar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
             D
           </div>
-          <span className="text-lg font-semibold">Dokka</span>
+          <span className="text-lg font-semibold">Wikso</span>
         </Link>
       </div>
 

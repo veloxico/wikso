@@ -26,7 +26,7 @@ export class WebhooksController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete webhook' })
-  remove(@Param('id') id: string) {
-    return this.webhooksService.delete(id);
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.webhooksService.delete(id, user.id);
   }
 }

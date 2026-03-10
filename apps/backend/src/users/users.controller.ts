@@ -9,6 +9,7 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -45,7 +46,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Change password' })
   async changePassword(
     @CurrentUser() user: any,
-    @Body() body: { currentPassword: string; newPassword: string },
+    @Body() body: ChangePasswordDto,
   ) {
     const dbUser = await this.prisma.user.findUnique({ where: { id: user.id } });
     if (!dbUser?.passwordHash) throw new BadRequestException('Account has no password set');

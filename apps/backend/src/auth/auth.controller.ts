@@ -11,6 +11,7 @@ import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { AcceptInviteDto } from './dto/accept-invite.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -96,7 +97,7 @@ export class AuthController {
 
   @Post('accept-invite')
   @ApiOperation({ summary: 'Accept invitation and set password' })
-  acceptInvite(@Body() body: { token: string; name: string; password: string }) {
+  acceptInvite(@Body() body: AcceptInviteDto) {
     return this.authService.acceptInvite(body.token, body.name, body.password);
   }
 

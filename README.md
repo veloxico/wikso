@@ -1,6 +1,6 @@
-# Dokka
+# Wikso
 
-**Dokka** — open-source wiki-platform inspired by Confluence. Real-time collaborative editing, page trees, spaces, full-text search, version history, and more.
+**Wikso** — open-source wiki-platform inspired by Confluence. Real-time collaborative editing, page trees, spaces, full-text search, version history, and more.
 
 ## Tech Stack
 
@@ -40,7 +40,7 @@
 
 ## Quick Start (Docker)
 
-The fastest way to run Dokka — a single command, no build required. Pre-built images are pulled from Docker Hub. Works on **Linux**, **macOS**, and **Windows (WSL2)**.
+The fastest way to run Wikso — a single command, no build required. Pre-built images are pulled from Docker Hub. Works on **Linux**, **macOS**, and **Windows (WSL2)**.
 
 ### Requirements
 
@@ -49,18 +49,18 @@ The fastest way to run Dokka — a single command, no build required. Pre-built 
 ### Launch
 
 ```bash
-git clone <your-repo-url> && cd confluence
+git clone <your-repo-url> && cd wikso
 docker compose up -d
 ```
 
-That's it. Docker Compose pulls pre-built images from Docker Hub (`veloxico/dokka-be`, `veloxico/dokka-fe`) and starts all 6 services with health-check ordering. No local build, no Node.js, no pnpm required.
+That's it. Docker Compose pulls pre-built images from Docker Hub (`veloxico/wikso-be`, `veloxico/wikso-fe`) and starts all 6 services with health-check ordering. No local build, no Node.js, no pnpm required.
 
 ### Docker Hub Images
 
 | Image | Description |
 |-------|-------------|
-| [`veloxico/dokka-be`](https://hub.docker.com/r/veloxico/dokka-be) | Backend — NestJS API + Hocuspocus WS |
-| [`veloxico/dokka-fe`](https://hub.docker.com/r/veloxico/dokka-fe) | Frontend — Next.js application |
+| [`veloxico/wikso-be`](https://hub.docker.com/r/veloxico/wikso-be) | Backend — NestJS API + Hocuspocus WS |
+| [`veloxico/wikso-fe`](https://hub.docker.com/r/veloxico/wikso-fe) | Frontend — Next.js application |
 
 ### Service URLs
 
@@ -76,7 +76,7 @@ That's it. Docker Compose pulls pre-built images from Docker Hub (`veloxico/dokk
 1. **PostgreSQL, Redis, MinIO, Meilisearch** start and pass health checks
 2. **Backend** image is pulled from Docker Hub (no local build)
 3. **Backend** runs Prisma migrations (`prisma migrate deploy`) on first boot
-4. **Backend** auto-creates the MinIO S3 bucket (`dokka-uploads`) if it doesn't exist
+4. **Backend** auto-creates the MinIO S3 bucket (`wikso-uploads`) if it doesn't exist
 5. **Frontend** image is pulled from Docker Hub and starts after the backend is healthy
 6. **Setup Wizard** — on first launch, open the frontend URL and you'll be guided through creating your admin account. No default credentials or manual seeding required.
 
@@ -118,7 +118,7 @@ pnpm install
 # Backend
 cp apps/backend/.env.example apps/backend/.env
 # Edit apps/backend/.env — update DATABASE_URL host from "postgres" to "localhost":
-#   DATABASE_URL="postgresql://postgres:password@localhost:5432/dokka"
+#   DATABASE_URL="postgresql://postgres:password@localhost:5432/wikso"
 # Also update S3_ENDPOINT, REDIS_HOST, MEILISEARCH_HOST to use localhost
 
 # Frontend
@@ -153,10 +153,10 @@ pnpm dev:frontend  # Frontend on http://localhost:3001
 docker compose build
 
 # Tag and push to Docker Hub
-docker tag confluence-backend veloxico/dokka-be:latest
-docker tag confluence-frontend veloxico/dokka-fe:latest
-docker push veloxico/dokka-be:latest
-docker push veloxico/dokka-fe:latest
+docker tag wikso-backend veloxico/wikso-be:latest
+docker tag wikso-frontend veloxico/wikso-fe:latest
+docker push veloxico/wikso-be:latest
+docker push veloxico/wikso-fe:latest
 ```
 
 ## Environment Variables
@@ -177,7 +177,7 @@ docker push veloxico/dokka-fe:latest
 | `S3_ENDPOINT` | S3/MinIO endpoint | `http://minio:9000` |
 | `S3_ACCESS_KEY` | S3 access key | `minioadmin` |
 | `S3_SECRET_KEY` | S3 secret key | `minioadmin` |
-| `S3_BUCKET` | S3 bucket name | `dokka-uploads` |
+| `S3_BUCKET` | S3 bucket name | `wikso-uploads` |
 | `MEILISEARCH_HOST` | Meilisearch URL | `http://meilisearch:7700` |
 | `MEILISEARCH_API_KEY` | Meilisearch API key | `masterKey` |
 | `HOCUSPOCUS_PORT` | WebSocket server port | `1234` |
@@ -195,7 +195,7 @@ docker push veloxico/dokka-fe:latest
 ## Project Structure
 
 ```
-confluence/
+wikso/
   apps/
     backend/           # NestJS API + Hocuspocus WS server
       src/

@@ -1,4 +1,4 @@
-# Confluence Backend — API Specification for Frontend
+# Wikso Backend — API Specification for Frontend
 
 **Base URL:** `https://veloxico.com/api` (после деплоя)  
 **Auth:** Bearer JWT в заголовке `Authorization: Bearer <token>`  

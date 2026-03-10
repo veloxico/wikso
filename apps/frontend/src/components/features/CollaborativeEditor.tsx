@@ -47,11 +47,48 @@ import { useAuthStore } from '@/store/authStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { api } from '@/lib/api';
 
+/**
+ * Normalize ProseMirror JSON node type names from snake_case (as
+ * produced by the Confluence converter) to the camelCase names
+ * expected by TipTap extensions (e.g. table_row → tableRow).
+ */
+const NODE_TYPE_MAP: Record<string, string> = {
+  bullet_list: 'bulletList',
+  code_block: 'codeBlock',
+  hard_break: 'hardBreak',
+  horizontal_rule: 'horizontalRule',
+  list_item: 'listItem',
+  ordered_list: 'orderedList',
+  table_row: 'tableRow',
+  table_cell: 'tableCell',
+  table_header: 'tableHeader',
+  task_list: 'taskList',
+  task_item: 'taskItem',
+};
+
+function normalizeNodeTypes(node: any): any {
+  if (!node || typeof node !== 'object') return node;
+  if (Array.isArray(node)) return node.map(normalizeNodeTypes);
+  const out: any = { ...node };
+  if (out.type && NODE_TYPE_MAP[out.type]) {
+    out.type = NODE_TYPE_MAP[out.type];
+  }
+  if (out.content) out.content = normalizeNodeTypes(out.content);
+  if (out.marks) out.marks = out.marks.map((m: any) => {
+    const nm: any = { ...m };
+    if (nm.type && NODE_TYPE_MAP[nm.type]) nm.type = NODE_TYPE_MAP[nm.type];
+    return nm;
+  });
+  return out;
+}
+
 interface CollaborativeEditorProps {
   pageId: string;
   spaceSlug?: string;
   editable?: boolean;
   onEditorReady?: (editor: any) => void;
+  /** Pre-loaded page content (avoids extra API call for imported pages). */
+  initialContent?: Record<string, unknown> | null;
 }
 
 const COLORS = ['#958DF1', '#F98181', '#FBBC88', '#FAF594', '#70CFF8', '#94FADB', '#B9F18D'];
@@ -72,7 +109,7 @@ function getRandomColor() {
 
 type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
-export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEditorReady }: CollaborativeEditorProps) {
+export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEditorReady, initialContent }: CollaborativeEditorProps) {
   const user = useAuthStore((s) => s.user);
   const { t } = useTranslation();
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
@@ -102,6 +139,8 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
     // preventing unhandled WebSocket promise rejections during teardown.
     let provider: HocuspocusProvider | null = null;
     let destroyed = false;
+    let syncedFlag = false;
+    let syncFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
     const timerId = setTimeout(() => {
       if (destroyed) return;
@@ -112,9 +151,28 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
         document: newDoc,
         token,
         autoConnect: false,
-        onConnect() { if (!destroyed) setStatus('connected'); },
+        onConnect() {
+          if (!destroyed) {
+            setStatus('connected');
+            // Fallback: if onSynced doesn't fire within 3 s (e.g. server
+            // returned null for a fresh/imported page), force synced state
+            // so the editor renders and can load contentJson.
+            syncFallbackTimer = setTimeout(() => {
+              if (!destroyed && !syncedFlag) {
+                syncedFlag = true;
+                setSynced(true);
+              }
+            }, 3000);
+          }
+        },
         onClose() { if (!destroyed) setStatus('disconnected'); },
-        onSynced() { if (!destroyed) setSynced(true); },
+        onSynced() {
+          if (!destroyed) {
+            syncedFlag = true;
+            setSynced(true);
+            if (syncFallbackTimer) { clearTimeout(syncFallbackTimer); syncFallbackTimer = null; }
+          }
+        },
       } as any);
 
       // Monkeypatch connect() to silently catch unhandled rejections.
@@ -139,6 +197,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
     return () => {
       destroyed = true;
       clearTimeout(timerId);
+      if (syncFallbackTimer) clearTimeout(syncFallbackTimer);
       if (provider) {
         provider.destroy();
       }
@@ -244,7 +303,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       ],
       editorProps: {
         attributes: {
-          class: 'dokka-editor prose prose-sm dark:prose-invert max-w-none min-h-[calc(100vh-280px)] focus:outline-none px-4 py-3',
+          class: 'wikso-editor prose prose-sm dark:prose-invert max-w-none min-h-[calc(100vh-280px)] focus:outline-none px-4 py-3',
         },
         handleDrop: (_view, event, _slice, moved) => {
           if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
@@ -277,6 +336,48 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
     },
     [ydoc, provider, synced],
   );
+
+  // After first sync, if the Y.Doc is empty (imported page with no yjsState),
+  // initialize the editor from the pre-loaded contentJson using setContent.
+  const contentLoadedRef = useRef(false);
+  useEffect(() => {
+    if (!editor || !synced || contentLoadedRef.current) return;
+    if (editor.isDestroyed) return;
+
+    const fragment = ydoc.getXmlFragment('default');
+    if (fragment.length > 0) {
+      contentLoadedRef.current = true;
+      return;
+    }
+
+    contentLoadedRef.current = true;
+
+    const loadContent = async () => {
+      try {
+        let json = initialContent;
+        if (!json) {
+          const { data } = await api.get(`/spaces/${spaceSlug}/pages/${pageId}`);
+          json = data?.contentJson ?? null;
+        }
+        if (json && editor && !editor.isDestroyed) {
+          const parsed = typeof json === 'string' ? JSON.parse(json) : json;
+          if (parsed?.content?.length > 0) {
+            const normalized = normalizeNodeTypes(parsed);
+            editor.commands.setContent(normalized);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load contentJson for fresh page:', err);
+      }
+    };
+
+    loadContent();
+  }, [editor, synced, ydoc, pageId, spaceSlug, initialContent]);
+
+  // Reset contentLoadedRef when page changes
+  useEffect(() => {
+    contentLoadedRef.current = false;
+  }, [pageId]);
 
   // Sync editable state via useEffect (avoids flushSync-during-render error)
   useEffect(() => {

@@ -128,7 +128,7 @@ export function useSpaceMembers(slug: string) {
     queryKey: ['spaces', slug, 'members'],
     queryFn: async () => {
       const { data } = await api.get(`/spaces/${slug}/members`);
-      return data;
+      return Array.isArray(data) ? data : data?.data ?? [];
     },
     enabled: !!slug,
   });

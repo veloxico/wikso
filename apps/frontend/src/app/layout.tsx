@@ -6,17 +6,17 @@ import { Providers } from '@/lib/providers';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
 });
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
 });
 
 export const metadata: Metadata = {
-  title: 'Dokka',
-  description: 'Dokka — modern wiki & knowledge base',
+  title: 'Wikso',
+  description: 'Wikso — modern wiki & knowledge base',
 };
 
 export default function RootLayout({

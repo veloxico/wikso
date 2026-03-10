@@ -23,7 +23,7 @@ export function useRecentPages() {
     queryKey: ['recentPages'],
     queryFn: async () => {
       const { data } = await api.get('/recent-pages');
-      return data;
+      return Array.isArray(data) ? data : data?.data ?? [];
     },
   });
 }

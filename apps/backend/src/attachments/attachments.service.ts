@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import {
@@ -96,9 +96,12 @@ export class AttachmentsService implements OnModuleInit {
     return this.prisma.attachment.findMany({ where: { pageId } });
   }
 
-  async delete(id: string) {
+  async delete(id: string, userId: string) {
     const attachment = await this.prisma.attachment.findUnique({ where: { id } });
     if (!attachment) throw new NotFoundException('Attachment not found');
+    if (attachment.uploaderId !== userId) {
+      throw new ForbiddenException('You can only delete your own attachments');
+    }
 
     await this.s3.send(
       new DeleteObjectCommand({ Bucket: this.bucket, Key: attachment.storageKey }),

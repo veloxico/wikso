@@ -310,6 +310,7 @@ export default function PageEditorPage() {
           spaceSlug={slug}
           editable={isEditing}
           onEditorReady={handleEditorReady}
+          initialContent={page?.contentJson as Record<string, unknown> | null}
         />
 
         {/* Comments (collapsible) */}

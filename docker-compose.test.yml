@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: testpassword
-      POSTGRES_DB: dokka_test
+      POSTGRES_DB: wikso_test
     ports:
       - '5433:5432'
     tmpfs:

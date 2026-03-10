@@ -16,7 +16,7 @@ export class SetupAdminDto {
   @MinLength(8)
   password: string;
 
-  @ApiPropertyOptional({ example: 'My Confluence', description: 'Instance name (optional)' })
+  @ApiPropertyOptional({ example: 'My Wikso', description: 'Instance name (optional)' })
   @IsOptional()
   @IsString()
   instanceName?: string;

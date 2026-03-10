@@ -9,7 +9,8 @@ export function useComments(pageId: string) {
     queryKey: ['comments', pageId],
     queryFn: async () => {
       const { data } = await api.get(`/pages/${pageId}/comments`);
-      return data;
+      // Backend returns paginated { data: Comment[], total, skip, take }
+      return Array.isArray(data) ? data : data?.data ?? [];
     },
     enabled: !!pageId,
   });

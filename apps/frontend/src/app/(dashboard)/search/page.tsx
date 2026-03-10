@@ -64,7 +64,7 @@ export default function SearchPage() {
               <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                 {result.spaceName && <span>{result.spaceName}</span>}
                 <span>·</span>
-                <span>{new Date(result.updatedAt).toLocaleDateString(locale)}</span>
+                {result.updatedAt && <span>{new Date(result.updatedAt).toLocaleDateString(locale)}</span>}
               </div>
             </Link>
           ))}

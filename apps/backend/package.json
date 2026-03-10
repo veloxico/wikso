@@ -1,5 +1,5 @@
 {
-  "name": "@dokka/backend",
+  "name": "@wikso/backend",
   "version": "1.1.0",
   "description": "",
   "author": "",
@@ -26,7 +26,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.997.0",
     "@aws-sdk/s3-request-presigner": "^3.997.0",
-    "@dokka/shared": "workspace:*",
+    "@wikso/shared": "workspace:*",
     "@hocuspocus/extension-database": "^3.4.4",
     "@hocuspocus/server": "^3.4.4",
     "@nestjs/bullmq": "^11.0.4",
@@ -46,6 +46,7 @@
     "bullmq": "^5.70.4",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
+    "htmlparser2": "^10.1.0",
     "ioredis": "^5.9.3",
     "meilisearch": "^0.55.0",
     "nodemailer": "^8.0.1",
@@ -56,6 +57,7 @@
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "sax": "^1.5.0",
     "slugify": "^1.6.6",
     "uuid": "^13.0.0",
     "yjs": "^13.6.29"
@@ -76,6 +78,7 @@
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
+    "@types/sax": "^1.2.7",
     "@types/supertest": "^6.0.2",
     "@types/uuid": "^10.0.0",
     "dotenv": "^17.3.1",

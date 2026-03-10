@@ -14,7 +14,7 @@ ALTER TABLE "Webhook" ADD COLUMN "active" BOOLEAN NOT NULL DEFAULT true;
 -- CreateTable
 CREATE TABLE "SystemSettings" (
     "id" TEXT NOT NULL DEFAULT 'singleton',
-    "siteName" TEXT NOT NULL DEFAULT 'Dokka',
+    "siteName" TEXT NOT NULL DEFAULT 'Wikso',
     "siteDescription" TEXT NOT NULL DEFAULT '',
     "registrationEnabled" BOOLEAN NOT NULL DEFAULT true,
     "allowedEmailDomains" TEXT[] DEFAULT ARRAY[]::TEXT[],
