@@ -3,6 +3,7 @@
 **Wikso** — open-source, self-hosted alternative to Confluence. Real-time collaborative editing, page trees, spaces, full-text search, version history, and more.
 
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/veloxico?style=flat&logo=githubsponsors&label=Sponsor)](https://github.com/sponsors/veloxico)
+[![Crypto Donate](https://img.shields.io/badge/Crypto-Donate-blue?style=flat&logo=bitcoin)](#support-the-project)
 
 ## Tech Stack
 
