@@ -24,6 +24,7 @@ import { TemplatesModule } from './templates/templates.module';
 import { HealthModule } from './health/health.module';
 import { TagsModule } from './tags/tags.module';
 import { JobsModule } from './jobs/jobs.module';
+import { ImportModule } from './import/import.module';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 
 @Module({
@@ -52,6 +53,7 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     HealthModule,
     TagsModule,
     JobsModule,
+    ImportModule,
   ],
   providers: [
     {

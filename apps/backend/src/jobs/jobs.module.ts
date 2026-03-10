@@ -17,6 +17,7 @@ import { SearchIndexProcessor } from './processors/search-index.processor';
       { name: 'webhooks' },
       { name: 'emails' },
       { name: 'search-index' },
+      { name: 'confluence-import' },
     ),
   ],
   providers: [WebhookProcessor, EmailProcessor, SearchIndexProcessor],

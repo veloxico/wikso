@@ -30,7 +30,8 @@ function usePageVersions(slug: string, pageId: string) {
     queryKey: ['versions', slug, pageId],
     queryFn: async () => {
       const { data } = await api.get(`/spaces/${slug}/pages/${pageId}/versions`);
-      return data;
+      // Backend returns paginated { data: PageVersion[], total, skip, take }
+      return Array.isArray(data) ? data : data?.data ?? [];
     },
     enabled: !!slug && !!pageId,
   });

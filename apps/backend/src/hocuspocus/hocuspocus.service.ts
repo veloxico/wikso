@@ -95,12 +95,20 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
             try {
               const page = await this.prisma.page.findUnique({
                 where: { id: pageId },
-                select: { yjsState: true, deletedAt: true },
+                select: { yjsState: true, contentJson: true, deletedAt: true },
               });
               if (page?.deletedAt) return null;
+
+              // Prefer persisted Y.js state
               if (page?.yjsState) {
                 return new Uint8Array(page.yjsState);
               }
+
+              // No yjsState yet (imported pages). Return null and let the
+              // client load contentJson via API and initialize the editor
+              // with its own ProseMirror schema. This avoids a lossy
+              // server-side JSON→Y.js conversion that doesn't know
+              // about the client's TipTap extensions and schema.
               return null;
             } catch (err) {
               this.logger.error(`Failed to fetch document ${pageId}: ${err.message}`);
@@ -110,7 +118,25 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
           store: async ({ documentName, state, document: ydoc }) => {
             const pageId = this.extractPageId(documentName);
             try {
-              // 1. Convert Yjs XmlFragment → TipTap/ProseMirror JSON
+              // Check if this page already has yjsState in DB.
+              // Imported pages (yjsState = null) were loaded via setContent on
+              // the client.  The ProseMirror→Y.js→ProseMirror round-trip through
+              // the Hocuspocus sync protocol is lossy for complex table content,
+              // so we NEVER persist yjsState for these pages.  On each page open
+              // they will reload from the original contentJson and display correctly.
+              const existing = await this.prisma.page.findUnique({
+                where: { id: pageId },
+                select: { yjsState: true, contentJson: true },
+              });
+
+              if (!existing?.yjsState) {
+                this.logger.debug(
+                  `Skipping Y.js persist for ${pageId} (imported page, no existing yjsState)`,
+                );
+                return;
+              }
+
+              // Page has existing yjsState (natively created/edited) — normal save flow.
               let contentJson: Record<string, unknown> | undefined;
               try {
                 const fragment = (ydoc as Y.Doc).getXmlFragment('default');
@@ -121,8 +147,21 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
                 this.logger.warn(`Failed to convert Yjs→JSON for ${pageId}: ${convErr.message}`);
               }
 
-              // 2. Persist both yjsState and contentJson
               const buffer = Buffer.from(state);
+
+              // Safety: don't overwrite contentJson with a dramatically smaller version.
+              if (contentJson && existing.contentJson) {
+                const existingLen = JSON.stringify(existing.contentJson).length;
+                const newLen = JSON.stringify(contentJson).length;
+                if (existingLen > 2000 && newLen < existingLen * 0.3) {
+                  this.logger.warn(
+                    `Skipping save for ${pageId}: ` +
+                    `existing=${existingLen}, new=${newLen} (would lose content)`,
+                  );
+                  return;
+                }
+              }
+
               await this.prisma.page.update({
                 where: { id: pageId },
                 data: {
@@ -131,7 +170,7 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
                 },
               });
 
-              // 3. Create a version snapshot if enough time has passed
+              // Create a version snapshot if enough time has passed
               if (contentJson) {
                 await this.maybeCreateVersion(pageId, contentJson);
               }

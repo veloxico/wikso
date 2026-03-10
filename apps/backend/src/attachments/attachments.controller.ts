@@ -37,8 +37,8 @@ export class AttachmentsController {
   @ApiOperation({ summary: 'Delete attachment' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  remove(@Param('id') id: string) {
-    return this.attachmentsService.delete(id);
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.attachmentsService.delete(id, user.id);
   }
 
   @Get('attachments/:id/download')

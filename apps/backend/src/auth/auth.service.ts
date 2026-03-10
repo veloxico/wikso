@@ -113,6 +113,8 @@ export class AuthService {
         name: user.name,
         role: user.role,
         avatarUrl: user.avatarUrl || null,
+        locale: user.locale || null,
+        timezone: user.timezone || null,
       },
     };
   }

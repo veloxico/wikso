@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { UnifiedSidebar } from '@/components/features/UnifiedSidebar';
 import { MobileSidebar } from '@/components/features/MobileSidebar';
+import { TopSearchBar } from '@/components/features/GlobalSearchDialog';
 import { CommandPalette, useCommandPalette } from '@/components/features/CommandPalette';
 import { ErrorBoundary } from '@/components/features/ErrorBoundary';
 
@@ -30,11 +31,20 @@ export default function DashboardLayout({
       {/* Mobile sidebar (hamburger) */}
       <MobileSidebar />
 
-      <main className="flex-1 overflow-y-auto bg-background">
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
-      </main>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Top search bar — Confluence-style */}
+        {!isAdminContext && (
+          <div className="flex items-center border-b border-border bg-background px-6 py-2 shrink-0">
+            <TopSearchBar />
+          </div>
+        )}
+
+        <main className="flex-1 overflow-y-auto bg-background">
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </main>
+      </div>
       <CommandPalette open={open} onOpenChange={setOpen} />
     </div>
   );

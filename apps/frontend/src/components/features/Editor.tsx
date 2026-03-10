@@ -104,7 +104,7 @@ export function Editor({ content, onChange, editable = true, spaceSlug }: Editor
     },
     editorProps: {
       attributes: {
-        class: 'dokka-editor prose prose-sm dark:prose-invert max-w-none min-h-[400px] focus:outline-none px-4 py-3',
+        class: 'wikso-editor prose prose-sm dark:prose-invert max-w-none min-h-[400px] focus:outline-none px-4 py-3',
       },
     },
   });

@@ -87,9 +87,9 @@ export class MailService {
 
   async sendInvitationEmail(email: string, name: string, token: string) {
     const url = `${process.env.FRONTEND_URL || 'http://localhost:3001'}/auth/accept-invite?token=${token}`;
-    await this.send(email, 'You have been invited to Dokka', `
+    await this.send(email, 'You have been invited to Wikso', `
       <h2>Hello ${name}!</h2>
-      <p>You have been invited to join Dokka — a modern wiki & knowledge base.</p>
+      <p>You have been invited to join Wikso — a modern wiki & knowledge base.</p>
       <p>Click the link below to set up your password and get started:</p>
       <a href="${url}" style="display:inline-block;background:#6366f1;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;">Accept Invitation</a>
       <p style="margin-top:16px;color:#888;">Or copy this URL: ${url}</p>

@@ -18,6 +18,7 @@ import { usePages, useCreatePage } from '@/hooks/usePages';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useRecentPages } from '@/hooks/useRecentPages';
 import { PageTree } from '@/components/features/PageTree';
+import { GlobalSearchDialog } from '@/components/features/GlobalSearchDialog';
 import { PageTemplatesDialog } from '@/components/features/PageTemplates';
 import { UserMenu } from '@/components/features/UserMenu';
 import { Button } from '@/components/ui/button';
@@ -179,6 +180,7 @@ export function UnifiedSidebar() {
 
   const [showFavorites, setShowFavorites] = useState(true);
   const [showRecent, setShowRecent] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // Extract current space slug from URL
   const currentSlugMatch = pathname.match(/^\/spaces\/([^/]+)/);
@@ -208,6 +210,7 @@ export function UnifiedSidebar() {
   /* ── Collapsed (icon-only) sidebar ── */
   if (collapsed) {
     return (
+    <>
       <aside className="flex h-screen w-14 flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-all duration-200">
         {/* Logo */}
         <div className="flex items-center justify-center border-b border-border py-3">
@@ -227,8 +230,16 @@ export function UnifiedSidebar() {
 
         {/* Quick nav icons */}
         <div className="flex flex-col items-center gap-1 py-2 border-b border-border">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            title={t('sidebar.search')}
+            onClick={() => setSearchOpen(true)}
+          >
+            <Search className="h-4 w-4" />
+          </Button>
           {[
-            { href: '/search', icon: Search, label: t('sidebar.search') },
             { href: '/notifications', icon: Bell, label: t('sidebar.notifications') },
             { href: '/profile', icon: Settings, label: t('sidebar.profile') },
           ].map((item) => {
@@ -292,11 +303,14 @@ export function UnifiedSidebar() {
           <UserMenu avatarSize="h-7 w-7" showName={false} />
         </div>
       </aside>
+      <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+    </>
     );
   }
 
   /* ── Expanded (full) sidebar ── */
   return (
+    <>
     <aside className="flex h-screen w-60 flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-all duration-200">
       {/* ── Logo + collapse toggle ── */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -304,7 +318,7 @@ export function UnifiedSidebar() {
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-xs">
             D
           </div>
-          <span className="text-base font-semibold">Dokka</span>
+          <span className="text-base font-semibold">Wikso</span>
         </Link>
         <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={toggle} title={t('sidebar.collapse') || 'Collapse sidebar'}>
           <PanelLeftClose className="h-4 w-4" />
@@ -313,8 +327,16 @@ export function UnifiedSidebar() {
 
       {/* ── Quick nav ── */}
       <div className="flex items-center gap-1 px-3 py-2 border-b border-border">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          title={t('sidebar.search')}
+          onClick={() => setSearchOpen(true)}
+        >
+          <Search className="h-4 w-4" />
+        </Button>
         {[
-          { href: '/search', icon: Search, label: t('sidebar.search') },
           { href: '/notifications', icon: Bell, label: t('sidebar.notifications') },
           { href: '/profile', icon: Settings, label: t('sidebar.profile') },
         ].map((item) => {
@@ -475,5 +497,7 @@ export function UnifiedSidebar() {
         <UserMenu avatarSize="h-7 w-7" showName />
       </div>
     </aside>
+    <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+    </>
   );
 }

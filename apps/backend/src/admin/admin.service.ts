@@ -56,8 +56,17 @@ export class AdminService {
     return { users, total };
   }
 
+  private static readonly SAFE_USER_SELECT = {
+    id: true, email: true, name: true, avatarUrl: true, role: true,
+    status: true, emailVerified: true, createdAt: true,
+  } as const;
+
   async updateUser(id: string, data: { name?: string; role?: GlobalRole }) {
-    return this.prisma.user.update({ where: { id }, data });
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      select: AdminService.SAFE_USER_SELECT,
+    });
   }
 
   async deleteUser(id: string) {
@@ -69,6 +78,7 @@ export class AdminService {
     return this.prisma.user.update({
       where: { id },
       data: { status: 'SUSPENDED' },
+      select: AdminService.SAFE_USER_SELECT,
     });
   }
 
@@ -76,6 +86,7 @@ export class AdminService {
     return this.prisma.user.update({
       where: { id },
       data: { status: 'ACTIVE' },
+      select: AdminService.SAFE_USER_SELECT,
     });
   }
 
@@ -274,8 +285,8 @@ export class AdminService {
       await transporter.sendMail({
         from: process.env.MAIL_FROM || process.env.SMTP_FROM || 'noreply@example.com',
         to: adminEmail,
-        subject: 'Dokka — Test Email',
-        html: '<h2>Email configuration is working!</h2><p>This is a test email from Dokka admin panel.</p>',
+        subject: 'Wikso — Test Email',
+        html: '<h2>Email configuration is working!</h2><p>This is a test email from Wikso admin panel.</p>',
       });
       return { success: true, message: `Test email sent to ${adminEmail}` };
     } catch (err: any) {

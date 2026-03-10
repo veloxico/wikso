@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
@@ -15,10 +15,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: { sub: string; email: string }) {
     try {
-      // UsersService.findById throws NotFoundException if user not found, catch and rethrow as Unauthorized
       const user = await this.usersService.findById(payload.sub);
+      if ((user as any).status === 'SUSPENDED') {
+        throw new ForbiddenException('Your account has been suspended');
+      }
       return user;
     } catch (e) {
+      if (e instanceof ForbiddenException) throw e;
       throw new UnauthorizedException();
     }
   }

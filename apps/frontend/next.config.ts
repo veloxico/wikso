@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+// Server-side rewrite target: in Docker use API_INTERNAL_URL (e.g. http://backend:3000)
+// to reach the backend via Docker network; falls back to the public URL for local dev.
+const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,

@@ -1,5 +1,5 @@
 {
-  "name": "dokka",
+  "name": "wikso",
   "version": "1.1.0",
   "private": true,
   "scripts": {
@@ -8,8 +8,8 @@
     "lint": "turbo lint",
     "test": "turbo test",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "dev:backend": "turbo dev --filter=@dokka/backend",
-    "dev:frontend": "turbo dev --filter=@dokka/frontend"
+    "dev:backend": "turbo dev --filter=@wikso/backend",
+    "dev:frontend": "turbo dev --filter=@wikso/frontend"
   },
   "devDependencies": {
     "prettier": "^3.4.2",

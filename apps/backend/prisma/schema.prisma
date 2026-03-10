@@ -206,7 +206,7 @@ model Webhook {
 
 model SystemSettings {
   id                        String   @id @default("singleton")
-  siteName                  String   @default("Dokka")
+  siteName                  String   @default("Wikso")
   siteDescription           String   @default("")
   registrationEnabled       Boolean  @default(true)
   allowedEmailDomains       String[] @default([])

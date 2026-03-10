@@ -14,7 +14,7 @@ export class SamlStrategy extends PassportStrategy(SamlBase, 'saml') {
 
     super({
       entryPoint: process.env.SAML_ENTRY_POINT || '',
-      issuer: process.env.SAML_ISSUER || 'dokka',
+      issuer: process.env.SAML_ISSUER || 'wikso',
       callbackUrl: process.env.SAML_CALLBACK_URL || '',
       cert: cert || undefined,
       wantAuthnResponseSigned: true,

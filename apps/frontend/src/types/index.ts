@@ -22,4 +22,4 @@ export {
   type RegisterRequest,
   type PaginatedResponse,
   type SearchResult,
-} from '@dokka/shared';
+} from '@wikso/shared';

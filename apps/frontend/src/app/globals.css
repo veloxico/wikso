@@ -125,10 +125,10 @@
   }
 }
 
-/* ===== Dokka Editor Styles ===== */
+/* ===== Wikso Editor Styles ===== */
 
 /* Table styles */
-.dokka-editor table {
+.wikso-editor table {
   border-collapse: collapse;
   margin: 1rem 0;
   overflow: hidden;
@@ -136,8 +136,8 @@
   width: 100%;
 }
 
-.dokka-editor td,
-.dokka-editor th {
+.wikso-editor td,
+.wikso-editor th {
   border: 2px solid var(--border);
   box-sizing: border-box;
   min-width: 1em;
@@ -146,13 +146,13 @@
   vertical-align: top;
 }
 
-.dokka-editor th {
+.wikso-editor th {
   background-color: var(--muted);
   font-weight: 600;
   text-align: left;
 }
 
-.dokka-editor .selectedCell:after {
+.wikso-editor .selectedCell:after {
   background: color-mix(in oklch, var(--primary) 15%, transparent);
   content: '';
   left: 0;
@@ -164,7 +164,7 @@
   z-index: 2;
 }
 
-.dokka-editor .column-resize-handle {
+.wikso-editor .column-resize-handle {
   background-color: var(--primary);
   bottom: -2px;
   pointer-events: none;
@@ -174,17 +174,17 @@
   width: 4px;
 }
 
-.dokka-editor .tableWrapper {
+.wikso-editor .tableWrapper {
   overflow-x: auto;
   margin: 1rem 0;
 }
 
-.dokka-editor table .resize-cursor {
+.wikso-editor table .resize-cursor {
   cursor: col-resize;
 }
 
 /* Image styles */
-.dokka-editor .editor-image {
+.wikso-editor .editor-image {
   border-radius: 0.5rem;
   cursor: default;
   display: block;
@@ -193,63 +193,63 @@
   height: auto;
 }
 
-.dokka-editor .ProseMirror-selectednode .editor-image,
-.dokka-editor img.ProseMirror-selectednode {
+.wikso-editor .ProseMirror-selectednode .editor-image,
+.wikso-editor img.ProseMirror-selectednode {
   outline: 3px solid var(--primary);
   outline-offset: 2px;
   border-radius: 0.5rem;
 }
 
 /* Link styles */
-.dokka-editor .editor-link {
+.wikso-editor .editor-link {
   color: var(--primary);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.dokka-editor .editor-link:hover {
+.wikso-editor .editor-link:hover {
   color: color-mix(in oklch, var(--primary), black 20%);
 }
 
 /* Task list styles */
-.dokka-editor ul[data-type='taskList'] {
+.wikso-editor ul[data-type='taskList'] {
   list-style: none;
   padding: 0;
   margin: 0.5rem 0;
 }
 
-.dokka-editor ul[data-type='taskList'] li {
+.wikso-editor ul[data-type='taskList'] li {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
   margin: 0.25rem 0;
 }
 
-.dokka-editor ul[data-type='taskList'] li > label {
+.wikso-editor ul[data-type='taskList'] li > label {
   flex: 0 0 auto;
   margin-top: 0.25rem;
   user-select: none;
 }
 
-.dokka-editor ul[data-type='taskList'] li > label input[type='checkbox'] {
+.wikso-editor ul[data-type='taskList'] li > label input[type='checkbox'] {
   cursor: pointer;
   width: 1rem;
   height: 1rem;
   accent-color: var(--primary);
 }
 
-.dokka-editor ul[data-type='taskList'] li > div {
+.wikso-editor ul[data-type='taskList'] li > div {
   flex: 1 1 auto;
 }
 
-.dokka-editor ul[data-type='taskList'] li[data-checked='true'] > div {
+.wikso-editor ul[data-type='taskList'] li[data-checked='true'] > div {
   text-decoration: line-through;
   opacity: 0.6;
 }
 
 /* Code block styles */
-.dokka-editor pre {
+.wikso-editor pre {
   background: var(--muted);
   border-radius: 0.5rem;
   color: var(--foreground);
@@ -259,7 +259,7 @@
   overflow-x: auto;
 }
 
-.dokka-editor pre code {
+.wikso-editor pre code {
   background: none;
   color: inherit;
   font-size: 0.875rem;
@@ -267,7 +267,7 @@
 }
 
 /* Blockquote styles */
-.dokka-editor blockquote {
+.wikso-editor blockquote {
   border-left: 4px solid var(--primary);
   margin: 1rem 0;
   padding-left: 1rem;
@@ -275,14 +275,14 @@
 }
 
 /* Horizontal rule */
-.dokka-editor hr {
+.wikso-editor hr {
   border: none;
   border-top: 2px solid var(--border);
   margin: 1.5rem 0;
 }
 
 /* Placeholder styles */
-.dokka-editor .is-empty::before {
+.wikso-editor .is-empty::before {
   color: var(--muted-foreground);
   content: attr(data-placeholder);
   float: left;
@@ -317,7 +317,7 @@
 }
 
 /* Highlight colors */
-.dokka-editor mark {
+.wikso-editor mark {
   border-radius: 0.15rem;
   padding: 0.1rem 0.2rem;
 }
@@ -495,7 +495,7 @@
 }
 
 /* ===== Mention Styles ===== */
-.dokka-editor .mention {
+.wikso-editor .mention {
   background-color: color-mix(in oklch, var(--primary) 12%, transparent);
   color: var(--primary);
   border-radius: 0.25rem;
@@ -506,16 +506,16 @@
   white-space: nowrap;
 }
 
-.dokka-editor .mention:hover {
+.wikso-editor .mention:hover {
   background-color: color-mix(in oklch, var(--primary) 20%, transparent);
 }
 
-.dark .dokka-editor .mention {
+.dark .wikso-editor .mention {
   background-color: color-mix(in oklch, var(--primary) 20%, transparent);
   color: var(--primary);
 }
 
-.dark .dokka-editor .mention:hover {
+.dark .wikso-editor .mention:hover {
   background-color: color-mix(in oklch, var(--primary) 30%, transparent);
 }
 
@@ -605,7 +605,7 @@
 }
 
 /* ===== Callout Block Styles ===== */
-.dokka-editor .callout {
+.wikso-editor .callout {
   border-radius: 0.5rem;
   padding: 1rem 1rem 1rem 0.75rem;
   margin: 0.75rem 0;
@@ -614,7 +614,7 @@
   align-items: flex-start;
 }
 
-.dokka-editor .callout-icon {
+.wikso-editor .callout-icon {
   flex-shrink: 0;
   width: 1.25rem;
   height: 1.25rem;
@@ -624,108 +624,108 @@
   transition: opacity 0.15s ease;
 }
 
-.dokka-editor .callout-icon:hover {
+.wikso-editor .callout-icon:hover {
   opacity: 0.7;
 }
 
-.dokka-editor .callout-content {
+.wikso-editor .callout-content {
   flex: 1;
   min-width: 0;
 }
 
-.dokka-editor .callout-content > *:first-child {
+.wikso-editor .callout-content > *:first-child {
   margin-top: 0;
 }
 
-.dokka-editor .callout-content > *:last-child {
+.wikso-editor .callout-content > *:last-child {
   margin-bottom: 0;
 }
 
 /* Info callout */
-.dokka-editor .callout-info {
+.wikso-editor .callout-info {
   background-color: oklch(0.93 0.03 250);
   border-left: 4px solid oklch(0.55 0.15 250);
 }
 
-.dokka-editor .callout-info .callout-icon {
+.wikso-editor .callout-info .callout-icon {
   color: oklch(0.55 0.15 250);
 }
 
 /* Warning callout */
-.dokka-editor .callout-warning {
+.wikso-editor .callout-warning {
   background-color: oklch(0.95 0.05 85);
   border-left: 4px solid oklch(0.7 0.15 70);
 }
 
-.dokka-editor .callout-warning .callout-icon {
+.wikso-editor .callout-warning .callout-icon {
   color: oklch(0.7 0.15 70);
 }
 
 /* Success callout */
-.dokka-editor .callout-success {
+.wikso-editor .callout-success {
   background-color: oklch(0.93 0.04 155);
   border-left: 4px solid oklch(0.55 0.15 155);
 }
 
-.dokka-editor .callout-success .callout-icon {
+.wikso-editor .callout-success .callout-icon {
   color: oklch(0.55 0.15 155);
 }
 
 /* Error callout */
-.dokka-editor .callout-error {
+.wikso-editor .callout-error {
   background-color: oklch(0.93 0.04 25);
   border-left: 4px solid oklch(0.6 0.2 25);
 }
 
-.dokka-editor .callout-error .callout-icon {
+.wikso-editor .callout-error .callout-icon {
   color: oklch(0.6 0.2 25);
 }
 
 /* Dark mode callouts */
-.dark .dokka-editor .callout-info {
+.dark .wikso-editor .callout-info {
   background-color: oklch(0.25 0.04 250);
   border-left-color: oklch(0.6 0.18 250);
 }
 
-.dark .dokka-editor .callout-info .callout-icon {
+.dark .wikso-editor .callout-info .callout-icon {
   color: oklch(0.7 0.18 250);
 }
 
-.dark .dokka-editor .callout-warning {
+.dark .wikso-editor .callout-warning {
   background-color: oklch(0.25 0.04 70);
   border-left-color: oklch(0.7 0.18 70);
 }
 
-.dark .dokka-editor .callout-warning .callout-icon {
+.dark .wikso-editor .callout-warning .callout-icon {
   color: oklch(0.8 0.15 70);
 }
 
-.dark .dokka-editor .callout-success {
+.dark .wikso-editor .callout-success {
   background-color: oklch(0.25 0.04 155);
   border-left-color: oklch(0.6 0.18 155);
 }
 
-.dark .dokka-editor .callout-success .callout-icon {
+.dark .wikso-editor .callout-success .callout-icon {
   color: oklch(0.7 0.18 155);
 }
 
-.dark .dokka-editor .callout-error {
+.dark .wikso-editor .callout-error {
   background-color: oklch(0.25 0.04 25);
   border-left-color: oklch(0.65 0.2 25);
 }
 
-.dark .dokka-editor .callout-error .callout-icon {
+.dark .wikso-editor .callout-error .callout-icon {
   color: oklch(0.75 0.2 25);
 }
 
 /* ===== Code Block Syntax Highlighting ===== */
 
 /* Language selector dropdown */
-.dokka-editor .code-block-wrapper {
+.wikso-editor .code-block-wrapper {
   position: relative;
 }
 
-.dokka-editor .code-block-language-select {
+.wikso-editor .code-block-language-select {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
@@ -740,126 +740,126 @@
 }
 
 /* GitHub Light Theme for lowlight */
-.dokka-editor pre code .hljs-comment,
-.dokka-editor pre code .hljs-quote {
+.wikso-editor pre code .hljs-comment,
+.wikso-editor pre code .hljs-quote {
   color: oklch(0.55 0.02 250);
   font-style: italic;
 }
 
-.dokka-editor pre code .hljs-keyword,
-.dokka-editor pre code .hljs-selector-tag,
-.dokka-editor pre code .hljs-addition {
+.wikso-editor pre code .hljs-keyword,
+.wikso-editor pre code .hljs-selector-tag,
+.wikso-editor pre code .hljs-addition {
   color: oklch(0.5 0.2 330);
 }
 
-.dokka-editor pre code .hljs-number,
-.dokka-editor pre code .hljs-string,
-.dokka-editor pre code .hljs-meta .hljs-meta-string,
-.dokka-editor pre code .hljs-literal,
-.dokka-editor pre code .hljs-doctag,
-.dokka-editor pre code .hljs-regexp {
+.wikso-editor pre code .hljs-number,
+.wikso-editor pre code .hljs-string,
+.wikso-editor pre code .hljs-meta .hljs-meta-string,
+.wikso-editor pre code .hljs-literal,
+.wikso-editor pre code .hljs-doctag,
+.wikso-editor pre code .hljs-regexp {
   color: oklch(0.5 0.15 250);
 }
 
-.dokka-editor pre code .hljs-title,
-.dokka-editor pre code .hljs-section,
-.dokka-editor pre code .hljs-name,
-.dokka-editor pre code .hljs-selector-id,
-.dokka-editor pre code .hljs-selector-class {
+.wikso-editor pre code .hljs-title,
+.wikso-editor pre code .hljs-section,
+.wikso-editor pre code .hljs-name,
+.wikso-editor pre code .hljs-selector-id,
+.wikso-editor pre code .hljs-selector-class {
   color: oklch(0.55 0.2 30);
 }
 
-.dokka-editor pre code .hljs-attribute,
-.dokka-editor pre code .hljs-attr,
-.dokka-editor pre code .hljs-variable,
-.dokka-editor pre code .hljs-template-variable,
-.dokka-editor pre code .hljs-class .hljs-title,
-.dokka-editor pre code .hljs-type {
+.wikso-editor pre code .hljs-attribute,
+.wikso-editor pre code .hljs-attr,
+.wikso-editor pre code .hljs-variable,
+.wikso-editor pre code .hljs-template-variable,
+.wikso-editor pre code .hljs-class .hljs-title,
+.wikso-editor pre code .hljs-type {
   color: oklch(0.55 0.18 55);
 }
 
-.dokka-editor pre code .hljs-symbol,
-.dokka-editor pre code .hljs-bullet,
-.dokka-editor pre code .hljs-subst,
-.dokka-editor pre code .hljs-meta,
-.dokka-editor pre code .hljs-meta .hljs-keyword,
-.dokka-editor pre code .hljs-selector-attr,
-.dokka-editor pre code .hljs-selector-pseudo,
-.dokka-editor pre code .hljs-link {
+.wikso-editor pre code .hljs-symbol,
+.wikso-editor pre code .hljs-bullet,
+.wikso-editor pre code .hljs-subst,
+.wikso-editor pre code .hljs-meta,
+.wikso-editor pre code .hljs-meta .hljs-keyword,
+.wikso-editor pre code .hljs-selector-attr,
+.wikso-editor pre code .hljs-selector-pseudo,
+.wikso-editor pre code .hljs-link {
   color: oklch(0.5 0.18 150);
 }
 
-.dokka-editor pre code .hljs-built_in,
-.dokka-editor pre code .hljs-deletion {
+.wikso-editor pre code .hljs-built_in,
+.wikso-editor pre code .hljs-deletion {
   color: oklch(0.55 0.2 25);
 }
 
-.dokka-editor pre code .hljs-formula {
+.wikso-editor pre code .hljs-formula {
   background: oklch(0.95 0.02 250);
 }
 
-.dokka-editor pre code .hljs-emphasis {
+.wikso-editor pre code .hljs-emphasis {
   font-style: italic;
 }
 
-.dokka-editor pre code .hljs-strong {
+.wikso-editor pre code .hljs-strong {
   font-weight: bold;
 }
 
 /* Dark mode syntax highlighting */
-.dark .dokka-editor pre code .hljs-comment,
-.dark .dokka-editor pre code .hljs-quote {
+.dark .wikso-editor pre code .hljs-comment,
+.dark .wikso-editor pre code .hljs-quote {
   color: oklch(0.55 0.02 250);
 }
 
-.dark .dokka-editor pre code .hljs-keyword,
-.dark .dokka-editor pre code .hljs-selector-tag,
-.dark .dokka-editor pre code .hljs-addition {
+.dark .wikso-editor pre code .hljs-keyword,
+.dark .wikso-editor pre code .hljs-selector-tag,
+.dark .wikso-editor pre code .hljs-addition {
   color: oklch(0.7 0.18 330);
 }
 
-.dark .dokka-editor pre code .hljs-number,
-.dark .dokka-editor pre code .hljs-string,
-.dark .dokka-editor pre code .hljs-meta .hljs-meta-string,
-.dark .dokka-editor pre code .hljs-literal,
-.dark .dokka-editor pre code .hljs-doctag,
-.dark .dokka-editor pre code .hljs-regexp {
+.dark .wikso-editor pre code .hljs-number,
+.dark .wikso-editor pre code .hljs-string,
+.dark .wikso-editor pre code .hljs-meta .hljs-meta-string,
+.dark .wikso-editor pre code .hljs-literal,
+.dark .wikso-editor pre code .hljs-doctag,
+.dark .wikso-editor pre code .hljs-regexp {
   color: oklch(0.7 0.14 220);
 }
 
-.dark .dokka-editor pre code .hljs-title,
-.dark .dokka-editor pre code .hljs-section,
-.dark .dokka-editor pre code .hljs-name,
-.dark .dokka-editor pre code .hljs-selector-id,
-.dark .dokka-editor pre code .hljs-selector-class {
+.dark .wikso-editor pre code .hljs-title,
+.dark .wikso-editor pre code .hljs-section,
+.dark .wikso-editor pre code .hljs-name,
+.dark .wikso-editor pre code .hljs-selector-id,
+.dark .wikso-editor pre code .hljs-selector-class {
   color: oklch(0.75 0.18 45);
 }
 
-.dark .dokka-editor pre code .hljs-attribute,
-.dark .dokka-editor pre code .hljs-attr,
-.dark .dokka-editor pre code .hljs-variable,
-.dark .dokka-editor pre code .hljs-template-variable,
-.dark .dokka-editor pre code .hljs-class .hljs-title,
-.dark .dokka-editor pre code .hljs-type {
+.dark .wikso-editor pre code .hljs-attribute,
+.dark .wikso-editor pre code .hljs-attr,
+.dark .wikso-editor pre code .hljs-variable,
+.dark .wikso-editor pre code .hljs-template-variable,
+.dark .wikso-editor pre code .hljs-class .hljs-title,
+.dark .wikso-editor pre code .hljs-type {
   color: oklch(0.75 0.15 65);
 }
 
-.dark .dokka-editor pre code .hljs-symbol,
-.dark .dokka-editor pre code .hljs-bullet,
-.dark .dokka-editor pre code .hljs-subst,
-.dark .dokka-editor pre code .hljs-meta,
-.dark .dokka-editor pre code .hljs-meta .hljs-keyword,
-.dark .dokka-editor pre code .hljs-selector-attr,
-.dark .dokka-editor pre code .hljs-selector-pseudo,
-.dark .dokka-editor pre code .hljs-link {
+.dark .wikso-editor pre code .hljs-symbol,
+.dark .wikso-editor pre code .hljs-bullet,
+.dark .wikso-editor pre code .hljs-subst,
+.dark .wikso-editor pre code .hljs-meta,
+.dark .wikso-editor pre code .hljs-meta .hljs-keyword,
+.dark .wikso-editor pre code .hljs-selector-attr,
+.dark .wikso-editor pre code .hljs-selector-pseudo,
+.dark .wikso-editor pre code .hljs-link {
   color: oklch(0.7 0.15 160);
 }
 
-.dark .dokka-editor pre code .hljs-built_in,
-.dark .dokka-editor pre code .hljs-deletion {
+.dark .wikso-editor pre code .hljs-built_in,
+.dark .wikso-editor pre code .hljs-deletion {
   color: oklch(0.7 0.2 25);
 }
 
-.dark .dokka-editor pre code .hljs-formula {
+.dark .wikso-editor pre code .hljs-formula {
   background: oklch(0.25 0.02 250);
 }

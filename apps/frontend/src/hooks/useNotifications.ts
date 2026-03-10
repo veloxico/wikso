@@ -7,7 +7,8 @@ export function useNotifications() {
     queryKey: ['notifications'],
     queryFn: async () => {
       const { data } = await api.get('/notifications');
-      return data;
+      // Backend returns paginated { data: Notification[], total, skip, take }
+      return Array.isArray(data) ? data : data?.data ?? [];
     },
   });
 }

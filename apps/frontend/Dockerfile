@@ -22,10 +22,13 @@ COPY apps/frontend ./apps/frontend
 # Next.js needs NEXT_PUBLIC_ vars at build time
 ARG NEXT_PUBLIC_API_URL=http://localhost:3000
 ARG NEXT_PUBLIC_WS_URL=ws://localhost:1234
+# Internal URL for server-side rewrites (e.g. http://backend:3000 in Docker)
+ARG API_INTERNAL_URL=http://localhost:3000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+ENV API_INTERNAL_URL=$API_INTERNAL_URL
 
-RUN pnpm --filter @dokka/frontend run build
+RUN pnpm --filter @wikso/frontend run build
 
 # Production stage
 FROM node:20-alpine AS runner
@@ -37,6 +40,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_API_URL=http://localhost:3000
 ENV NEXT_PUBLIC_WS_URL=ws://localhost:1234
+ENV API_INTERNAL_URL=http://localhost:3000
 
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY patches ./patches

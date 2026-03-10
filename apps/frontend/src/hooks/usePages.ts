@@ -9,7 +9,7 @@ export function usePages(slug: string) {
     queryKey: ['pages', slug],
     queryFn: async () => {
       const { data } = await api.get(`/spaces/${slug}/pages`);
-      return data;
+      return Array.isArray(data) ? data : data?.data ?? [];
     },
     enabled: !!slug,
   });

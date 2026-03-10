@@ -81,7 +81,7 @@ export default function AdminGeneralPage() {
                 <Input
                   value={siteName}
                   onChange={(e) => setSiteName(e.target.value)}
-                  placeholder="Dokka"
+                  placeholder="Wikso"
                 />
               </div>
               <div>

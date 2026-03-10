@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SearchService } from './search.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -9,6 +9,18 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @Controller('search')
 export class SearchController {
   constructor(private searchService: SearchService) {}
+
+  @Post('reindex')
+  @ApiOperation({ summary: 'Reindex all pages into MeiliSearch' })
+  reindex() {
+    return this.searchService.reindexAll();
+  }
+
+  @Get('global')
+  @ApiOperation({ summary: 'Global search across pages and spaces' })
+  searchGlobal(@Query('q') q: string, @Req() req: any) {
+    return this.searchService.searchGlobal(q, req.user.id);
+  }
 
   @Get()
   @ApiOperation({ summary: 'Search pages' })

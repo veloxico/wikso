@@ -15,12 +15,12 @@ RUN pnpm install --frozen-lockfile
 # Copy shared package source
 COPY packages/shared ./packages/shared
 COPY apps/backend/prisma ./apps/backend/prisma
-RUN pnpm --filter @dokka/backend exec prisma generate
+RUN pnpm --filter @wikso/backend exec prisma generate
 
 # Copy backend source
 COPY apps/backend/tsconfig*.json apps/backend/nest-cli.json ./apps/backend/
 COPY apps/backend/src ./apps/backend/src
-RUN pnpm --filter @dokka/backend run build
+RUN pnpm --filter @wikso/backend run build
 
 # Production stage
 FROM node:20-alpine
@@ -41,7 +41,7 @@ COPY packages/shared ./packages/shared
 COPY apps/backend/prisma ./apps/backend/prisma
 
 # Generate Prisma client in production stage
-RUN pnpm --filter @dokka/backend exec prisma generate
+RUN pnpm --filter @wikso/backend exec prisma generate
 
 # Copy compiled backend from builder
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
