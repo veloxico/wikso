@@ -49,7 +49,7 @@ The fastest way to run Wikso — a single command, no build required. Pre-built 
 ### Launch
 
 ```bash
-git clone <your-repo-url> && cd confluence
+git clone <your-repo-url> && cd wikso
 docker compose up -d
 ```
 
@@ -153,8 +153,8 @@ pnpm dev:frontend  # Frontend on http://localhost:3001
 docker compose build
 
 # Tag and push to Docker Hub
-docker tag confluence-backend veloxico/wikso-be:latest
-docker tag confluence-frontend veloxico/wikso-fe:latest
+docker tag wikso-backend veloxico/wikso-be:latest
+docker tag wikso-frontend veloxico/wikso-fe:latest
 docker push veloxico/wikso-be:latest
 docker push veloxico/wikso-fe:latest
 ```
@@ -195,7 +195,7 @@ docker push veloxico/wikso-fe:latest
 ## Project Structure
 
 ```
-confluence/
+wikso/
   apps/
     backend/           # NestJS API + Hocuspocus WS server
       src/

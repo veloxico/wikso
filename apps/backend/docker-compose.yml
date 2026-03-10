@@ -27,7 +27,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: confluence
+      POSTGRES_DB: wikso
     ports:
       - '5432:5432'
     volumes:

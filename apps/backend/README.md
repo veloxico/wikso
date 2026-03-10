@@ -1,4 +1,4 @@
-# Confluence Backend
+# Wikso Backend
 
 A self-hosted wiki/knowledge base backend with full feature set (Auth, Users, Spaces, Pages, Comments, Attachments, Search, Realtime Collaboration).
 
@@ -24,8 +24,8 @@ A self-hosted wiki/knowledge base backend with full feature set (Auth, Users, Sp
 
 1. **Clone repository**
    ```bash
-   git clone git@github.com:dzzun-ops/confluence-backend.git
-   cd confluence-backend
+   git clone git@github.com:veloxico/wikso.git
+   cd wikso
    ```
 
 2. **Configure Environment**

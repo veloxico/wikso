@@ -32,7 +32,7 @@ export default function DashboardLayout({
       <MobileSidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top search bar — Confluence-style */}
+        {/* Top search bar */}
         {!isAdminContext && (
           <div className="flex items-center border-b border-border bg-background px-6 py-2 shrink-0">
             <TopSearchBar />

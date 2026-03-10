@@ -81,7 +81,7 @@ export function GlobalSearchDialog({ open, onOpenChange }: GlobalSearchDialogPro
   );
 }
 
-/* ─── Top bar search (Confluence-style) ─── */
+/* ─── Top bar search ─── */
 
 export function TopSearchBar() {
   const router = useRouter();
