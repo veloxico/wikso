@@ -254,4 +254,4 @@ If you find Wikso useful, consider supporting its development:
 
 Apache License 2.0 — see [LICENSE](LICENSE) for details.
 
-© 2025-2026 Oleksandr Kosenko / Veloxico
+© 2025-2026 Aleks Koss / Veloxico
