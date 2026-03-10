@@ -1,6 +1,6 @@
 # Wikso
 
-**Wikso** — open-source wiki-platform inspired by Confluence. Real-time collaborative editing, page trees, spaces, full-text search, version history, and more.
+**Wikso** — open-source, self-hosted alternative to Confluence. Real-time collaborative editing, page trees, spaces, full-text search, version history, and more.
 
 ## Tech Stack
 
@@ -237,4 +237,6 @@ pnpm format           # Format code with Prettier
 
 ## License
 
-UNLICENSED — private project.
+Apache License 2.0 — see [LICENSE](LICENSE) for details.
+
+© 2025-2026 Oleksandr Kosenko / Veloxico
