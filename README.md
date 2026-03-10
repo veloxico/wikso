@@ -47,7 +47,7 @@ The fastest way to run Wikso — a single command, no build required. Pre-built 
 
 ### Requirements
 
-- **Docker** >= 20.10 and **Docker Compose** v2 (`docker compose` — no hyphen)
+- [**Docker**](https://docs.docker.com/get-docker/) >= 20.10 and **Docker Compose** v2 (`docker compose` — no hyphen)
 
 ### Launch
 
