@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { WebhookProcessor } from './processors/webhook.processor';
 import { EmailProcessor } from './processors/email.processor';
 import { SearchIndexProcessor } from './processors/search-index.processor';
+import { MailModule } from '../mail/mail.module';
 
 @Global()
 @Module({
@@ -19,6 +20,7 @@ import { SearchIndexProcessor } from './processors/search-index.processor';
       { name: 'search-index' },
       { name: 'confluence-import' },
     ),
+    MailModule,
   ],
   providers: [WebhookProcessor, EmailProcessor, SearchIndexProcessor],
   exports: [BullModule],

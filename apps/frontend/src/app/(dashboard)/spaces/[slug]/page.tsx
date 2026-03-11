@@ -2,11 +2,12 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { FileText, Users, Clock, Globe, Lock, User, Activity, ArrowRight } from 'lucide-react';
+import { FileText, Users, Clock, Globe, Lock, User, Activity, ArrowRight, Settings } from 'lucide-react';
 import { useSpace, useSpaceMembers } from '@/hooks/useSpaces';
 import { usePages } from '@/hooks/usePages';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 const spaceTypeIcon: Record<string, React.ElementType> = {
   PUBLIC: Globe,
@@ -37,16 +38,23 @@ export default function SpacePage() {
     <div className="p-8">
       {/* Space header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <TypeIcon className="h-6 w-6" />
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <TypeIcon className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">{space?.name || t('common.loading')}</h1>
+              {space?.description && (
+                <p className="text-muted-foreground">{space.description}</p>
+              )}
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">{space?.name || t('common.loading')}</h1>
-            {space?.description && (
-              <p className="text-muted-foreground">{space.description}</p>
-            )}
-          </div>
+          <Button variant="ghost" size="icon" asChild title={t('spaces.settings.title')}>
+            <Link href={`/spaces/${slug}/settings`}>
+              <Settings className="h-5 w-5" />
+            </Link>
+          </Button>
         </div>
       </div>
 

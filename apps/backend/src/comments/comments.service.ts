@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
+import { MailService } from '../mail/mail.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 
@@ -18,10 +19,13 @@ function parseMentions(content: string): string[] {
 
 @Injectable()
 export class CommentsService {
+  private logger = new Logger(CommentsService.name);
+
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
     private webhooksService: WebhooksService,
+    private mailService: MailService,
   ) {}
 
   async create(pageId: string, dto: CreateCommentDto, authorId: string) {
@@ -44,16 +48,35 @@ export class CommentsService {
       });
 
       if (page) {
+        const commenterName = comment.author?.name || 'Someone';
+
         // Notify the page author if they're not the commenter
         if (page.authorId !== authorId) {
           await this.notificationsService.create(page.authorId, 'comment.created', {
             commentId: comment.id,
             pageId,
             pageTitle: page.title,
-            authorName: comment.author?.name || 'Someone',
+            authorName: commenterName,
             content: dto.content.substring(0, 100),
             spaceSlug: page.space?.slug,
           });
+
+          // Send email notification to page author
+          if (this.mailService.isConfigured()) {
+            try {
+              const pageAuthor = await this.prisma.user.findUnique({
+                where: { id: page.authorId },
+                select: { email: true, name: true },
+              });
+              if (pageAuthor) {
+                await this.mailService.sendCommentNotification(
+                  pageAuthor.email, pageAuthor.name, page.title, commenterName,
+                );
+              }
+            } catch (e) {
+              this.logger.warn(`Failed to send comment email: ${e.message}`);
+            }
+          }
         }
 
         // If replying to a comment, also notify the parent comment author
@@ -66,10 +89,27 @@ export class CommentsService {
               commentId: comment.id,
               pageId,
               pageTitle: page.title,
-              authorName: comment.author?.name || 'Someone',
+              authorName: commenterName,
               content: dto.content.substring(0, 100),
               spaceSlug: page.space?.slug,
             });
+
+            // Send email notification to parent comment author
+            if (this.mailService.isConfigured()) {
+              try {
+                const parentAuthor = await this.prisma.user.findUnique({
+                  where: { id: parentComment.authorId },
+                  select: { email: true, name: true },
+                });
+                if (parentAuthor) {
+                  await this.mailService.sendCommentNotification(
+                    parentAuthor.email, parentAuthor.name, page.title, commenterName,
+                  );
+                }
+              } catch (e) {
+                this.logger.warn(`Failed to send reply email: ${e.message}`);
+              }
+            }
           }
         }
 
@@ -83,10 +123,27 @@ export class CommentsService {
             commentId: comment.id,
             pageId,
             pageTitle: page.title,
-            authorName: comment.author?.name || 'Someone',
+            authorName: commenterName,
             content: dto.content.substring(0, 100),
             spaceSlug: page.space?.slug,
           });
+
+          // Send email notification for @mention
+          if (this.mailService.isConfigured()) {
+            try {
+              const mentionedUser = await this.prisma.user.findUnique({
+                where: { id: mentionedId },
+                select: { email: true, name: true },
+              });
+              if (mentionedUser) {
+                await this.mailService.sendMentionNotification(
+                  mentionedUser.email, mentionedUser.name, page.title, commenterName,
+                );
+              }
+            } catch (e) {
+              this.logger.warn(`Failed to send mention email: ${e.message}`);
+            }
+          }
         }
       }
 

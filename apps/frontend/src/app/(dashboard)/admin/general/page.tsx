@@ -36,7 +36,14 @@ export default function AdminGeneralPage() {
     <div>
       <div className="mb-8 flex items-center gap-3">
         <Settings className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold">{t('admin.general.title')}</h1>
+        <div>
+          <h1 className="text-2xl font-bold">{t('admin.general.title')}</h1>
+          {settings?.appVersion && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {t('admin.general.version', { version: settings.appVersion })}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Stats */}

@@ -206,6 +206,7 @@ model Webhook {
 
 model SystemSettings {
   id                        String   @id @default("singleton")
+  appVersion                String   @default("0.0.0")
   siteName                  String   @default("Wikso")
   siteDescription           String   @default("")
   registrationEnabled       Boolean  @default(true)
@@ -214,7 +215,18 @@ model SystemSettings {
   passwordMinLength         Int      @default(6)
   sessionTimeoutMinutes     Int      @default(10080)
   maxAttachmentSizeMb       Int      @default(25)
+  emailProvider             String   @default("")
+  emailProviderConfig       String   @default("")
+  emailFromAddress          String   @default("")
+  emailFromName             String   @default("")
   updatedAt                 DateTime @updatedAt
+}
+
+model DataMigration {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  batch     Int      @default(1)
+  appliedAt DateTime @default(now())
 }
 
 model Favorite {

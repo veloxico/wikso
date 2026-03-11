@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { AuthService } from '../auth/auth.service';
@@ -6,7 +6,9 @@ import { MailService } from '../mail/mail.service';
 import { PagesService } from '../pages/pages.service';
 import { GlobalRole, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import * as nodemailer from 'nodemailer';
+import { encrypt, decrypt } from '../common/utils/encryption';
+import { getAvailableProviders, maskConfig, mergeConfigWithExisting } from '../mail/providers/provider-factory';
+import { EmailProviderType } from '../mail/providers/email-provider.interface';
 
 @Injectable()
 export class AdminService {
@@ -69,12 +71,29 @@ export class AdminService {
     });
   }
 
-  async deleteUser(id: string) {
+  async deleteUser(id: string, currentUserId: string) {
+    if (id === currentUserId) {
+      throw new ForbiddenException('You cannot delete your own account');
+    }
+
+    // Prevent deleting the last admin
+    const target = await this.prisma.user.findUnique({ where: { id }, select: { role: true } });
+    if (target?.role === GlobalRole.ADMIN) {
+      const adminCount = await this.prisma.user.count({ where: { role: GlobalRole.ADMIN } });
+      if (adminCount <= 1) {
+        throw new ForbiddenException('Cannot delete the last admin account');
+      }
+    }
+
     await this.prisma.user.delete({ where: { id } });
     return { message: 'User deleted' };
   }
 
-  async suspendUser(id: string) {
+  async suspendUser(id: string, currentUserId: string) {
+    if (id === currentUserId) {
+      throw new ForbiddenException('You cannot suspend your own account');
+    }
+
     return this.prisma.user.update({
       where: { id },
       data: { status: 'SUSPENDED' },
@@ -258,40 +277,98 @@ export class AdminService {
   // ─── Email ─────────────────────────────────────────────
 
   getEmailStatus() {
-    const host = process.env.MAIL_HOST || process.env.SMTP_HOST || '';
-    const port = process.env.MAIL_PORT || process.env.SMTP_PORT || '';
-    const from = process.env.MAIL_FROM || process.env.SMTP_FROM || '';
-    return {
-      configured: !!host,
-      host: host || 'Not configured',
-      port: port || 'Not configured',
-      from: from || 'Not configured',
-    };
+    return this.mailService.getStatus();
   }
 
   async sendTestEmail(adminEmail: string) {
-    const host = process.env.MAIL_HOST || process.env.SMTP_HOST || 'localhost';
-    const port = parseInt(process.env.MAIL_PORT || process.env.SMTP_PORT || '587');
-    const user = process.env.MAIL_USER || process.env.SMTP_USER;
-    const pass = process.env.MAIL_PASS || process.env.SMTP_PASS;
+    return this.mailService.sendTestEmail(adminEmail);
+  }
 
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      ...(user && pass ? { auth: { user, pass } } : {}),
+  getEmailProviders() {
+    return getAvailableProviders();
+  }
+
+  async getEmailConfig() {
+    const settings = await this.settingsService.getSettings();
+    if (!settings.emailProvider) {
+      return { provider: '', config: {}, fromAddress: '', fromName: '' };
+    }
+
+    let config: Record<string, any> = {};
+    if (settings.emailProviderConfig) {
+      try {
+        const raw = JSON.parse(decrypt(settings.emailProviderConfig));
+        config = maskConfig(settings.emailProvider as EmailProviderType, raw);
+      } catch {
+        config = {};
+      }
+    }
+
+    return {
+      provider: settings.emailProvider,
+      config,
+      fromAddress: settings.emailFromAddress,
+      fromName: settings.emailFromName,
+    };
+  }
+
+  async saveEmailConfig(data: {
+    provider: string;
+    config: Record<string, any>;
+    fromAddress?: string;
+    fromName?: string;
+  }) {
+    // Merge with existing config to preserve masked password fields
+    let configToSave = data.config;
+    const settings = await this.settingsService.getSettings();
+    if (settings.emailProviderConfig && settings.emailProvider === data.provider) {
+      try {
+        const existingConfig = JSON.parse(decrypt(settings.emailProviderConfig));
+        configToSave = mergeConfigWithExisting(
+          data.provider as EmailProviderType,
+          data.config,
+          existingConfig,
+        );
+      } catch {
+        // If decryption fails, use incoming config as-is
+      }
+    }
+
+    const encrypted = encrypt(JSON.stringify(configToSave));
+
+    await this.prisma.systemSettings.update({
+      where: { id: 'singleton' },
+      data: {
+        emailProvider: data.provider,
+        emailProviderConfig: encrypted,
+        emailFromAddress: data.fromAddress || '',
+        emailFromName: data.fromName || '',
+      },
     });
 
-    try {
-      await transporter.sendMail({
-        from: process.env.MAIL_FROM || process.env.SMTP_FROM || 'noreply@example.com',
-        to: adminEmail,
-        subject: 'Wikso — Test Email',
-        html: '<h2>Email configuration is working!</h2><p>This is a test email from Wikso admin panel.</p>',
-      });
-      return { success: true, message: `Test email sent to ${adminEmail}` };
-    } catch (err: any) {
-      return { success: false, message: err.message };
-    }
+    // Invalidate settings cache so MailService picks up new config
+    await this.settingsService.invalidateCache();
+    // Reload the email provider
+    await this.mailService.reloadProvider();
+
+    return { success: true, message: `Email provider "${data.provider}" configured successfully` };
+  }
+
+  async deleteEmailConfig() {
+    await this.prisma.systemSettings.update({
+      where: { id: 'singleton' },
+      data: {
+        emailProvider: '',
+        emailProviderConfig: '',
+        emailFromAddress: '',
+        emailFromName: '',
+      },
+    });
+
+    await this.settingsService.invalidateCache();
+    await this.mailService.reloadProvider();
+
+    return { success: true, message: 'Email configuration cleared. Falling back to environment variables.' };
   }
 
   // ─── Trash ───────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 export interface SystemSettings {
   id: string;
+  appVersion: string;
   siteName: string;
   siteDescription: string;
   registrationEnabled: boolean;

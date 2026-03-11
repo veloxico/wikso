@@ -64,9 +64,32 @@ export interface AdminWebhook {
 
 export interface EmailStatus {
   configured: boolean;
-  host: string;
-  port: string;
-  from: string;
+  provider: string;
+  fromAddress: string;
+}
+
+export interface ProviderFieldDefinition {
+  name: string;
+  label: string;
+  type: 'text' | 'password' | 'number' | 'select';
+  required: boolean;
+  placeholder?: string;
+  options?: { label: string; value: string }[];
+}
+
+export interface ProviderInfo {
+  type: string;
+  name: string;
+  description: string;
+  docsUrl: string;
+  fields: ProviderFieldDefinition[];
+}
+
+export interface EmailConfig {
+  provider: string;
+  config: Record<string, any>;
+  fromAddress: string;
+  fromName: string;
 }
 
 // ─── Stats ───────────────────────────────────────────────
@@ -273,6 +296,60 @@ export function useEmailStatus() {
       const { data } = await api.get('/admin/email/status');
       return data;
     },
+  });
+}
+
+export function useEmailProviders() {
+  return useQuery<ProviderInfo[]>({
+    queryKey: ['admin', 'email-providers'],
+    queryFn: async () => {
+      const { data } = await api.get('/admin/email/providers');
+      return data;
+    },
+  });
+}
+
+export function useEmailConfig() {
+  return useQuery<EmailConfig>({
+    queryKey: ['admin', 'email-config'],
+    queryFn: async () => {
+      const { data } = await api.get('/admin/email/config');
+      return data;
+    },
+  });
+}
+
+export function useSaveEmailConfig() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (dto: { provider: string; config: Record<string, any>; fromAddress?: string; fromName?: string }) => {
+      const { data } = await api.put('/admin/email/config', dto);
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'email-status'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'email-config'] });
+      toast.success(data.message || t('toasts.emailConfigSaved'));
+    },
+    onError: () => toast.error(t('toasts.emailConfigSaveFailed')),
+  });
+}
+
+export function useDeleteEmailConfig() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.delete('/admin/email/config');
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'email-status'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'email-config'] });
+      toast.success(data.message || t('toasts.emailConfigCleared'));
+    },
+    onError: () => toast.error(t('toasts.emailConfigDeleteFailed')),
   });
 }
 
