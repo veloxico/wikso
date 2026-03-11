@@ -79,6 +79,13 @@
   --sidebar-accent-foreground: oklch(0.29 0.05 260);
   --sidebar-border: oklch(0.91 0.005 260);
   --sidebar-ring: oklch(0.44 0.19 260);
+  /* Logo — origami unfold */
+  --logo-left: #6AADFF;
+  --logo-left-dark: #2D6BDD;
+  --logo-right: #5B9FFF;
+  --logo-right-dark: #1A4FAA;
+  --logo-spine: #8AC4FF;
+  --logo-spark: #A8D4FF;
 }
 
 /* ===== Anthropic-inspired Dark Theme ===== */
@@ -114,6 +121,13 @@
   --sidebar-accent-foreground: oklch(0.92 0.01 80);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.75 0.09 55);
+  /* Logo — warm origami unfold */
+  --logo-left: #E8B86A;
+  --logo-left-dark: #C8883A;
+  --logo-right: #D9A050;
+  --logo-right-dark: #9A6828;
+  --logo-spine: #F0CC80;
+  --logo-spark: #F5DDA0;
 }
 
 @layer base {

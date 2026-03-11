@@ -1,13 +1,7 @@
 import axios from 'axios';
 
-// NEXT_PUBLIC_API_URL should be the backend origin (e.g. http://localhost:3000)
-// We always append /api/v1 because backend uses setGlobalPrefix('api') + URI versioning
-const envUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-const baseURL = envUrl.endsWith('/api/v1')
-  ? envUrl
-  : envUrl.endsWith('/api')
-    ? `${envUrl}/v1`
-    : `${envUrl}/api/v1`;
+// All API requests use relative paths — Next.js middleware proxies /api/* to the backend at runtime
+const baseURL = '/api/v1';
 
 export const api = axios.create({
   baseURL,

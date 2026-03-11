@@ -21,6 +21,7 @@ import { PageTree } from '@/components/features/PageTree';
 import { GlobalSearchDialog } from '@/components/features/GlobalSearchDialog';
 import { PageTemplatesDialog } from '@/components/features/PageTemplates';
 import { UserMenu } from '@/components/features/UserMenu';
+import { WiksoLogo } from '@/components/ui/WiksoLogo';
 import { Button } from '@/components/ui/button';
 import type { Space } from '@/types';
 
@@ -215,9 +216,7 @@ export function UnifiedSidebar() {
         {/* Logo */}
         <div className="flex items-center justify-center border-b border-border py-3">
           <Link href="/spaces">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-xs">
-              D
-            </div>
+            <WiksoLogo showText={false} className="h-7 w-7" />
           </Link>
         </div>
 
@@ -315,9 +314,7 @@ export function UnifiedSidebar() {
       {/* ── Logo + collapse toggle ── */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <Link href="/spaces" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-xs">
-            D
-          </div>
+          <WiksoLogo showText={false} className="h-7 w-7" />
           <span className="text-base font-semibold">Wikso</span>
         </Link>
         <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={toggle} title={t('sidebar.collapse') || 'Collapse sidebar'}>

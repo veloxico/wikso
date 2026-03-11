@@ -26,6 +26,7 @@ import { TagsModule } from './tags/tags.module';
 import { JobsModule } from './jobs/jobs.module';
 import { ImportModule } from './import/import.module';
 import { DataMigrationsModule } from './data-migrations/data-migrations.module';
+import { GroupsModule } from './groups/groups.module';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 
 @Module({
@@ -56,6 +57,7 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     JobsModule,
     ImportModule,
     DataMigrationsModule,
+    GroupsModule,
   ],
   providers: [
     {

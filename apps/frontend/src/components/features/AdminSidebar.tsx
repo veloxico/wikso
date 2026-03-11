@@ -6,6 +6,7 @@ import {
   Settings,
   Shield,
   Users,
+  UsersRound,
   FolderOpen,
   Trash2,
   ScrollText,
@@ -18,6 +19,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 import { UserMenu } from '@/components/features/UserMenu';
+import { WiksoLogo } from '@/components/ui/WiksoLogo';
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -27,6 +29,7 @@ export function AdminSidebar() {
     { href: '/admin/general', labelKey: 'admin.nav.general', icon: Settings },
     { href: '/admin/security', labelKey: 'admin.nav.securityAccess', icon: Shield },
     { href: '/admin/users', labelKey: 'admin.nav.users', icon: Users },
+    { href: '/admin/groups', labelKey: 'admin.nav.groups', icon: UsersRound },
     { href: '/admin/spaces', labelKey: 'admin.nav.spaces', icon: FolderOpen },
     { href: '/admin/trash', labelKey: 'admin.nav.trash', icon: Trash2 },
     { href: '/admin/audit-log', labelKey: 'admin.nav.auditLog', icon: ScrollText },
@@ -41,9 +44,7 @@ export function AdminSidebar() {
       {/* Logo */}
       <div className="flex items-center gap-2 border-b border-border px-4 py-4">
         <Link href="/spaces" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
-            D
-          </div>
+          <WiksoLogo showText={false} className="h-8 w-8" />
           <span className="text-lg font-semibold">Wikso</span>
         </Link>
       </div>

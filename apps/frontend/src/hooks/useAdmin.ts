@@ -228,6 +228,53 @@ export function useBulkInvite() {
   });
 }
 
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (dto: { email: string; name: string; password: string; role?: string }) => {
+      const { data } = await api.post('/admin/users', dto);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success(t('toasts.userCreated'));
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || t('toasts.userCreateFailed'));
+    },
+  });
+}
+
+export function useUpdateUser() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async ({ userId, ...dto }: { userId: string; name?: string; role?: string }) => {
+      const { data } = await api.patch(`/admin/users/${userId}`, dto);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast.success(t('toasts.userUpdated'));
+    },
+    onError: () => toast.error(t('toasts.userUpdateFailed')),
+  });
+}
+
+export function useSetUserPassword() {
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      const { data } = await api.patch(`/admin/users/${userId}/password`, { password });
+      return data;
+    },
+    onSuccess: () => toast.success(t('toasts.passwordSet')),
+    onError: () => toast.error(t('toasts.passwordSetFailed')),
+  });
+}
+
 // ─── Audit Log ───────────────────────────────────────────
 
 export function useAuditLog(

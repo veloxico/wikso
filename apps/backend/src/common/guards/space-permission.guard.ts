@@ -33,9 +33,15 @@ export class SpacePermissionGuard implements CanActivate {
     // Write operations still require an explicit permission record.
     if (space.type === 'PUBLIC' && isReadOnly) return true;
 
-    // Check explicit space permission
+    // Check explicit space permission (direct user or via group membership)
     const perm = await this.prisma.spacePermission.findFirst({
-      where: { spaceId: space.id, userId: user.id },
+      where: {
+        spaceId: space.id,
+        OR: [
+          { userId: user.id },
+          { group: { members: { some: { userId: user.id } } } },
+        ],
+      },
     });
 
     if (!perm) throw new ForbiddenException('No access to this space');

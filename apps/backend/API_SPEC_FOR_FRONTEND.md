@@ -10,7 +10,7 @@
 ## Enums
 
 ```typescript
-enum GlobalRole { ADMIN = "ADMIN", VIEWER = "VIEWER" }
+enum GlobalRole { ADMIN = "ADMIN", USER = "USER" }
 enum SpaceType  { PUBLIC = "PUBLIC", PRIVATE = "PRIVATE", PERSONAL = "PERSONAL" }
 enum SpaceRole  { ADMIN = "ADMIN", EDITOR = "EDITOR", VIEWER = "VIEWER", GUEST = "GUEST" }
 enum PageStatus { DRAFT = "DRAFT", PUBLISHED = "PUBLISHED", ARCHIVED = "ARCHIVED" }
@@ -90,7 +90,7 @@ enum PageStatus { DRAFT = "DRAFT", PUBLISHED = "PUBLISHED", ARCHIVED = "ARCHIVED
   name: string
   avatarUrl?: string
   emailVerified: boolean
-  role: GlobalRole     // "ADMIN" | "VIEWER"
+  role: GlobalRole     // "ADMIN" | "USER"
   createdAt: string    // ISO 8601
   updatedAt: string
 }

@@ -6,7 +6,8 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, BookOpen } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { WiksoLogo } from '@/components/ui/WiksoLogo';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,7 +65,6 @@ export default function LoginPage() {
   }, [router]);
 
   const hasOAuth = providers && (providers.github || providers.google || providers.saml);
-  const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
   const onSubmit = async (data: LoginValues) => {
     try {
@@ -92,12 +92,7 @@ export default function LoginPage() {
         style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)' }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
-            <BookOpen className="h-5 w-5 text-primary" />
-          </div>
-          <span className="text-2xl font-bold tracking-tight">Wikso</span>
-        </div>
+        <WiksoLogo className="h-16 w-auto text-foreground" />
 
         {/* Card */}
         <div className="w-full rounded-2xl border border-border bg-card p-8 shadow-sm">
@@ -141,17 +136,17 @@ export default function LoginPage() {
               </div>
               <div className="mt-4 grid gap-3" style={{ gridTemplateColumns: `repeat(${[providers!.github, providers!.google, providers!.saml].filter(Boolean).length}, 1fr)` }}>
                 {providers!.github && (
-                  <Button variant="outline" className="h-11 w-full" onClick={() => { window.location.href = `${base}/api/v1/auth/github`; }}>
+                  <Button variant="outline" className="h-11 w-full" onClick={() => { window.location.href = `/api/v1/auth/github`; }}>
                     GitHub
                   </Button>
                 )}
                 {providers!.google && (
-                  <Button variant="outline" className="h-11 w-full" onClick={() => { window.location.href = `${base}/api/v1/auth/google`; }}>
+                  <Button variant="outline" className="h-11 w-full" onClick={() => { window.location.href = `/api/v1/auth/google`; }}>
                     Google
                   </Button>
                 )}
                 {providers!.saml && (
-                  <Button variant="outline" className="h-11 w-full" onClick={() => { window.location.href = `${base}/api/v1/auth/saml`; }}>
+                  <Button variant="outline" className="h-11 w-full" onClick={() => { window.location.href = `/api/v1/auth/saml`; }}>
                     SSO (SAML)
                   </Button>
                 )}

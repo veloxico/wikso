@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Users, UsersRound, X } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -30,10 +30,12 @@ function createSettingsSchema(t: (key: string) => string) {
 type SettingsValues = z.infer<ReturnType<typeof createSettingsSchema>>;
 
 interface SpaceMember {
-  userId: string;
-  name?: string;
-  email?: string;
+  id: string;
+  userId: string | null;
+  groupId: string | null;
   role: string;
+  user?: { id: string; name: string; email: string } | null;
+  group?: { id: string; name: string; description?: string | null } | null;
 }
 
 export default function SpaceSettingsPage() {
@@ -179,12 +181,42 @@ export default function SpaceSettingsPage() {
           {members && members.length > 0 ? (
             <div className="space-y-2">
               {members.map((m) => (
-                <div key={m.userId} className="flex items-center justify-between rounded-md border border-border p-3">
-                  <div>
-                    <p className="text-sm font-medium">{m.name || m.userId}</p>
-                    {m.email && <p className="text-xs text-muted-foreground">{m.email}</p>}
+                <div key={m.id} className="flex items-center justify-between rounded-md border border-border p-3">
+                  <div className="flex items-center gap-2">
+                    {m.groupId ? (
+                      <UsersRound className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium">
+                        {m.group ? m.group.name : m.user?.name || m.userId}
+                      </p>
+                      {m.user?.email && (
+                        <p className="text-xs text-muted-foreground">{m.user.email}</p>
+                      )}
+                    </div>
                   </div>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{m.role}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{m.role}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={async () => {
+                        try {
+                          if (m.groupId) {
+                            await api.delete(`/spaces/${slug}/members/group/${m.groupId}`);
+                          } else if (m.userId) {
+                            await api.delete(`/spaces/${slug}/members/${m.userId}`);
+                          }
+                          queryClient.invalidateQueries({ queryKey: ['spaces', slug, 'members'] });
+                        } catch {}
+                      }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

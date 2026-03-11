@@ -91,7 +91,7 @@ export function useAddMember(slug: string) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   return useMutation({
-    mutationFn: async (input: { userId: string; role: string }) => {
+    mutationFn: async (input: { userId?: string; groupId?: string; role: string }) => {
       const { data } = await api.post(`/spaces/${slug}/members`, input);
       return data;
     },
@@ -120,6 +120,35 @@ export function useRemoveMember(slug: string) {
     onError: () => {
       toast.error(t('toasts.memberRemoveFailed'));
     },
+  });
+}
+
+export function useRemoveGroupMember(slug: string) {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (groupId: string) => {
+      const { data } = await api.delete(`/spaces/${slug}/members/group/${groupId}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spaces', slug, 'members'] });
+      toast.success(t('toasts.memberRemoved'));
+    },
+    onError: () => {
+      toast.error(t('toasts.memberRemoveFailed'));
+    },
+  });
+}
+
+export function useSearchSpaceMembers(slug: string, query: string) {
+  return useQuery({
+    queryKey: ['spaces', slug, 'members', 'search', query],
+    queryFn: async () => {
+      const { data } = await api.get(`/spaces/${slug}/members/search`, { params: { q: query } });
+      return Array.isArray(data) ? data : data?.data ?? [];
+    },
+    enabled: !!slug && query.length >= 1,
   });
 }
 

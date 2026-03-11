@@ -64,7 +64,7 @@ export class UsersService {
         email: dto.email,
         name: dto.name || 'User',
         passwordHash: hash,
-        role: GlobalRole.VIEWER, // Default role
+        role: GlobalRole.USER, // Default role
       },
       select: {
         id: true,

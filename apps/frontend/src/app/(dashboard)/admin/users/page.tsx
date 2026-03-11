@@ -10,6 +10,8 @@ import {
   Trash2,
   Ban,
   CheckCircle2,
+  Pencil,
+  Plus,
 } from 'lucide-react';
 import {
   useAdminUsers,
@@ -18,10 +20,14 @@ import {
   useSuspendUser,
   useActivateUser,
   useInviteUser,
+  useCreateUser,
+  useUpdateUser,
+  useSetUserPassword,
 } from '@/hooks/useAdmin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -29,6 +35,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const PAGE_SIZE = 10;
@@ -41,8 +54,23 @@ export default function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('VIEWER');
+  const [inviteRole, setInviteRole] = useState('USER');
   const [inviteName, setInviteName] = useState('');
+
+  // Create user dialog
+  const [showCreate, setShowCreate] = useState(false);
+  const [createEmail, setCreateEmail] = useState('');
+  const [createName, setCreateName] = useState('');
+  const [createPassword, setCreatePassword] = useState('');
+  const [createConfirmPassword, setCreateConfirmPassword] = useState('');
+  const [createRole, setCreateRole] = useState('USER');
+
+  // Edit user dialog
+  const [editUser, setEditUser] = useState<any>(null);
+  const [editName, setEditName] = useState('');
+  const [editRole, setEditRole] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [editConfirmPassword, setEditConfirmPassword] = useState('');
 
   const filters = {
     search: search || undefined,
@@ -56,6 +84,9 @@ export default function AdminUsersPage() {
   const suspendUser = useSuspendUser();
   const activateUser = useActivateUser();
   const inviteUser = useInviteUser();
+  const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
+  const setUserPassword = useSetUserPassword();
 
   const handleInvite = () => {
     if (!inviteEmail.trim()) return;
@@ -71,6 +102,52 @@ export default function AdminUsersPage() {
     );
   };
 
+  const handleCreate = () => {
+    if (!createEmail.trim() || !createName.trim() || !createPassword) return;
+    if (createPassword !== createConfirmPassword) return;
+    createUser.mutate(
+      { email: createEmail.trim(), name: createName.trim(), password: createPassword, role: createRole },
+      {
+        onSuccess: () => {
+          setCreateEmail('');
+          setCreateName('');
+          setCreatePassword('');
+          setCreateConfirmPassword('');
+          setCreateRole('USER');
+          setShowCreate(false);
+        },
+      },
+    );
+  };
+
+  const handleEditSave = () => {
+    if (!editUser) return;
+    const promises: Promise<any>[] = [];
+    if (editName !== editUser.name || editRole !== editUser.role) {
+      promises.push(
+        updateUser.mutateAsync({ userId: editUser.id, name: editName, role: editRole }),
+      );
+    }
+    if (editPassword && editPassword === editConfirmPassword) {
+      promises.push(
+        setUserPassword.mutateAsync({ userId: editUser.id, password: editPassword }),
+      );
+    }
+    Promise.all(promises).then(() => {
+      setEditUser(null);
+      setEditPassword('');
+      setEditConfirmPassword('');
+    });
+  };
+
+  const openEditDialog = (user: any) => {
+    setEditUser(user);
+    setEditName(user.name);
+    setEditRole(user.role);
+    setEditPassword('');
+    setEditConfirmPassword('');
+  };
+
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
@@ -78,10 +155,16 @@ export default function AdminUsersPage() {
           <Users className="h-7 w-7 text-primary" />
           <h1 className="text-2xl font-bold">{t('admin.users.title')}</h1>
         </div>
-        <Button onClick={() => setShowInvite(!showInvite)} className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          {t('admin.users.inviteUser')}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowInvite(!showInvite)} className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            {t('admin.users.inviteUser')}
+          </Button>
+          <Button onClick={() => setShowCreate(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            {t('admin.users.createUser')}
+          </Button>
+        </div>
       </div>
 
       {/* Invite Dialog */}
@@ -108,8 +191,7 @@ export default function AdminUsersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADMIN">{t('roles.admin')}</SelectItem>
-                  <SelectItem value="EDITOR">{t('roles.editor')}</SelectItem>
-                  <SelectItem value="VIEWER">{t('roles.viewer')}</SelectItem>
+                  <SelectItem value="USER">{t('roles.user')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -124,6 +206,152 @@ export default function AdminUsersPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Create User Dialog */}
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('admin.users.createUser')}</DialogTitle>
+            <DialogDescription>{t('admin.users.createUserDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>{t('common.email')}</Label>
+              <Input
+                type="email"
+                value={createEmail}
+                onChange={(e) => setCreateEmail(e.target.value)}
+                placeholder={t('admin.users.emailPlaceholder')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('common.name')}</Label>
+              <Input
+                value={createName}
+                onChange={(e) => setCreateName(e.target.value)}
+                placeholder={t('admin.users.namePlaceholder')}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>{t('common.password')}</Label>
+                <Input
+                  type="password"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('admin.users.confirmPassword')}</Label>
+                <Input
+                  type="password"
+                  value={createConfirmPassword}
+                  onChange={(e) => setCreateConfirmPassword(e.target.value)}
+                />
+              </div>
+            </div>
+            {createPassword && createConfirmPassword && createPassword !== createConfirmPassword && (
+              <p className="text-sm text-red-500">{t('validation.passwordsDoNotMatch')}</p>
+            )}
+            <div className="space-y-2">
+              <Label>{t('common.role')}</Label>
+              <Select value={createRole} onValueChange={setCreateRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ADMIN">{t('roles.admin')}</SelectItem>
+                  <SelectItem value="USER">{t('roles.user')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowCreate(false)}>{t('common.cancel')}</Button>
+              <Button
+                onClick={handleCreate}
+                disabled={
+                  !createEmail.trim() ||
+                  !createName.trim() ||
+                  createPassword.length < 6 ||
+                  createPassword !== createConfirmPassword ||
+                  createUser.isPending
+                }
+              >
+                {createUser.isPending ? t('common.creating') : t('admin.users.createUser')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('admin.users.editUser')}</DialogTitle>
+            <DialogDescription>{editUser?.email}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>{t('common.name')}</Label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('common.role')}</Label>
+              <Select value={editRole} onValueChange={setEditRole}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ADMIN">{t('roles.admin')}</SelectItem>
+                  <SelectItem value="USER">{t('roles.user')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium mb-3">{t('admin.users.setPassword')}</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>{t('admin.users.newPassword')}</Label>
+                  <Input
+                    type="password"
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                    placeholder={t('admin.users.newPasswordPlaceholder')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('admin.users.confirmPassword')}</Label>
+                  <Input
+                    type="password"
+                    value={editConfirmPassword}
+                    onChange={(e) => setEditConfirmPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+              {editPassword && editConfirmPassword && editPassword !== editConfirmPassword && (
+                <p className="text-sm text-red-500 mt-2">{t('validation.passwordsDoNotMatch')}</p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditUser(null)}>{t('common.cancel')}</Button>
+              <Button
+                onClick={handleEditSave}
+                disabled={
+                  (editPassword && (editPassword.length < 6 || editPassword !== editConfirmPassword)) ||
+                  updateUser.isPending ||
+                  setUserPassword.isPending
+                }
+              >
+                {t('common.save')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap gap-3">
@@ -146,8 +374,7 @@ export default function AdminUsersPage() {
           <SelectContent>
             <SelectItem value="all">{t('admin.users.allRoles')}</SelectItem>
             <SelectItem value="ADMIN">{t('roles.admin')}</SelectItem>
-            <SelectItem value="EDITOR">{t('roles.editor')}</SelectItem>
-            <SelectItem value="VIEWER">{t('roles.viewer')}</SelectItem>
+            <SelectItem value="USER">{t('roles.user')}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v === 'all' ? '' : v); setPage(0); }}>
@@ -209,8 +436,7 @@ export default function AdminUsersPage() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="ADMIN">{t('roles.admin')}</SelectItem>
-                              <SelectItem value="EDITOR">{t('roles.editor')}</SelectItem>
-                              <SelectItem value="VIEWER">{t('roles.viewer')}</SelectItem>
+                              <SelectItem value="USER">{t('roles.user')}</SelectItem>
                             </SelectContent>
                           </Select>
                         </td>
@@ -230,6 +456,15 @@ export default function AdminUsersPage() {
                         </td>
                         <td className="py-3">
                           <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title={t('admin.users.editUser')}
+                              onClick={() => openEditDialog(user)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                             {user.status === 'ACTIVE' ? (
                               <Button
                                 variant="ghost"
