@@ -1,7 +1,7 @@
 // === Enums ===
 export enum GlobalRole {
   ADMIN = 'ADMIN',
-  VIEWER = 'VIEWER',
+  USER = 'USER',
 }
 
 export enum SpaceType {

@@ -339,7 +339,7 @@ describe('SpacesService', () => {
       notifications.create.mockResolvedValue(undefined);
       webhooks.fireEvent.mockResolvedValue(undefined);
 
-      const result = await service.addMember('engineering', MEMBER_ID, SpaceRole.EDITOR as any);
+      const result = await service.addMember('engineering', { userId: MEMBER_ID, role: SpaceRole.EDITOR });
 
       // Permission created
       expect(prisma.spacePermission.create).toHaveBeenCalledWith({
@@ -377,7 +377,7 @@ describe('SpacesService', () => {
       notifications.create.mockRejectedValue(new Error('Notification service down'));
       webhooks.fireEvent.mockResolvedValue(undefined);
 
-      const result = await service.addMember('engineering', MEMBER_ID, SpaceRole.VIEWER as any);
+      const result = await service.addMember('engineering', { userId: MEMBER_ID, role: SpaceRole.VIEWER });
 
       // Should not throw despite notification failure
       expect(result).toEqual(newPermission);
@@ -389,7 +389,7 @@ describe('SpacesService', () => {
       prisma.space.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.addMember('nonexistent', MEMBER_ID, SpaceRole.EDITOR as any),
+        service.addMember('nonexistent', { userId: MEMBER_ID, role: SpaceRole.EDITOR }),
       ).rejects.toThrow(NotFoundException);
 
       expect(prisma.spacePermission.create).not.toHaveBeenCalled();

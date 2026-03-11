@@ -10,6 +10,8 @@ import { UpdateUserDto } from '../users/dto/update-user.dto';
 import { UpdateRoleDto } from '../users/dto/update-role.dto';
 import { UpdateSettingsDto } from '../settings/dto/update-settings.dto';
 import { InviteUserDto, BulkInviteDto } from './dto/invite-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { SetPasswordDto } from './dto/set-password.dto';
 import { SaveEmailConfigDto } from './dto/email-config.dto';
 
 @ApiTags('Admin')
@@ -45,6 +47,12 @@ export class AdminController {
 
   // ─── Users ─────────────────────────────────────────────
 
+  @Post('users')
+  @ApiOperation({ summary: 'Create a local user' })
+  createUser(@Body() dto: CreateUserDto) {
+    return this.adminService.createUser(dto.email, dto.name, dto.password, dto.role);
+  }
+
   @Get('users')
   @ApiOperation({ summary: 'List all users (with search/filter)' })
   getUsers(
@@ -75,6 +83,12 @@ export class AdminController {
     return this.adminService.updateUser(id, { role: dto.role });
   }
 
+  @Patch('users/:id/password')
+  @ApiOperation({ summary: 'Set password for a user' })
+  setPassword(@Param('id') id: string, @Body() dto: SetPasswordDto) {
+    return this.adminService.setPassword(id, dto.password);
+  }
+
   @Patch('users/:id/suspend')
   @ApiOperation({ summary: 'Suspend user account' })
   suspendUser(@Param('id') id: string, @Req() req: any) {
@@ -98,7 +112,7 @@ export class AdminController {
   inviteUser(@Body() dto: InviteUserDto, @Req() req: any) {
     return this.adminService.inviteUser(
       dto.email,
-      dto.role || GlobalRole.VIEWER,
+      dto.role || GlobalRole.USER,
       dto.name,
       req.user.id,
     );
@@ -109,7 +123,7 @@ export class AdminController {
   bulkInvite(@Body() dto: BulkInviteDto, @Req() req: any) {
     return this.adminService.bulkInvite(
       dto.emails,
-      dto.role || GlobalRole.VIEWER,
+      dto.role || GlobalRole.USER,
       req.user.id,
     );
   }

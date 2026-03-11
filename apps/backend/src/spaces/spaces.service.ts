@@ -5,7 +5,9 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { CreateSpaceDto } from './dto/create-space.dto';
 import { UpdateSpaceDto } from './dto/update-space.dto';
+import { AddMemberDto } from './dto/add-member.dto';
 import { SpaceRole } from '@prisma/client';
+import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class SpacesService {
@@ -67,6 +69,7 @@ export class SpacesService {
           { type: 'PUBLIC' },
           { ownerId: userId },
           { permissions: { some: { userId } } },
+          { permissions: { some: { group: { members: { some: { userId } } } } } },
         ],
       },
       include: { owner: { select: { id: true, name: true, avatarUrl: true } } },
@@ -124,7 +127,10 @@ export class SpacesService {
     const space = await this.findBySlug(slug);
     return this.prisma.spacePermission.findMany({
       where: { spaceId: space.id },
-      include: { user: { select: { id: true, name: true, email: true, avatarUrl: true } } },
+      include: {
+        user: { select: { id: true, name: true, email: true, avatarUrl: true } },
+        group: { select: { id: true, name: true, description: true, _count: { select: { members: true } } } },
+      },
     });
   }
 
@@ -161,31 +167,51 @@ export class SpacesService {
       }));
   }
 
-  async addMember(slug: string, userId: string, role: SpaceRole) {
+  async addMember(slug: string, dto: AddMemberDto) {
+    if (!dto.userId && !dto.groupId) {
+      throw new BadRequestException('Either userId or groupId must be provided');
+    }
+
     const space = await this.findBySlug(slug);
     const permission = await this.prisma.spacePermission.create({
-      data: { spaceId: space.id, userId, role },
+      data: {
+        spaceId: space.id,
+        userId: dto.userId || null,
+        groupId: dto.groupId || null,
+        role: dto.role,
+      },
     });
 
-    // Invalidate cache for the new member
-    await this.invalidateSpacesCache(userId);
+    if (dto.userId) {
+      await this.invalidateSpacesCache(dto.userId);
+      try {
+        await this.notificationsService.create(dto.userId, 'space.member_added', {
+          spaceId: space.id,
+          spaceName: space.name,
+          spaceSlug: space.slug,
+          role: dto.role,
+        });
+      } catch {
+        // Non-critical
+      }
+    }
 
-    // Notify the new member
-    try {
-      await this.notificationsService.create(userId, 'space.member_added', {
-        spaceId: space.id,
-        spaceName: space.name,
-        spaceSlug: space.slug,
-        role,
+    if (dto.groupId) {
+      // Invalidate cache for all group members
+      const members = await this.prisma.groupMember.findMany({
+        where: { groupId: dto.groupId },
+        select: { userId: true },
       });
-    } catch {
-      // Non-critical
+      for (const m of members) {
+        await this.invalidateSpacesCache(m.userId);
+      }
     }
 
     await this.webhooksService.fireEvent('space.member_added', {
       spaceId: space.id,
-      userId,
-      role,
+      userId: dto.userId,
+      groupId: dto.groupId,
+      role: dto.role,
     });
 
     return permission;
@@ -197,10 +223,8 @@ export class SpacesService {
       where: { spaceId: space.id, userId },
     });
 
-    // Invalidate cache for the removed member
     await this.invalidateSpacesCache(userId);
 
-    // Notify the removed member
     try {
       await this.notificationsService.create(userId, 'space.member_removed', {
         spaceId: space.id,
@@ -212,5 +236,25 @@ export class SpacesService {
     }
 
     return { message: 'Member removed' };
+  }
+
+  async removeGroupMember(slug: string, groupId: string) {
+    const space = await this.findBySlug(slug);
+
+    // Get group members before deleting permission (for cache invalidation)
+    const members = await this.prisma.groupMember.findMany({
+      where: { groupId },
+      select: { userId: true },
+    });
+
+    await this.prisma.spacePermission.deleteMany({
+      where: { spaceId: space.id, groupId },
+    });
+
+    for (const m of members) {
+      await this.invalidateSpacesCache(m.userId);
+    }
+
+    return { message: 'Group removed from space' };
   }
 }

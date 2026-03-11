@@ -36,7 +36,13 @@ export class PagePermissionGuard implements CanActivate {
 
     // Check explicit page or space permissions for write access (or private spaces)
     const perm = await this.prisma.pagePermission.findFirst({
-      where: { pageId, userId: user.id },
+      where: {
+        pageId,
+        OR: [
+          { userId: user.id },
+          { group: { members: { some: { userId: user.id } } } },
+        ],
+      },
     });
     if (perm) {
       request.page = page;
@@ -44,7 +50,13 @@ export class PagePermissionGuard implements CanActivate {
     }
 
     const spacePerm = await this.prisma.spacePermission.findFirst({
-      where: { spaceId: page.spaceId, userId: user.id },
+      where: {
+        spaceId: page.spaceId,
+        OR: [
+          { userId: user.id },
+          { group: { members: { some: { userId: user.id } } } },
+        ],
+      },
     });
     if (!spacePerm) throw new ForbiddenException('No access to this page');
 

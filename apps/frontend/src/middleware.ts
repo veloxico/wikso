@@ -3,16 +3,25 @@ import type { NextRequest } from 'next/server';
 
 const publicPaths = ['/login', '/register', '/forgot-password', '/auth', '/auth/accept-invite', '/setup'];
 
+// Runtime API URL for server-side proxying (resolved at request time, not build time)
+const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Proxy /api/* requests to the backend at runtime
+  if (pathname.startsWith('/api/')) {
+    const url = new URL(pathname + request.nextUrl.search, API_URL);
+    return NextResponse.rewrite(url);
+  }
 
   // Allow public paths
   if (publicPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  // Allow static files and API routes
-  if (pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.includes('.')) {
+  // Allow static files
+  if (pathname.startsWith('/_next') || pathname.includes('.')) {
     return NextResponse.next();
   }
 

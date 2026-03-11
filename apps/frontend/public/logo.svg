@@ -1,0 +1,95 @@
+<svg width="1200" height="320" viewBox="0 0 1200 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7FD0FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#2F6BFF" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="leftWing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2D7BFF"/>
+      <stop offset="100%" stop-color="#1D56C9"/>
+    </linearGradient>
+    <linearGradient id="centerWing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7ED3FF"/>
+      <stop offset="100%" stop-color="#43A7FF"/>
+    </linearGradient>
+    <linearGradient id="rightWing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4AA8FF"/>
+      <stop offset="100%" stop-color="#2F6BFF"/>
+    </linearGradient>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="24" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- soft glow -->
+  <ellipse cx="220" cy="160" rx="150" ry="95" fill="url(#bgGlow)" filter="url(#softGlow)"/>
+  <!-- icon -->
+  <g transform="translate(80,58)">
+    <!-- left -->
+    <path d="M40 70
+             C25 62, 12 58, 0 54
+             L18 146
+             C21 159, 31 168, 43 170
+             C52 171, 59 166, 63 158
+             L92 96
+             C98 84, 94 73, 84 69
+             L40 70Z"
+          fill="url(#leftWing)"/>
+    <!-- center -->
+    <path d="M55 24
+             L126 40
+             C134 42, 138 49, 136 57
+             L110 150
+             C108 158, 100 163, 92 161
+             L72 156
+             C64 154, 58 146, 56 138
+             L38 39
+             C36 30, 46 22, 55 24Z"
+          fill="url(#centerWing)"/>
+    <!-- right -->
+    <path d="M126 54
+             L210 18
+             C220 14, 229 23, 226 33
+             L196 151
+             C194 160, 185 166, 176 164
+             L103 149
+             C95 147, 91 138, 95 131
+             L118 81
+             C120 75, 122 64, 126 54Z"
+          fill="url(#rightWing)"/>
+    <!-- far right fold -->
+    <path d="M210 47
+             L273 53
+             C282 54, 287 64, 283 72
+             L249 142
+             C244 152, 233 156, 223 153
+             L187 141
+             C178 138, 176 127, 183 121
+             L210 47Z"
+          fill="url(#leftWing)"/>
+    <!-- lower fold shadow -->
+    <path d="M103 149
+             L187 141
+             L224 154
+             L128 170
+             C114 172, 103 163, 103 149Z"
+          fill="#2458C8" opacity="0.9"/>
+    <!-- dots -->
+    <circle cx="238" cy="30" r="10" fill="#67BEFF"/>
+    <circle cx="273" cy="8" r="12" fill="#67BEFF"/>
+  </g>
+  <!-- wordmark -->
+  <g transform="translate(560,92)">
+    <text x="0" y="115"
+          font-family="Arial, Helvetica, sans-serif"
+          font-size="124"
+          font-weight="700"
+          letter-spacing="-2"
+          fill="#0B2C6A">
+      Wikso
+    </text>
+  </g>
+</svg>

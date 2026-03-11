@@ -64,15 +64,22 @@ export class SpacesController {
 
   @Post(':slug/members')
   @UseGuards(SpacePermissionGuard)
-  @ApiOperation({ summary: 'Add member to space' })
+  @ApiOperation({ summary: 'Add member (user or group) to space' })
   addMember(@Param('slug') slug: string, @Body() dto: AddMemberDto) {
-    return this.spacesService.addMember(slug, dto.userId, dto.role);
+    return this.spacesService.addMember(slug, dto);
   }
 
   @Delete(':slug/members/:userId')
   @UseGuards(SpacePermissionGuard)
-  @ApiOperation({ summary: 'Remove member from space' })
+  @ApiOperation({ summary: 'Remove user member from space' })
   removeMember(@Param('slug') slug: string, @Param('userId') userId: string) {
     return this.spacesService.removeMember(slug, userId);
+  }
+
+  @Delete(':slug/members/group/:groupId')
+  @UseGuards(SpacePermissionGuard)
+  @ApiOperation({ summary: 'Remove group from space' })
+  removeGroupMember(@Param('slug') slug: string, @Param('groupId') groupId: string) {
+    return this.spacesService.removeGroupMember(slug, groupId);
   }
 }

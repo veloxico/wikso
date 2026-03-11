@@ -24,6 +24,26 @@ export class AdminService {
 
   // ─── Users ─────────────────────────────────────────────
 
+  async createUser(email: string, name: string, password: string, role: GlobalRole = GlobalRole.USER) {
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) throw new ConflictException('User with this email already exists');
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    return this.prisma.user.create({
+      data: { email, name, passwordHash, role, emailVerified: true, status: 'ACTIVE' },
+      select: AdminService.SAFE_USER_SELECT,
+    });
+  }
+
+  async setPassword(userId: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    return { message: 'Password updated' };
+  }
+
   async getUsers(skip = 0, take = 20, search?: string, role?: string, status?: string) {
     const where: Prisma.UserWhereInput = {};
     if (search) {
