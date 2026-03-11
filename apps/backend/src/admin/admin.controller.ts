@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { SettingsService } from '../settings/settings.service';
@@ -10,6 +10,7 @@ import { UpdateUserDto } from '../users/dto/update-user.dto';
 import { UpdateRoleDto } from '../users/dto/update-role.dto';
 import { UpdateSettingsDto } from '../settings/dto/update-settings.dto';
 import { InviteUserDto, BulkInviteDto } from './dto/invite-user.dto';
+import { SaveEmailConfigDto } from './dto/email-config.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -26,14 +27,20 @@ export class AdminController {
 
   @Get('settings')
   @ApiOperation({ summary: 'Get system settings' })
-  getSettings() {
-    return this.settingsService.getSettings();
+  async getSettings() {
+    const settings = await this.settingsService.getSettings();
+    // Strip encrypted email provider credentials from the response.
+    // Email config should only be accessed via GET /admin/email/config (with masking).
+    const { emailProviderConfig, ...safeSettings } = settings;
+    return safeSettings;
   }
 
   @Patch('settings')
   @ApiOperation({ summary: 'Update system settings' })
-  updateSettings(@Body() dto: UpdateSettingsDto) {
-    return this.settingsService.updateSettings(dto);
+  async updateSettings(@Body() dto: UpdateSettingsDto) {
+    const settings = await this.settingsService.updateSettings(dto);
+    const { emailProviderConfig, ...safeSettings } = settings;
+    return safeSettings;
   }
 
   // ─── Users ─────────────────────────────────────────────
@@ -70,8 +77,8 @@ export class AdminController {
 
   @Patch('users/:id/suspend')
   @ApiOperation({ summary: 'Suspend user account' })
-  suspendUser(@Param('id') id: string) {
-    return this.adminService.suspendUser(id);
+  suspendUser(@Param('id') id: string, @Req() req: any) {
+    return this.adminService.suspendUser(id, req.user.id);
   }
 
   @Patch('users/:id/activate')
@@ -82,8 +89,8 @@ export class AdminController {
 
   @Delete('users/:id')
   @ApiOperation({ summary: 'Delete user' })
-  deleteUser(@Param('id') id: string) {
-    return this.adminService.deleteUser(id);
+  deleteUser(@Param('id') id: string, @Req() req: any) {
+    return this.adminService.deleteUser(id, req.user.id);
   }
 
   @Post('users/invite')
@@ -166,9 +173,33 @@ export class AdminController {
   // ─── Email ─────────────────────────────────────────────
 
   @Get('email/status')
-  @ApiOperation({ summary: 'Get SMTP email configuration status' })
+  @ApiOperation({ summary: 'Get email configuration status' })
   getEmailStatus() {
     return this.adminService.getEmailStatus();
+  }
+
+  @Get('email/providers')
+  @ApiOperation({ summary: 'List available email providers with field definitions' })
+  getEmailProviders() {
+    return this.adminService.getEmailProviders();
+  }
+
+  @Get('email/config')
+  @ApiOperation({ summary: 'Get current email provider configuration (secrets masked)' })
+  getEmailConfig() {
+    return this.adminService.getEmailConfig();
+  }
+
+  @Put('email/config')
+  @ApiOperation({ summary: 'Save email provider configuration' })
+  saveEmailConfig(@Body() dto: SaveEmailConfigDto) {
+    return this.adminService.saveEmailConfig(dto);
+  }
+
+  @Delete('email/config')
+  @ApiOperation({ summary: 'Clear email provider configuration (revert to env vars)' })
+  deleteEmailConfig() {
+    return this.adminService.deleteEmailConfig();
   }
 
   @Post('email/test')

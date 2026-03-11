@@ -1,6 +1,6 @@
 {
   "name": "@wikso/backend",
-  "version": "1.1.0",
+  "version": "2.1.0",
   "description": "",
   "author": "",
   "private": true,
@@ -25,8 +25,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.997.0",
+    "@aws-sdk/client-ses": "^3.1006.0",
     "@aws-sdk/s3-request-presigner": "^3.997.0",
-    "@wikso/shared": "workspace:*",
     "@hocuspocus/extension-database": "^3.4.4",
     "@hocuspocus/server": "^3.4.4",
     "@nestjs/bullmq": "^11.0.4",
@@ -42,6 +42,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@node-saml/passport-saml": "^5.1.0",
     "@prisma/client": "^6.15.0",
+    "@wikso/shared": "workspace:*",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.70.4",
     "class-transformer": "^0.5.1",
