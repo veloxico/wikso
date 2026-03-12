@@ -17,6 +17,8 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
+  GitBranch,
+  PenTool,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -199,6 +201,26 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
     aliases: ['error', 'danger', 'critical'],
     command: ({ editor, range }) => {
       editor.chain().focus().deleteRange(range).setCallout({ type: 'error' }).run();
+    },
+  },
+  {
+    title: 'Mermaid Diagram',
+    description: 'Flowchart, sequence, or other diagram',
+    icon: GitBranch,
+    category: 'Insert',
+    aliases: ['mermaid', 'diagram', 'flowchart', 'chart', 'sequence', 'gantt'],
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).insertContent({ type: 'mermaidDiagram' }).run();
+    },
+  },
+  {
+    title: 'Drawing',
+    description: 'Excalidraw whiteboard',
+    icon: PenTool,
+    category: 'Insert',
+    aliases: ['draw', 'excalidraw', 'whiteboard', 'sketch', 'canvas'],
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).insertContent({ type: 'excalidrawBlock' }).run();
     },
   },
 ];

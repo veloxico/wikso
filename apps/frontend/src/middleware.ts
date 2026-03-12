@@ -9,8 +9,9 @@ const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Proxy /api/* requests to the backend at runtime
-  if (pathname.startsWith('/api/')) {
+  // Proxy /api/* requests to the backend at runtime,
+  // except /api/client-config which is a Next.js route handler
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/client-config')) {
     const url = new URL(pathname + request.nextUrl.search, API_URL);
     return NextResponse.rewrite(url);
   }

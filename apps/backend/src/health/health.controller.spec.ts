@@ -41,23 +41,44 @@ describe('HealthController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('check', () => {
-    it('should return ok when all services are up', async () => {
+  describe('check (public)', () => {
+    it('should return ok when database is up', async () => {
       prisma.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
 
       const result = await controller.check();
 
       expect(result.status).toBe('ok');
-      expect(result.checks.database.status).toBe('up');
-      expect(result.checks.redis.status).toBe('up');
-      expect(result.checks.meilisearch.status).toBe('up');
-      expect(result.timestamp).toBeDefined();
+      expect(result).not.toHaveProperty('checks');
+      expect(result).not.toHaveProperty('version');
     });
 
     it('should return degraded when database is down', async () => {
       prisma.$queryRaw.mockRejectedValue(new Error('Connection refused'));
 
       const result = await controller.check();
+
+      expect(result.status).toBe('degraded');
+    });
+  });
+
+  describe('detailedCheck (admin)', () => {
+    it('should return detailed info when all services are up', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
+
+      const result = await controller.detailedCheck();
+
+      expect(result.status).toBe('ok');
+      expect(result.checks.database.status).toBe('up');
+      expect(result.checks.redis.status).toBe('up');
+      expect(result.checks.meilisearch.status).toBe('up');
+      expect(result.timestamp).toBeDefined();
+      expect(result.version).toBeDefined();
+    });
+
+    it('should return degraded when database is down', async () => {
+      prisma.$queryRaw.mockRejectedValue(new Error('Connection refused'));
+
+      const result = await controller.detailedCheck();
 
       expect(result.status).toBe('degraded');
       expect(result.checks.database.status).toBe('down');
@@ -71,22 +92,11 @@ describe('HealthController', () => {
         ping: jest.fn().mockRejectedValue(new Error('Redis unavailable')),
       });
 
-      const result = await controller.check();
+      const result = await controller.detailedCheck();
 
       expect(result.status).toBe('degraded');
       expect(result.checks.redis.status).toBe('down');
       expect(result.checks.redis.message).toBe('Redis unavailable');
-    });
-
-    it('should return degraded when Meilisearch is down', async () => {
-      prisma.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
-      (global.fetch as jest.Mock).mockRejectedValue(new Error('Meilisearch timeout'));
-
-      const result = await controller.check();
-
-      expect(result.status).toBe('degraded');
-      expect(result.checks.meilisearch.status).toBe('down');
-      expect(result.checks.meilisearch.message).toBe('Meilisearch timeout');
     });
 
     it('should return degraded when all services are down', async () => {
@@ -96,7 +106,7 @@ describe('HealthController', () => {
       });
       (global.fetch as jest.Mock).mockRejectedValue(new Error('Meili down'));
 
-      const result = await controller.check();
+      const result = await controller.detailedCheck();
 
       expect(result.status).toBe('degraded');
       expect(result.checks.database.status).toBe('down');

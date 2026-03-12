@@ -1,8 +1,12 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { GlobalRole } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -38,8 +42,23 @@ export class HealthController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Health check' })
+  @ApiOperation({ summary: 'Public health check (minimal info)' })
   async check() {
+    // Public endpoint — only return minimal status, no internals
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+      return { status: 'ok' };
+    } catch {
+      return { status: 'degraded' };
+    }
+  }
+
+  @Get('detailed')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(GlobalRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Detailed health check (admin only)' })
+  async detailedCheck() {
     const checks: Record<string, { status: string; message?: string }> = {};
 
     // PostgreSQL

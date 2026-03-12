@@ -21,6 +21,8 @@ import { SlashCommandExtension } from './editor/SlashCommandExtension';
 import { slashCommandSuggestion } from './editor/slashCommandSuggestion';
 import { CalloutExtension } from './editor/CalloutExtension';
 import { CodeBlockExtension } from './editor/CodeBlockExtension';
+import { MermaidExtension } from './editor/MermaidExtension';
+import { ExcalidrawExtension } from './editor/ExcalidrawExtension';
 import { createMentionExtension } from './editor/MentionExtension';
 import { EmojiPickerButton } from './editor/EmojiPickerButton';
 import {
@@ -32,7 +34,7 @@ import {
   Table as TableIcon, ImagePlus, Link as LinkIcon,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Highlighter, Superscript as SuperscriptIcon, Subscript as SubscriptIcon,
-  Trash2, Plus, Columns, Rows, Palette,
+  Trash2, Plus, Columns, Rows, Palette, PenTool, GitBranch,
 } from 'lucide-react';
 import { useState, useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
@@ -90,6 +92,8 @@ export function Editor({ content, onChange, editable = true, spaceSlug }: Editor
       CharacterCount,
       CalloutExtension,
       CodeBlockExtension,
+      MermaidExtension,
+      ExcalidrawExtension,
       SlashCommandExtension.configure({
         suggestion: {
           ...slashCommandSuggestion,
@@ -141,7 +145,7 @@ export function Editor({ content, onChange, editable = true, spaceSlug }: Editor
   }: {
     onClick: () => void; isActive?: boolean; children: React.ReactNode; title: string; disabled?: boolean;
   }) => (
-    <Button variant="ghost" size="icon" className={cn('h-8 w-8', isActive && 'bg-accent text-accent-foreground')} onClick={onClick} title={title} type="button" disabled={disabled}>
+    <Button variant="ghost" size="icon" className={cn('h-8 w-8', isActive && 'bg-accent text-accent-foreground')} onClick={onClick} onMouseDown={(e) => e.preventDefault()} title={title} type="button" disabled={disabled}>
       {children}
     </Button>
   );
@@ -283,6 +287,15 @@ export function Editor({ content, onChange, editable = true, spaceSlug }: Editor
           </ToolbarButton>
           <ToolbarButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title={t('editor.divider')}>
             <Minus className="h-4 w-4" />
+          </ToolbarButton>
+
+          <ToolbarDivider />
+
+          <ToolbarButton onClick={() => editor.chain().focus().setExcalidrawBlock().run()} title={t('editor.drawing')}>
+            <PenTool className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor.chain().focus().setMermaidDiagram().run()} title={t('editor.mermaidDiagram')}>
+            <GitBranch className="h-4 w-4" />
           </ToolbarButton>
 
           <ToolbarDivider />

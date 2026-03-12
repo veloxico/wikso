@@ -217,7 +217,7 @@ model SystemSettings {
   appVersion                String   @default("0.0.0")
   siteName                  String   @default("Wikso")
   siteDescription           String   @default("")
-  registrationEnabled       Boolean  @default(true)
+  registrationEnabled       Boolean  @default(false)
   allowedEmailDomains       String[] @default([])
   emailVerificationRequired Boolean  @default(false)
   passwordMinLength         Int      @default(6)

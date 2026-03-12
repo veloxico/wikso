@@ -24,6 +24,8 @@ import { SlashCommandExtension } from './editor/SlashCommandExtension';
 import { slashCommandSuggestion } from './editor/slashCommandSuggestion';
 import { CalloutExtension } from './editor/CalloutExtension';
 import { CodeBlockExtension } from './editor/CodeBlockExtension';
+import { MermaidExtension } from './editor/MermaidExtension';
+import { ExcalidrawExtension } from './editor/ExcalidrawExtension';
 import { createMentionExtension } from './editor/MentionExtension';
 import { EmojiPickerButton } from './editor/EmojiPickerButton';
 import { HocuspocusProvider } from '@hocuspocus/provider';
@@ -39,7 +41,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Highlighter, Superscript as SuperscriptIcon, Subscript as SubscriptIcon,
   Plus, Trash2, Columns, Rows,
-  Palette,
+  Palette, PenTool, GitBranch,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -64,6 +66,8 @@ const NODE_TYPE_MAP: Record<string, string> = {
   table_header: 'tableHeader',
   task_list: 'taskList',
   task_item: 'taskItem',
+  mermaid_diagram: 'mermaidDiagram',
+  excalidraw_block: 'excalidrawBlock',
 };
 
 function normalizeNodeTypes(node: any): any {
@@ -130,19 +134,29 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
     const newDoc = new Y.Doc();
     setYdoc(newDoc);
 
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:1234';
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') || '' : '';
 
-    // Defer provider creation to the next macrotask. In React Strict Mode,
-    // the first mount's cleanup runs synchronously before this timer fires,
-    // so no provider is ever created for the throwaway mount cycle —
-    // preventing unhandled WebSocket promise rejections during teardown.
+    // Fetch the WebSocket URL from the runtime config endpoint.
+    // NEXT_PUBLIC_WS_URL is a build-time variable and won't be set in
+    // pre-built Docker images, so we resolve the URL at runtime instead.
     let provider: HocuspocusProvider | null = null;
     let destroyed = false;
     let syncedFlag = false;
     let syncFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const timerId = setTimeout(() => {
+    const initProvider = async () => {
+      if (destroyed) return;
+
+      let wsUrl: string;
+      try {
+        const res = await fetch('/api/client-config');
+        const cfg = await res.json();
+        wsUrl = cfg.wsUrl;
+      } catch {
+        // Fallback for local development without the config endpoint
+        wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:1234';
+      }
+
       if (destroyed) return;
 
       provider = new HocuspocusProvider({
@@ -192,7 +206,12 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       provider.connect();
       providerRef.current = provider;
       setProviderState(provider);
-    }, 0);
+    };
+
+    // Defer to next macrotask — in React Strict Mode the first mount's
+    // cleanup runs synchronously, so the async function won't proceed
+    // past the first `if (destroyed)` check for the throwaway cycle.
+    const timerId = setTimeout(initProvider, 0);
 
     return () => {
       destroyed = true;
@@ -294,6 +313,8 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
         CharacterCount,
         CalloutExtension,
         CodeBlockExtension,
+        MermaidExtension,
+        ExcalidrawExtension,
         SlashCommandExtension.configure({
           suggestion: {
             ...slashCommandSuggestion,
@@ -480,6 +501,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       size="icon"
       className={cn('h-8 w-8', isActive && 'bg-accent text-accent-foreground')}
       onClick={onClick}
+      onMouseDown={(e) => e.preventDefault()}
       title={title}
       type="button"
       disabled={disabled}
@@ -704,6 +726,15 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
           </ToolbarButton>
           <ToolbarButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title={t('editor.divider')}>
             <Minus className="h-4 w-4" />
+          </ToolbarButton>
+
+          <ToolbarDivider />
+
+          <ToolbarButton onClick={() => editor.chain().focus().setExcalidrawBlock().run()} title={t('editor.drawing')}>
+            <PenTool className="h-4 w-4" />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => editor.chain().focus().setMermaidDiagram().run()} title={t('editor.mermaidDiagram')}>
+            <GitBranch className="h-4 w-4" />
           </ToolbarButton>
 
           <ToolbarDivider />

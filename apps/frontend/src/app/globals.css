@@ -877,3 +877,279 @@
 .dark .wikso-editor pre code .hljs-formula {
   background: oklch(0.25 0.02 250);
 }
+
+/* ===== Mermaid Diagram Block ===== */
+
+.mermaid-block {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 1rem 0;
+  overflow: hidden;
+  background: var(--card);
+}
+
+.mermaid-block-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+}
+
+.mermaid-block-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  user-select: none;
+}
+
+.mermaid-block-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mermaid-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.mermaid-btn:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.mermaid-btn.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.mermaid-btn-delete:hover {
+  background: oklch(0.6 0.2 25);
+  color: white;
+}
+
+.mermaid-block-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--foreground);
+  background: var(--card);
+  tab-size: 2;
+}
+
+.mermaid-block-textarea::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.5;
+}
+
+.mermaid-block-preview {
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80px;
+  overflow: auto;
+}
+
+.mermaid-block-preview svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-block-error {
+  color: oklch(0.6 0.2 25);
+  font-size: 13px;
+  padding: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mermaid-block-error span {
+  font-weight: 600;
+}
+
+.mermaid-block-empty {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ===== Excalidraw Block ===== */
+
+.excalidraw-block {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 1rem 0;
+  overflow: hidden;
+  background: var(--card);
+}
+
+.excalidraw-block-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+}
+
+.excalidraw-block-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  user-select: none;
+}
+
+.excalidraw-block-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.excalidraw-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.excalidraw-btn:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.excalidraw-btn-save {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.excalidraw-btn-save:hover {
+  opacity: 0.9;
+}
+
+.excalidraw-btn-delete:hover {
+  background: oklch(0.6 0.2 25);
+  color: white;
+}
+
+.excalidraw-block-preview {
+  min-height: 120px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.excalidraw-block-preview:hover {
+  background: var(--accent);
+}
+
+.excalidraw-block-svg {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.excalidraw-block-svg svg {
+  max-width: 100%;
+  height: auto;
+  max-height: 500px;
+}
+
+.excalidraw-block-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-foreground);
+  padding: 24px;
+}
+
+.excalidraw-block-placeholder span {
+  font-size: 13px;
+}
+
+.excalidraw-block-canvas {
+  position: relative;
+}
+
+.excalidraw-canvas-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.excalidraw-canvas-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+}
+
+.excalidraw-canvas-area {
+  height: 600px;
+  position: relative;
+}
+
+.excalidraw-canvas-area .excalidraw {
+  height: 100%;
+}
+
+.excalidraw-block-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 300px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.excalidraw-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: excalidraw-spin 0.6s linear infinite;
+}
+
+@keyframes excalidraw-spin {
+  to { transform: rotate(360deg); }
+}
