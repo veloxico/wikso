@@ -1105,6 +1105,7 @@
 
 .excalidraw-block-canvas {
   position: relative;
+  touch-action: none;
 }
 
 .excalidraw-canvas-wrapper {

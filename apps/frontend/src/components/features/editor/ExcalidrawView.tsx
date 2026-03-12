@@ -31,12 +31,22 @@ export function ExcalidrawView({ node, updateAttributes, deleteNode, editor }: N
   }, []);
 
   return (
-    <NodeViewWrapper className="excalidraw-block" data-drag-handle>
+    <NodeViewWrapper className="excalidraw-block" data-drag-handle={!editing}>
       {editing && isEditable ? (
         <div
           className="excalidraw-block-canvas"
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerMove={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onMouseMove={(e) => e.stopPropagation()}
+          onMouseUp={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
           onKeyUp={(e) => e.stopPropagation()}
+          onWheel={(e) => e.stopPropagation()}
         >
           <Suspense fallback={
             <div className="excalidraw-block-loading">
