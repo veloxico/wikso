@@ -1,8 +1,8 @@
 'use client';
 
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
-import { useState, useCallback, Suspense, lazy } from 'react';
-import { PenTool, Trash2, Pencil } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
+import { PenTool, Trash2, Pencil, GripVertical } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const ExcalidrawCanvas = lazy(() => import('./ExcalidrawCanvas'));
@@ -13,8 +13,8 @@ export function ExcalidrawView({ node, updateAttributes, deleteNode, editor }: N
   const data = (node.attrs.data as string) || '{}';
   const hasContent = data !== '{}' && previewSvg;
 
-  // New blocks open immediately in edit mode
   const [editing, setEditing] = useState(!hasContent);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   const isDark = typeof document !== 'undefined'
     ? document.documentElement.classList.contains('dark')
@@ -30,24 +30,41 @@ export function ExcalidrawView({ node, updateAttributes, deleteNode, editor }: N
     setEditing(false);
   }, []);
 
+  // Prevent browser native drag from TipTap's draggable="true" ancestor.
+  // Uses capture phase to intercept dragstart before it reaches TipTap/browser.
+  // Also disables draggable on the TipTap wrapper element while editing.
+  useEffect(() => {
+    if (!editing) return;
+
+    const el = canvasRef.current;
+    if (!el) return;
+
+    // Find TipTap's outer wrapper element (has draggable="true")
+    const tiptapWrapper = el.closest('[draggable="true"]') as HTMLElement | null;
+    if (tiptapWrapper) {
+      tiptapWrapper.draggable = false;
+    }
+
+    const preventDrag = (e: Event) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    };
+
+    el.addEventListener('dragstart', preventDrag, true);
+
+    return () => {
+      el.removeEventListener('dragstart', preventDrag, true);
+      // Restore draggable when leaving edit mode
+      if (tiptapWrapper) {
+        tiptapWrapper.draggable = true;
+      }
+    };
+  }, [editing]);
+
   return (
-    <NodeViewWrapper className="excalidraw-block" data-drag-handle={!editing}>
+    <NodeViewWrapper className="excalidraw-block">
       {editing && isEditable ? (
-        <div
-          className="excalidraw-block-canvas"
-          onPointerDown={(e) => e.stopPropagation()}
-          onPointerMove={(e) => e.stopPropagation()}
-          onPointerUp={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onMouseMove={(e) => e.stopPropagation()}
-          onMouseUp={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          onTouchMove={(e) => e.stopPropagation()}
-          onTouchEnd={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-          onKeyUp={(e) => e.stopPropagation()}
-          onWheel={(e) => e.stopPropagation()}
-        >
+        <div ref={canvasRef} className="excalidraw-block-canvas">
           <Suspense fallback={
             <div className="excalidraw-block-loading">
               <div className="excalidraw-spinner" />
@@ -65,6 +82,13 @@ export function ExcalidrawView({ node, updateAttributes, deleteNode, editor }: N
       ) : (
         <>
           <div className="excalidraw-block-toolbar">
+            <div
+              data-drag-handle=""
+              className="excalidraw-drag-handle"
+              contentEditable={false}
+            >
+              <GripVertical size={14} />
+            </div>
             <div className="excalidraw-block-label">
               <PenTool size={14} />
               <span>{t('editor.drawing')}</span>
@@ -100,7 +124,6 @@ export function ExcalidrawView({ node, updateAttributes, deleteNode, editor }: N
             onKeyDown={(e) => {
               if (isEditable && (e.key === 'Enter' || e.key === ' ')) {
                 e.preventDefault();
-                e.stopPropagation();
                 setEditing(true);
               }
             }}

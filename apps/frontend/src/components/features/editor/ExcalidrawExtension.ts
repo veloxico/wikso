@@ -19,6 +19,8 @@ export const ExcalidrawExtension = Node.create({
 
   draggable: true,
 
+  selectable: true,
+
   addAttributes() {
     return {
       data: {
@@ -71,6 +73,44 @@ export const ExcalidrawExtension = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(ExcalidrawView);
+    return ReactNodeViewRenderer(ExcalidrawView, {
+      // Override TipTap's default stopEvent to prevent ProseMirror from
+      // intercepting pointer/mouse/touch events inside the Excalidraw canvas.
+      // Only events originating from [data-drag-handle] are passed through
+      // to ProseMirror (for node dragging).
+      stopEvent: ({ event }) => {
+        const target = event.target as HTMLElement;
+
+        // Let ProseMirror handle events on the drag handle
+        if (target.closest?.('[data-drag-handle]')) {
+          return false;
+        }
+
+        // Let copy/paste/cut through to ProseMirror
+        if (['copy', 'paste', 'cut'].includes(event.type)) {
+          return false;
+        }
+
+        // Block all pointer/mouse/touch/drag events from ProseMirror
+        // so Excalidraw's internal canvas handlers work freely
+        if (
+          event.type.startsWith('mouse') ||
+          event.type.startsWith('pointer') ||
+          event.type.startsWith('touch') ||
+          event.type.startsWith('drag') ||
+          event.type === 'drop' ||
+          event.type === 'wheel'
+        ) {
+          return true;
+        }
+
+        // Block keyboard events too (Excalidraw uses shortcuts)
+        if (event.type.startsWith('key')) {
+          return true;
+        }
+
+        return true;
+      },
+    });
   },
 });
