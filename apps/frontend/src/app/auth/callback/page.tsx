@@ -1,11 +1,12 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { LanguageSwitcher } from '@/components/features/LanguageSwitcher';
+import axios from 'axios';
 
 function OAuthCallbackContent() {
   const router = useRouter();
@@ -13,24 +14,45 @@ function OAuthCallbackContent() {
   const [error, setError] = useState<string | null>(null);
   const setTokens = useAuthStore((s) => s.setTokens);
   const { t } = useTranslation();
+  const exchangedRef = useRef(false);
 
   useEffect(() => {
-    const accessToken = searchParams.get('accessToken');
-    const refreshToken = searchParams.get('refreshToken');
     const errorParam = searchParams.get('error');
-
     if (errorParam) {
       setError(errorParam);
       return;
     }
 
+    // New flow: exchange one-time code for tokens (tokens are never in URL)
+    const code = searchParams.get('code');
+    if (code && !exchangedRef.current) {
+      exchangedRef.current = true;
+      axios
+        .post('/api/v1/auth/exchange-code', { code })
+        .then(({ data }) => {
+          const { accessToken, refreshToken } = data;
+          localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('refreshToken', refreshToken);
+          document.cookie = `accessToken=${accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+          setTokens(accessToken, refreshToken);
+          router.replace('/spaces');
+        })
+        .catch(() => {
+          setError(t('auth.callback.failed'));
+        });
+      return;
+    }
+
+    // Legacy fallback: direct tokens in URL (will be removed in future)
+    const accessToken = searchParams.get('accessToken');
+    const refreshToken = searchParams.get('refreshToken');
     if (accessToken && refreshToken) {
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       document.cookie = `accessToken=${accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
       setTokens(accessToken, refreshToken);
       router.replace('/spaces');
-    } else {
+    } else if (!code) {
       setError(t('auth.callback.missingTokens'));
     }
   }, [searchParams, router, setTokens, t]);

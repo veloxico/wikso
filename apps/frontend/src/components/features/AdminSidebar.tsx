@@ -36,7 +36,7 @@ export function AdminSidebar() {
     { href: '/admin/auth', labelKey: 'admin.nav.authProviders', icon: Key },
     { href: '/admin/email', labelKey: 'admin.nav.email', icon: Mail },
     { href: '/admin/webhooks', labelKey: 'admin.nav.webhooks', icon: Webhook },
-    { href: '/admin/import', labelKey: 'admin.nav.import', icon: Upload },
+    { href: '/admin/import', labelKey: 'admin.nav.import', icon: Upload, badge: 'Beta' },
   ];
 
   return (
@@ -85,6 +85,11 @@ export function AdminSidebar() {
             >
               <Icon className="h-4 w-4" />
               {t(item.labelKey)}
+              {(item as any).badge && (
+                <span className="ml-auto rounded-full bg-yellow-100 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                  {(item as any).badge}
+                </span>
+              )}
             </Link>
           );
         })}

@@ -101,13 +101,22 @@ export class AuthController {
     return this.authService.acceptInvite(body.token, body.name, body.password);
   }
 
-  // --- Helper: redirect to frontend with tokens ---
+  /**
+   * Exchange a one-time OAuth code for tokens.
+   * The code was created during the OAuth redirect and stored in Redis
+   * with a 60-second TTL. This prevents JWTs from being exposed in URLs/logs.
+   */
+  @Post('exchange-code')
+  @ApiOperation({ summary: 'Exchange one-time OAuth code for tokens' })
+  exchangeCode(@Body('code') code: string) {
+    return this.authService.exchangeOAuthCode(code);
+  }
+
+  // --- Helper: redirect to frontend with a one-time code (NOT tokens) ---
   private async oauthRedirect(req: any, res: any) {
-    const tokens = await this.authService.login(req.user);
+    const code = await this.authService.createOAuthCode(req.user);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
-    res.redirect(
-      `${frontendUrl}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`,
-    );
+    res.redirect(`${frontendUrl}/auth/callback?code=${code}`);
   }
 
   // OAuth2 routes — Google

@@ -181,7 +181,7 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
         }),
       ],
       onAuthenticate: async (data) => {
-        const { token } = data;
+        const { token, documentName } = data;
         if (!token) {
           this.logger.warn('Hocuspocus connection without token — rejecting');
           throw new Error('Authentication required');
@@ -189,6 +189,35 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
         try {
           const cleanToken = token.toString().replace('Bearer ', '');
           const payload = this.jwtService.verify(cleanToken);
+
+          // Verify user has access to this specific page
+          const pageId = this.extractPageId(documentName);
+          const page = await this.prisma.page.findUnique({
+            where: { id: pageId },
+            select: { id: true, spaceId: true, deletedAt: true },
+          });
+          if (!page || page.deletedAt) throw new Error('Page not found');
+
+          // Check space access: public spaces are open; private/personal require membership
+          const space = await this.prisma.space.findUnique({
+            where: { id: page.spaceId },
+            select: { type: true, ownerId: true },
+          });
+          if (!space) throw new Error('Space not found');
+
+          if (space.type !== 'PUBLIC') {
+            const isOwner = space.ownerId === payload.sub;
+            const isAdmin = payload.role === 'ADMIN';
+            const hasPerm = isOwner || isAdmin || await this.prisma.spacePermission.findFirst({
+              where: { spaceId: page.spaceId, userId: payload.sub },
+              select: { id: true },
+            });
+            if (!hasPerm) {
+              this.logger.warn(`User ${payload.sub} denied WS access to page ${pageId}`);
+              throw new Error('No access to this document');
+            }
+          }
+
           return { user: payload };
         } catch (err) {
           this.logger.warn(`Hocuspocus auth failed: ${err.message}`);

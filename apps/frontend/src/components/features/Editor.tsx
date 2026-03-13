@@ -133,6 +133,9 @@ export function Editor({ content, onChange, editable = true, spaceSlug }: Editor
         const result = ev.target?.result as string;
         editor.chain().focus().setImage({ src: result, alt: file.name }).run();
       };
+      reader.onerror = () => {
+        console.error('Failed to read image file:', file.name);
+      };
       reader.readAsDataURL(file);
     }
     if (e.target) e.target.value = '';

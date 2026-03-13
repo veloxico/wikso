@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import '@excalidraw/excalidraw/index.css';
 import { Excalidraw, exportToSvg } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from '@excalidraw/excalidraw/types';
@@ -12,6 +12,8 @@ interface ExcalidrawCanvasProps {
   onSave: (data: string, previewSvg: string) => void;
   onCancel: () => void;
   darkMode: boolean;
+  /** Called on every drawing change with scene JSON (no SVG). */
+  onDataChange?: (data: string) => void;
 }
 
 function parseInitialData(json: string): ExcalidrawInitialDataState {
@@ -33,11 +35,14 @@ function parseInitialData(json: string): ExcalidrawInitialDataState {
   return { elements: [], appState: { collaborators: new Map() } };
 }
 
-export default function ExcalidrawCanvas({ initialData, onSave, onCancel, darkMode }: ExcalidrawCanvasProps) {
+export default function ExcalidrawCanvas({ initialData, onSave, onCancel, onDataChange, darkMode }: ExcalidrawCanvasProps) {
   const { t } = useTranslation();
   const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const parsedData = parseInitialData(initialData);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
 
+  /** Full save with SVG preview (Done button). */
   const handleSave = useCallback(async () => {
     const api = excalidrawAPIRef.current;
     if (!api) return;
@@ -55,7 +60,6 @@ export default function ExcalidrawCanvas({ initialData, onSave, onCancel, darkMo
       files,
     });
 
-    // Generate SVG preview
     try {
       const svgElement = await exportToSvg({
         elements,
@@ -66,13 +70,42 @@ export default function ExcalidrawCanvas({ initialData, onSave, onCancel, darkMo
         },
         files,
       });
-      const svgString = svgElement?.outerHTML || '';
-      onSave(sceneData, svgString);
+      onSave(sceneData, svgElement?.outerHTML || '');
     } catch {
-      // If SVG export fails, save without preview
       onSave(sceneData, '');
     }
   }, [onSave]);
+
+  /** Debounced onChange — keeps TipTap node data in sync while drawing. */
+  const handleChange = useCallback(
+    (elements: readonly any[], appState: any, files: any) => {
+      if (!onDataChange) return;
+
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        if (!mountedRef.current) return;
+        const sceneData = JSON.stringify({
+          elements,
+          appState: {
+            viewBackgroundColor: appState.viewBackgroundColor,
+            gridSize: appState.gridSize,
+          },
+          files,
+        });
+        onDataChange(sceneData);
+      }, 500);
+    },
+    [onDataChange],
+  );
+
+  // Cleanup debounce timer and mark as unmounted
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   return (
     <div className="excalidraw-canvas-wrapper">
@@ -91,6 +124,7 @@ export default function ExcalidrawCanvas({ initialData, onSave, onCancel, darkMo
           excalidrawAPI={(api) => { excalidrawAPIRef.current = api; }}
           initialData={parsedData}
           theme={darkMode ? 'dark' : 'light'}
+          onChange={handleChange}
           UIOptions={{
             canvasActions: {
               loadScene: false,

@@ -9,6 +9,7 @@ import {
   Maximize2,
   Trash2,
 } from 'lucide-react';
+import { authenticatedSrc } from '@/lib/authenticated-src';
 
 export function ResizableImageView({
   node,
@@ -17,7 +18,8 @@ export function ResizableImageView({
   selected,
   editor,
 }: NodeViewProps) {
-  const { src, alt, width, alignment = 'center', caption = '' } = node.attrs;
+  const { src: rawSrc, alt, width, alignment = 'center', caption = '' } = node.attrs;
+  const src = authenticatedSrc(rawSrc);
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isResizing, setIsResizing] = useState(false);

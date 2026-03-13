@@ -4,6 +4,7 @@ import { RedisService } from '../redis/redis.service';
 import { SearchService } from '../search/search.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
+import { Prisma } from '@prisma/client';
 import { CreatePageDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
 import { MovePageDto } from './dto/move-page.dto';
@@ -57,7 +58,7 @@ export class PagesService {
       data: {
         title: dto.title,
         slug,
-        contentJson: dto.contentJson || {},
+        contentJson: (dto.contentJson || {}) as Prisma.InputJsonValue,
         parentId: dto.parentId,
         status: dto.status || 'DRAFT',
         spaceId: space.id,
@@ -194,7 +195,7 @@ export class PagesService {
       where: { id: pageId },
       data: {
         ...(dto.title !== undefined && dto.title !== '' && { title: dto.title }),
-        ...(dto.contentJson !== undefined && { contentJson: dto.contentJson }),
+        ...(dto.contentJson !== undefined && { contentJson: dto.contentJson as Prisma.InputJsonValue }),
         ...(dto.status && { status: dto.status }),
       },
       include: { space: true },
@@ -202,7 +203,7 @@ export class PagesService {
 
     if (dto.contentJson !== undefined) {
       await this.prisma.pageVersion.create({
-        data: { pageId, contentJson: dto.contentJson, authorId: userId },
+        data: { pageId, contentJson: dto.contentJson as Prisma.InputJsonValue, authorId: userId },
       });
     }
 
@@ -361,17 +362,18 @@ export class PagesService {
         throw new ForbiddenException('Cannot move page to a different space');
       }
 
-      // Circular reference check — walk up from the target parent to root
-      let currentId: string | null = dto.parentId;
-      while (currentId) {
-        if (currentId === pageId) {
-          throw new ForbiddenException('Cannot move page under its own descendant');
-        }
-        const current = await this.prisma.page.findUnique({
-          where: { id: currentId },
-          select: { parentId: true },
-        });
-        currentId = current?.parentId || null;
+      // Circular reference check — single recursive CTE instead of N+1 queries
+      const ancestors: Array<{ id: string }> = await this.prisma.$queryRaw`
+        WITH RECURSIVE ancestors AS (
+          SELECT id, "parentId" FROM "Page" WHERE id = ${dto.parentId}::uuid
+          UNION ALL
+          SELECT p.id, p."parentId" FROM "Page" p
+          INNER JOIN ancestors a ON p.id = a."parentId"
+        )
+        SELECT id FROM ancestors WHERE id = ${pageId}::uuid LIMIT 1
+      `;
+      if (ancestors.length > 0) {
+        throw new ForbiddenException('Cannot move page under its own descendant');
       }
     }
 

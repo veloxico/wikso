@@ -83,10 +83,12 @@ export default function PageEditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId]);
 
-  if (page && !titleInitialized) {
-    setTitle(page.title);
-    setTitleInitialized(true);
-  }
+  useEffect(() => {
+    if (page && !titleInitialized) {
+      setTitle(page.title);
+      setTitleInitialized(true);
+    }
+  }, [page, titleInitialized]);
 
   const handleSaveTitle = useCallback(() => {
     if (title && title !== page?.title) {

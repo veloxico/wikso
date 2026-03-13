@@ -1,20 +1,22 @@
-import { IsString, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsEnum, MaxLength, IsObject, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PageStatus } from '@prisma/client';
 
 export class CreatePageDto {
   @ApiProperty()
   @IsString()
+  @MaxLength(500)
   title: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsUUID()
   parentId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  contentJson?: any;
+  @IsObject()
+  contentJson?: Record<string, unknown>;
 
   @ApiPropertyOptional({ enum: PageStatus })
   @IsOptional()

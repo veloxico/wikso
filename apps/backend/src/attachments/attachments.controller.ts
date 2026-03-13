@@ -1,9 +1,10 @@
 import { Controller, Get, Post, Delete, Param, Res, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiQuery } from '@nestjs/swagger';
 import { Readable } from 'stream';
 import { AttachmentsService } from './attachments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtOrQueryAuthGuard } from '../auth/guards/jwt-or-query-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Attachments')
@@ -51,18 +52,21 @@ export class AttachmentsController {
 
   /**
    * Permanent file proxy — streams file content directly from S3.
-   * No auth required: the UUID serves as an unguessable access token.
-   * This endpoint is used for image src in the editor so URLs don't expire.
+   * Accepts JWT from Authorization header or ?token= query parameter.
+   * Query parameter is needed for browser-initiated requests (<img src>, etc.).
    */
   @Get('attachments/:id/file')
-  @ApiOperation({ summary: 'Stream file content (permanent URL)' })
+  @ApiOperation({ summary: 'Stream file content (auth via header or query token)' })
+  @ApiQuery({ name: 'token', required: false, description: 'JWT access token (for img/video src)' })
+  @UseGuards(JwtOrQueryAuthGuard)
   async file(@Param('id') id: string, @Res() res: any) {
     const { stream, mimeType, filename, size } = await this.attachmentsService.getFileStream(id);
 
     res.set({
       'Content-Type': mimeType,
       'Content-Disposition': `inline; filename="${encodeURIComponent(filename)}"`,
-      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Cache-Control': 'private, max-age=3600',
+      'Referrer-Policy': 'no-referrer',
     });
 
     if (size) {

@@ -222,15 +222,25 @@ export class SearchService implements OnModuleInit {
     return { indexed };
   }
 
+  /** Validate that a value looks like a UUID (prevents filter injection). */
+  private isValidUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  }
+
   async search(query: string, filters?: { spaceId?: string; authorId?: string; tags?: string }) {
     try {
       const index = this.client.index(this.indexName);
       const filterParts: string[] = [];
 
-      if (filters?.spaceId) filterParts.push(`spaceId = "${filters.spaceId}"`);
-      if (filters?.authorId) filterParts.push(`authorId = "${filters.authorId}"`);
+      // Validate filter values to prevent MeiliSearch filter injection
+      if (filters?.spaceId && this.isValidUuid(filters.spaceId)) {
+        filterParts.push(`spaceId = "${filters.spaceId}"`);
+      }
+      if (filters?.authorId && this.isValidUuid(filters.authorId)) {
+        filterParts.push(`authorId = "${filters.authorId}"`);
+      }
 
-      return index.search(query, {
+      return index.search(query?.substring(0, 500) || '', {
         filter: filterParts.length ? filterParts.join(' AND ') : undefined,
         limit: 50,
       });

@@ -21,8 +21,10 @@ export function GET(request: NextRequest) {
   }
 
   // Auto-detect from the request Host header.
-  const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3001';
-  const proto = request.headers.get('x-forwarded-proto') || 'http';
+  // Validate host to prevent header-injection attacks (e.g. spoofed x-forwarded-host).
+  const rawHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3001';
+  const host = /^[a-zA-Z0-9._:-]+$/.test(rawHost) ? rawHost : 'localhost:3001';
+  const proto = request.headers.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
   const wsProto = proto === 'https' ? 'wss' : 'ws';
 
   return NextResponse.json({

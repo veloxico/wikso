@@ -57,8 +57,21 @@ export class AttachmentsService implements OnModuleInit {
     }
   }
 
+  /** Blocked MIME types that could be used for XSS or code execution. */
+  private static readonly BLOCKED_MIMES = new Set([
+    'text/html', 'application/xhtml+xml',
+    'text/javascript', 'application/javascript', 'application/x-javascript',
+    'application/x-httpd-php', 'application/x-sh', 'application/x-csh',
+    'application/x-msdownload', 'application/x-msdos-program',
+  ]);
+
   async upload(pageId: string, uploaderId: string, file: Express.Multer.File) {
     if (!file) throw new BadRequestException('No file provided');
+
+    // Block dangerous file types that could cause XSS or code execution
+    if (AttachmentsService.BLOCKED_MIMES.has(file.mimetype)) {
+      throw new BadRequestException(`File type "${file.mimetype}" is not allowed`);
+    }
 
     // Enforce configurable file size limit from admin settings (hard cap 100 MB)
     const settings = await this.settingsService.getSettings();

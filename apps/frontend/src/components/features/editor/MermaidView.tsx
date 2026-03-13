@@ -31,10 +31,19 @@ export function MermaidView({ node, updateAttributes, deleteNode, editor }: Node
     };
   }, []);
 
-  // Detect dark mode
-  const isDark = typeof document !== 'undefined'
-    ? document.documentElement.classList.contains('dark')
-    : false;
+  // Reactive dark mode detection — re-renders when theme changes
+  const [isDark, setIsDark] = useState(() =>
+    typeof document !== 'undefined'
+      ? document.documentElement.classList.contains('dark')
+      : false,
+  );
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   const renderDiagram = useCallback(async (mermaidCode: string) => {
     try {
@@ -66,9 +75,10 @@ export function MermaidView({ node, updateAttributes, deleteNode, editor }: Node
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
       setSvgOutput('');
-      // Clean up any orphaned render elements from mermaid
+      // Clean up orphaned render element for THIS instance only
       if (typeof document !== 'undefined') {
-        const orphaned = document.querySelector(`[id^="${renderId}"]`);
+        const currentId = `${renderId}_${renderCountRef.current}`;
+        const orphaned = document.getElementById(currentId);
         if (orphaned) orphaned.remove();
       }
     }

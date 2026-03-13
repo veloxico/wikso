@@ -131,7 +131,7 @@ describe('AttachmentsService', () => {
       mockPrisma.attachment.findUnique.mockResolvedValue(attachment);
       mockPrisma.attachment.delete.mockResolvedValue(attachment);
 
-      const result = await service.delete('att-1');
+      const result = await service.delete('att-1', 'user-1');
 
       expect(result).toEqual({ message: 'Attachment deleted' });
       expect(mockPrisma.attachment.findUnique).toHaveBeenCalledWith({
@@ -145,7 +145,7 @@ describe('AttachmentsService', () => {
     it('should throw NotFoundException when attachment does not exist', async () => {
       mockPrisma.attachment.findUnique.mockResolvedValue(null);
 
-      await expect(service.delete('non-existent')).rejects.toThrow(
+      await expect(service.delete('non-existent', 'user-1')).rejects.toThrow(
         NotFoundException,
       );
     });

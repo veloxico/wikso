@@ -68,10 +68,14 @@ api.interceptors.response.use(
         localStorage.setItem('refreshToken', newRefresh);
         document.cookie = `accessToken=${accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 
+        // Reset flag BEFORE processing queue to prevent a new 401 from
+        // starting a second refresh while queued requests are replayed.
+        isRefreshing = false;
         processQueue(null, accessToken);
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
+        isRefreshing = false;
         processQueue(refreshError, null);
         // Clear auth and redirect to login
         localStorage.removeItem('accessToken');
@@ -81,8 +85,6 @@ api.interceptors.response.use(
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 

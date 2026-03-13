@@ -30,6 +30,13 @@ export function ExcalidrawView({ node, updateAttributes, deleteNode, editor }: N
     setEditing(false);
   }, []);
 
+  // Continuously sync drawing data to TipTap node attributes (debounced).
+  // This ensures editorInstance.getJSON() always has the latest drawing
+  // even if the user saves the page without clicking "Done" first.
+  const handleDataChange = useCallback((data: string) => {
+    updateAttributes({ data });
+  }, [updateAttributes]);
+
   // Prevent browser native drag from TipTap's draggable="true" ancestor.
   // Uses capture phase to intercept dragstart before it reaches TipTap/browser.
   // Also disables draggable on the TipTap wrapper element while editing.
@@ -75,6 +82,7 @@ export function ExcalidrawView({ node, updateAttributes, deleteNode, editor }: N
               initialData={data}
               onSave={handleSave}
               onCancel={handleCancel}
+              onDataChange={handleDataChange}
               darkMode={isDark}
             />
           </Suspense>

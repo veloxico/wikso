@@ -247,6 +247,9 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
         const result = e.target?.result as string;
         editorRef.current?.chain().focus().setImage({ src: result, alt: file.name }).run();
       };
+      reader.onerror = () => {
+        console.error('Failed to read image file:', file.name);
+      };
       reader.readAsDataURL(file);
     }
   }, [pageId]);

@@ -12,9 +12,11 @@ import { RegisterDto } from './dto/register.dto';
 const RESET_TOKEN_PREFIX = 'auth:reset:';
 const VERIFY_TOKEN_PREFIX = 'auth:verify:';
 const INVITE_TOKEN_PREFIX = 'auth:invite:';
+const OAUTH_CODE_PREFIX = 'auth:oauth-code:';
 const RESET_TOKEN_TTL = 3600; // 1 hour
 const VERIFY_TOKEN_TTL = 86400; // 24 hours
 const INVITE_TOKEN_TTL = 7 * 86400; // 7 days
+const OAUTH_CODE_TTL = 60; // 60 seconds — one-time use
 
 @Injectable()
 export class AuthService {
@@ -194,6 +196,31 @@ export class AuthService {
       INVITE_TOKEN_TTL,
     );
     return token;
+  }
+
+  /**
+   * Generate a one-time code for OAuth redirect.
+   * Tokens are stored in Redis (60s TTL) and exchanged by the frontend.
+   * This prevents JWTs from being exposed in URLs/logs.
+   */
+  async createOAuthCode(user: any): Promise<string> {
+    const code = uuid();
+    const tokens = await this.login(user);
+    await this.redis.set(
+      `${OAUTH_CODE_PREFIX}${code}`,
+      JSON.stringify(tokens),
+      OAUTH_CODE_TTL,
+    );
+    return code;
+  }
+
+  async exchangeOAuthCode(code: string) {
+    if (!code) throw new BadRequestException('Code is required');
+    const raw = await this.redis.get(`${OAUTH_CODE_PREFIX}${code}`);
+    if (!raw) throw new BadRequestException('Invalid or expired code');
+    // One-time use — delete immediately
+    await this.redis.del(`${OAUTH_CODE_PREFIX}${code}`);
+    return JSON.parse(raw);
   }
 
   async validateOAuthUser(profile: {
