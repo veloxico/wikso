@@ -101,7 +101,14 @@ export class AuthService {
     return null;
   }
 
-  async login(user: any) {
+  async login(user: any, ip?: string) {
+    // Track last login time and IP
+    if (user.id) {
+      const loginData: any = { lastLoginAt: new Date() };
+      if (ip) loginData.lastLoginIp = ip;
+      this.prisma.user.update({ where: { id: user.id }, data: loginData }).catch(() => {});
+    }
+
     const payload = { sub: user.id, email: user.email, role: user.role };
     return {
       accessToken: this.jwtService.sign(payload),
@@ -203,9 +210,9 @@ export class AuthService {
    * Tokens are stored in Redis (60s TTL) and exchanged by the frontend.
    * This prevents JWTs from being exposed in URLs/logs.
    */
-  async createOAuthCode(user: any): Promise<string> {
+  async createOAuthCode(user: any, ip?: string): Promise<string> {
     const code = uuid();
-    const tokens = await this.login(user);
+    const tokens = await this.login(user, ip);
     await this.redis.set(
       `${OAUTH_CODE_PREFIX}${code}`,
       JSON.stringify(tokens),

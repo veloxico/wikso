@@ -113,13 +113,13 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
       {/* Expanded content: actions + page tree */}
       {isExpanded && (
         <div className="ml-3 border-l border-border/50 pl-2">
-          {/* New Page / Template buttons */}
+          {/* New Page (opens template picker) */}
           <div className="flex items-center gap-1 py-1 px-1">
             <Button
               variant="ghost"
               size="sm"
               className="h-7 flex-1 justify-start gap-1.5 text-xs text-muted-foreground px-2"
-              onClick={() => handleNewPage()}
+              onClick={() => setShowTemplates(true)}
               disabled={createPage.isPending}
             >
               {createPage.isPending ? (
@@ -128,14 +128,6 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
                 <Plus className="h-3 w-3" />
               )}
               {t('pages.newPage')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 justify-start gap-1.5 text-xs text-muted-foreground px-2"
-              onClick={() => setShowTemplates(true)}
-            >
-              <FileText className="h-3 w-3" />
             </Button>
           </div>
 

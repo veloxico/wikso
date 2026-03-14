@@ -55,6 +55,19 @@ export function useDeleteComment(pageId: string) {
   });
 }
 
+export function useToggleReaction(pageId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ commentId, emoji }: { commentId: string; emoji: string }) => {
+      const { data } = await api.post(`/comments/${commentId}/reactions`, { emoji });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', pageId] });
+    },
+  });
+}
+
 export function useSearchUsers(query: string) {
   return useQuery<{ id: string; name: string; email: string; avatarUrl?: string }[]>({
     queryKey: ['users', 'search', query],

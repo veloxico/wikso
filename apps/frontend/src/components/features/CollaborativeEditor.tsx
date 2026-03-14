@@ -168,15 +168,6 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
         onConnect() {
           if (!destroyed) {
             setStatus('connected');
-            // Fallback: if onSynced doesn't fire within 3 s (e.g. server
-            // returned null for a fresh/imported page), force synced state
-            // so the editor renders and can load contentJson.
-            syncFallbackTimer = setTimeout(() => {
-              if (!destroyed && !syncedFlag) {
-                syncedFlag = true;
-                setSynced(true);
-              }
-            }, 3000);
           }
         },
         onClose() { if (!destroyed) setStatus('disconnected'); },
@@ -206,6 +197,16 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       provider.connect();
       providerRef.current = provider;
       setProviderState(provider);
+
+      // Fallback: if onSynced doesn't fire (e.g. imported page with no
+      // yjsState), force synced state so the editor can load contentJson.
+      // Start timer immediately — don't wait for onConnect.
+      syncFallbackTimer = setTimeout(() => {
+        if (!destroyed && !syncedFlag) {
+          syncedFlag = true;
+          setSynced(true);
+        }
+      }, 500);
     };
 
     // Defer to next macrotask — in React Strict Mode the first mount's

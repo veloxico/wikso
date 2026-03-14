@@ -52,13 +52,12 @@ export class AttachmentsController {
 
   /**
    * Permanent file proxy — streams file content directly from S3.
-   * Accepts JWT from Authorization header or ?token= query parameter.
-   * Query parameter is needed for browser-initiated requests (<img src>, etc.).
+   * Public endpoint — attachment UUIDs are unguessable and serve as
+   * capability tokens. This avoids auth issues with browser-initiated
+   * requests (<img src>, <video src>, CSS url(), etc.).
    */
   @Get('attachments/:id/file')
-  @ApiOperation({ summary: 'Stream file content (auth via header or query token)' })
-  @ApiQuery({ name: 'token', required: false, description: 'JWT access token (for img/video src)' })
-  @UseGuards(JwtOrQueryAuthGuard)
+  @ApiOperation({ summary: 'Stream file content (public, UUID acts as capability token)' })
   async file(@Param('id') id: string, @Res() res: any) {
     const { stream, mimeType, filename, size } = await this.attachmentsService.getFileStream(id);
 

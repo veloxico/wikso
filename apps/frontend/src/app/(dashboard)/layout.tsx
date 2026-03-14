@@ -6,6 +6,8 @@ import { MobileSidebar } from '@/components/features/MobileSidebar';
 import { TopSearchBar } from '@/components/features/GlobalSearchDialog';
 import { CommandPalette, useCommandPalette } from '@/components/features/CommandPalette';
 import { ErrorBoundary } from '@/components/features/ErrorBoundary';
+import { PageTransition } from '@/components/features/PageTransition';
+import { NewPageButton } from '@/components/features/NewPageButton';
 
 export default function DashboardLayout({
   children,
@@ -32,16 +34,21 @@ export default function DashboardLayout({
       <MobileSidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top search bar */}
+        {/* Top bar: search + new page */}
         {!isAdminContext && (
           <div className="flex items-center border-b border-border bg-background px-6 py-2 shrink-0">
             <TopSearchBar />
+            <div className="ml-auto">
+              <NewPageButton />
+            </div>
           </div>
         )}
 
         <main className="flex-1 overflow-y-auto bg-background">
           <ErrorBoundary>
-            {children}
+            <PageTransition>
+              {children}
+            </PageTransition>
           </ErrorBoundary>
         </main>
       </div>

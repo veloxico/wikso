@@ -335,6 +335,7 @@ const be = {
       authProviders: 'Правайдары аўтэнтыфікацыі',
       email: 'Электронная пошта',
       webhooks: 'Вэбхукі',
+      systemHealth: 'System Health',
       trash: 'Кошык',
       import: 'Імпарт',
       groups: 'Групы',

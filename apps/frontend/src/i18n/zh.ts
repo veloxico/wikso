@@ -335,6 +335,7 @@ const zh = {
       authProviders: '认证提供商',
       email: '邮件',
       webhooks: 'Webhooks',
+      systemHealth: 'System Health',
       trash: '回收站',
       import: '导入',
       groups: '用户组',

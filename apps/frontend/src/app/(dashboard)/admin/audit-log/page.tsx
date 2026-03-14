@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { ScrollText, Activity, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { ScrollText, Activity, ChevronLeft, ChevronRight, Search, Download, Loader2 } from 'lucide-react';
 import { useAuditLog } from '@/hooks/useAdmin';
+import { api } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,12 +46,65 @@ export default function AdminAuditLogPage() {
   };
 
   const { data: auditLog, isLoading } = useAuditLog(page * PAGE_SIZE, PAGE_SIZE, filters);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportCsv = useCallback(async () => {
+    setExporting(true);
+    try {
+      // Fetch ALL entries matching current filters (no pagination)
+      const { data } = await api.get('/admin/audit-log', {
+        params: { skip: 0, take: 10000, ...filters },
+      });
+      const entries = Array.isArray(data) ? data : data.logs ?? [];
+
+      // Build CSV
+      const header = 'Date,User,Action,Entity Type,Entity ID';
+      const rows = entries.map((entry: any) => {
+        const date = new Date(entry.createdAt).toISOString();
+        const user = (entry.user?.name || entry.userId || '').replace(/"/g, '""');
+        const action = entry.action || '';
+        const entityType = (entry.entityType || '').replace(/"/g, '""');
+        const entityId = (entry.entityId || '').replace(/"/g, '""');
+        return `"${date}","${user}","${action}","${entityType}","${entityId}"`;
+      });
+      const csv = [header, ...rows].join('\n');
+
+      // Trigger download
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      // silent fail
+    } finally {
+      setExporting(false);
+    }
+  }, [filters]);
 
   return (
     <div>
       <div className="mb-8 flex items-center gap-3">
         <ScrollText className="h-7 w-7 text-primary" />
         <h1 className="text-2xl font-bold">{t('admin.auditLog.title')}</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto"
+          onClick={handleExportCsv}
+          disabled={exporting}
+        >
+          {exporting ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+          ) : (
+            <Download className="h-4 w-4 mr-1.5" />
+          )}
+          Export CSV
+        </Button>
       </div>
 
       {/* Filters */}

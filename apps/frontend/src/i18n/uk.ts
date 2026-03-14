@@ -335,6 +335,7 @@ const uk = {
       authProviders: 'Провайдери автентифікації',
       email: 'Електронна пошта',
       webhooks: 'Вебхуки',
+      systemHealth: 'System Health',
       trash: 'Кошик',
       import: 'Імпорт',
       groups: 'Групи',

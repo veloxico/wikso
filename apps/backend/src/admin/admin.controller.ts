@@ -5,7 +5,7 @@ import { SettingsService } from '../settings/settings.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { GlobalRole } from '@prisma/client';
+import { GlobalRole, SpaceType } from '@prisma/client';
 import { UpdateUserDto } from '../users/dto/update-user.dto';
 import { UpdateRoleDto } from '../users/dto/update-role.dto';
 import { UpdateSettingsDto } from '../settings/dto/update-settings.dto';
@@ -128,17 +128,34 @@ export class AdminController {
     );
   }
 
+  @Post('users/bulk-suspend')
+  @ApiOperation({ summary: 'Bulk suspend users' })
+  bulkSuspendUsers(@Body() body: { userIds: string[] }, @Req() req: any) {
+    return this.adminService.bulkSuspendUsers(body.userIds, req.user.id);
+  }
+
+  @Post('users/bulk-delete')
+  @ApiOperation({ summary: 'Bulk delete users' })
+  bulkDeleteUsers(@Body() body: { userIds: string[] }, @Req() req: any) {
+    return this.adminService.bulkDeleteUsers(body.userIds, req.user.id);
+  }
+
   // ─── Spaces ────────────────────────────────────────────
 
   @Get('spaces')
   @ApiOperation({ summary: 'List all spaces (admin)' })
-  getSpaces(@Query('skip') skip?: number, @Query('take') take?: number) {
-    return this.adminService.getSpaces(Number(skip) || 0, Number(take) || 20);
+  getSpaces(
+    @Query('skip') skip?: number,
+    @Query('take') take?: number,
+    @Query('search') search?: string,
+    @Query('type') type?: string,
+  ) {
+    return this.adminService.getSpaces(Number(skip) || 0, Number(take) || 20, search, type as SpaceType);
   }
 
   @Patch('spaces/:id')
   @ApiOperation({ summary: 'Update space (admin)' })
-  updateSpace(@Param('id') id: string, @Body() body: { type?: string }) {
+  updateSpace(@Param('id') id: string, @Body() body: { name?: string; description?: string; type?: string; ownerId?: string }) {
     return this.adminService.updateSpace(id, body);
   }
 
@@ -174,6 +191,12 @@ export class AdminController {
   @ApiOperation({ summary: 'Get system stats' })
   getStats() {
     return this.adminService.getStats();
+  }
+
+  @Get('stats/activity')
+  @ApiOperation({ summary: 'Get daily activity stats for last 30 days' })
+  getActivityStats() {
+    return this.adminService.getActivityStats();
   }
 
   // ─── Auth Providers ────────────────────────────────────
@@ -230,14 +253,27 @@ export class AdminController {
     @Query('skip') skip?: number,
     @Query('take') take?: number,
     @Query('search') search?: string,
+    @Query('spaceId') spaceId?: string,
   ) {
-    return this.adminService.getTrash(Number(skip) || 0, Number(take) || 20, search);
+    return this.adminService.getTrash(Number(skip) || 0, Number(take) || 20, search, spaceId);
   }
 
   @Post('trash/:pageId/restore')
   @ApiOperation({ summary: 'Restore a trashed page' })
   restorePage(@Param('pageId') pageId: string) {
     return this.adminService.restorePage(pageId);
+  }
+
+  @Post('trash/bulk-restore')
+  @ApiOperation({ summary: 'Bulk restore trashed pages' })
+  bulkRestorePages(@Body() body: { pageIds: string[] }) {
+    return this.adminService.bulkRestorePages(body.pageIds);
+  }
+
+  @Post('trash/bulk-delete')
+  @ApiOperation({ summary: 'Bulk permanently delete trashed pages' })
+  bulkDeletePages(@Body() body: { pageIds: string[] }) {
+    return this.adminService.bulkPermanentDeletePages(body.pageIds);
   }
 
   @Delete('trash/:pageId')
@@ -258,5 +294,26 @@ export class AdminController {
   @ApiOperation({ summary: 'Toggle webhook active state' })
   toggleWebhook(@Param('id') id: string, @Body() body: { active: boolean }) {
     return this.adminService.toggleWebhook(id, body.active);
+  }
+
+  @Post('webhooks')
+  @ApiOperation({ summary: 'Create a webhook' })
+  createWebhook(@Body() body: { url: string; events: string[]; secret?: string }, @Req() req: any) {
+    return this.adminService.createWebhook({ ...body, userId: req.user.id });
+  }
+
+  @Put('webhooks/:id')
+  @ApiOperation({ summary: 'Update a webhook' })
+  updateWebhook(
+    @Param('id') id: string,
+    @Body() body: { url?: string; events?: string[]; secret?: string; active?: boolean },
+  ) {
+    return this.adminService.updateWebhook(id, body);
+  }
+
+  @Delete('webhooks/:id')
+  @ApiOperation({ summary: 'Delete a webhook' })
+  deleteWebhook(@Param('id') id: string) {
+    return this.adminService.deleteWebhook(id);
   }
 }

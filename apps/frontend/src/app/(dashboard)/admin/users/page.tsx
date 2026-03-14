@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Users,
   Search,
@@ -23,7 +23,10 @@ import {
   useCreateUser,
   useUpdateUser,
   useSetUserPassword,
+  useBulkSuspendUsers,
+  useBulkDeleteUsers,
 } from '@/hooks/useAdmin';
+import type { AdminUser } from '@/hooks/useAdmin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +48,23 @@ import {
 import { useTranslation } from '@/hooks/useTranslation';
 
 const PAGE_SIZE = 10;
+
+function formatRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '-';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffSec < 60) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  if (diffDay < 30) return `${diffDay}d ago`;
+  return date.toLocaleDateString();
+}
 
 export default function AdminUsersPage() {
   const { t, locale } = useTranslation();
@@ -72,6 +92,9 @@ export default function AdminUsersPage() {
   const [editPassword, setEditPassword] = useState('');
   const [editConfirmPassword, setEditConfirmPassword] = useState('');
 
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   const filters = {
     search: search || undefined,
     role: roleFilter || undefined,
@@ -87,6 +110,51 @@ export default function AdminUsersPage() {
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const setUserPassword = useSetUserPassword();
+  const bulkSuspend = useBulkSuspendUsers();
+  const bulkDelete = useBulkDeleteUsers();
+
+  // Non-admin users that can be selected for bulk actions
+  const selectableUsers = useMemo(
+    () => (users ?? []).filter((u: AdminUser) => u.role !== 'ADMIN'),
+    [users],
+  );
+
+  const allSelectableSelected =
+    selectableUsers.length > 0 && selectableUsers.every((u: AdminUser) => selectedIds.has(u.id));
+
+  const toggleSelectAll = () => {
+    if (allSelectableSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(selectableUsers.map((u: AdminUser) => u.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkSuspend = () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    bulkSuspend.mutate(ids, {
+      onSuccess: () => setSelectedIds(new Set()),
+    });
+  };
+
+  const handleBulkDelete = () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm(`Delete ${ids.length} selected user(s)? This cannot be undone.`)) return;
+    bulkDelete.mutate(ids, {
+      onSuccess: () => setSelectedIds(new Set()),
+    });
+  };
 
   const handleInvite = () => {
     if (!inviteEmail.trim()) return;
@@ -389,6 +457,37 @@ export default function AdminUsersPage() {
         </Select>
       </div>
 
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3">
+          <span className="text-sm font-medium">
+            {selectedIds.size} selected
+          </span>
+          <div className="flex gap-2 ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950"
+              onClick={handleBulkSuspend}
+              disabled={bulkSuspend.isPending}
+            >
+              <Ban className="h-4 w-4" />
+              Suspend Selected ({selectedIds.size})
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={handleBulkDelete}
+              disabled={bulkDelete.isPending}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Selected ({selectedIds.size})
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Users Table */}
       <Card>
         <CardContent className="pt-6">
@@ -404,105 +503,143 @@ export default function AdminUsersPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left">
+                      <th className="pb-3 pr-2">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300"
+                          checked={allSelectableSelected}
+                          onChange={toggleSelectAll}
+                          disabled={selectableUsers.length === 0}
+                        />
+                      </th>
                       <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.nameColumn')}</th>
                       <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.emailColumn')}</th>
                       <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.roleColumn')}</th>
                       <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.statusColumn')}</th>
                       <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.joinedColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">Last Login</th>
+                      <th className="pb-3 font-medium text-muted-foreground">IP</th>
                       <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.actionsColumn')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {users?.map((user: any) => (
-                      <tr key={user.id} className="border-b border-border last:border-0">
-                        <td className="py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-                              {user.name?.charAt(0)?.toUpperCase() || '?'}
-                            </div>
-                            <span className="font-medium">{user.name}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 text-muted-foreground">{user.email}</td>
-                        <td className="py-3">
-                          <Select
-                            value={user.role}
-                            onValueChange={(role) =>
-                              updateRole.mutate({ userId: user.id, role })
-                            }
-                          >
-                            <SelectTrigger className="w-28 h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="ADMIN">{t('roles.admin')}</SelectItem>
-                              <SelectItem value="USER">{t('roles.user')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="py-3">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                              user.status === 'SUSPENDED'
-                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            }`}
-                          >
-                            {user.status === 'SUSPENDED' ? t('common.suspended') : t('common.active')}
-                          </span>
-                        </td>
-                        <td className="py-3 text-muted-foreground">
-                          {new Date(user.createdAt).toLocaleDateString(locale)}
-                        </td>
-                        <td className="py-3">
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              title={t('admin.users.editUser')}
-                              onClick={() => openEditDialog(user)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            {user.status === 'ACTIVE' ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-orange-500 hover:text-orange-600"
-                                title={t('admin.users.suspendUser')}
-                                onClick={() => suspendUser.mutate(user.id)}
-                              >
-                                <Ban className="h-4 w-4" />
-                              </Button>
+                    {users?.map((user: AdminUser) => {
+                      const isAdmin = user.role === 'ADMIN';
+                      return (
+                        <tr key={user.id} className="border-b border-border last:border-0">
+                          <td className="py-3 pr-2">
+                            {isAdmin ? (
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300"
+                                disabled
+                                checked={false}
+                                title="Admin users cannot be selected for bulk actions"
+                              />
                             ) : (
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300"
+                                checked={selectedIds.has(user.id)}
+                                onChange={() => toggleSelect(user.id)}
+                              />
+                            )}
+                          </td>
+                          <td className="py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                                {user.name?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                              <span className="font-medium">{user.name}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 text-muted-foreground">{user.email}</td>
+                          <td className="py-3">
+                            <Select
+                              value={user.role}
+                              onValueChange={(role) =>
+                                updateRole.mutate({ userId: user.id, role })
+                              }
+                            >
+                              <SelectTrigger className="w-28 h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="ADMIN">{t('roles.admin')}</SelectItem>
+                                <SelectItem value="USER">{t('roles.user')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="py-3">
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                user.status === 'SUSPENDED'
+                                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                              }`}
+                            >
+                              {user.status === 'SUSPENDED' ? t('common.suspended') : t('common.active')}
+                            </span>
+                          </td>
+                          <td className="py-3 text-muted-foreground">
+                            {new Date(user.createdAt).toLocaleDateString(locale)}
+                          </td>
+                          <td className="py-3 text-muted-foreground" title={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString(locale) : undefined}>
+                            {formatRelativeTime(user.lastLoginAt)}
+                          </td>
+                          <td className="py-3 text-muted-foreground font-mono text-xs">
+                            {user.lastLoginIp || '-'}
+                          </td>
+                          <td className="py-3">
+                            <div className="flex gap-1">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 w-8 p-0 text-green-500 hover:text-green-600"
-                                title={t('admin.users.activateUser')}
-                                onClick={() => activateUser.mutate(user.id)}
+                                className="h-8 w-8 p-0"
+                                title={t('admin.users.editUser')}
+                                onClick={() => openEditDialog(user)}
                               >
-                                <CheckCircle2 className="h-4 w-4" />
+                                <Pencil className="h-4 w-4" />
                               </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                              title={t('admin.users.deleteUser')}
-                              onClick={() => {
-                                if (confirm(t('admin.users.confirmDeleteUser'))) {
-                                  deleteUser.mutate(user.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                              {user.status === 'ACTIVE' ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-orange-500 hover:text-orange-600"
+                                  title={t('admin.users.suspendUser')}
+                                  onClick={() => suspendUser.mutate(user.id)}
+                                >
+                                  <Ban className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-green-500 hover:text-green-600"
+                                  title={t('admin.users.activateUser')}
+                                  onClick={() => activateUser.mutate(user.id)}
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                title={t('admin.users.deleteUser')}
+                                onClick={() => {
+                                  if (confirm(t('admin.users.confirmDeleteUser'))) {
+                                    deleteUser.mutate(user.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

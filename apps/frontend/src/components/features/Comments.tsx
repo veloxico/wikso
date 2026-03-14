@@ -8,6 +8,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MentionInput } from '@/components/features/MentionInput';
+import { CommentReactions } from '@/components/features/CommentReactions';
 import type { Comment } from '@/types';
 import { toast } from 'sonner';
 
@@ -155,6 +156,7 @@ export function Comments({ pageId }: CommentsProps) {
         <CommentItem
           key={comment.id}
           comment={comment}
+          pageId={pageId}
           userId={user?.id}
           replyingTo={replyingTo}
           replyContent={replyContent}
@@ -185,6 +187,7 @@ export function Comments({ pageId }: CommentsProps) {
 
 interface CommentItemProps {
   comment: Comment & { author?: { id: string; name: string; avatarUrl?: string } };
+  pageId: string;
   userId?: string;
   replyingTo: string | null;
   replyContent: string;
@@ -208,6 +211,7 @@ interface CommentItemProps {
 
 function CommentItem({
   comment,
+  pageId,
   userId,
   replyingTo,
   replyContent,
@@ -333,6 +337,18 @@ function CommentItem({
             </div>
           )}
 
+          {/* Reactions */}
+          {!isEditingThis && (
+            <div className="mt-2">
+              <CommentReactions
+                reactions={comment.reactions || []}
+                commentId={comment.id}
+                pageId={pageId}
+                currentUserId={userId}
+              />
+            </div>
+          )}
+
           {/* Reply form */}
           {isReplyOpen && (
             <div className="mt-3 flex gap-2">
@@ -443,6 +459,16 @@ function CommentItem({
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
+                        </div>
+                      )}
+                      {!isEditingReply && (
+                        <div className="mt-1">
+                          <CommentReactions
+                            reactions={reply.reactions || []}
+                            commentId={reply.id}
+                            pageId={pageId}
+                            currentUserId={userId}
+                          />
                         </div>
                       )}
                     </div>

@@ -20,6 +20,8 @@ model User {
   invitedBy     String?
   locale        String?
   timezone      String?
+  lastLoginAt   DateTime?
+  lastLoginIp   String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -36,6 +38,7 @@ model User {
   recentPages   RecentPage[]
   templates     PageTemplate[]
   groupMemberships GroupMember[]
+  commentReactions CommentReaction[]
 }
 
 model OAuthAccount {
@@ -144,10 +147,25 @@ model Comment {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  page     Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  author   User      @relation(fields: [authorId], references: [id])
-  parent   Comment?  @relation("CommentThread", fields: [parentId], references: [id])
-  children Comment[] @relation("CommentThread")
+  page      Page              @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  author    User              @relation(fields: [authorId], references: [id])
+  parent    Comment?          @relation("CommentThread", fields: [parentId], references: [id])
+  children  Comment[]         @relation("CommentThread")
+  reactions CommentReaction[]
+}
+
+model CommentReaction {
+  id        String   @id @default(uuid())
+  commentId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, emoji])
+  @@index([commentId])
 }
 
 model Attachment {

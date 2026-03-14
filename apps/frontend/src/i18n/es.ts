@@ -335,6 +335,7 @@ const es = {
       authProviders: 'Proveedores de autenticación',
       email: 'Correo electrónico',
       webhooks: 'Webhooks',
+      systemHealth: 'System Health',
       trash: 'Papelera',
       import: 'Importar',
       groups: 'Grupos',

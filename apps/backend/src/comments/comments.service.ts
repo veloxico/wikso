@@ -162,13 +162,21 @@ export class CommentsService {
   }
 
   async findByPage(pageId: string, skip = 0, take = 50) {
+    const reactionInclude = {
+      select: { id: true, emoji: true, userId: true, user: { select: { id: true, name: true } } },
+    };
+
     const [data, total] = await Promise.all([
       this.prisma.comment.findMany({
         where: { pageId, parentId: null },
         include: {
           author: { select: { id: true, name: true, avatarUrl: true } },
+          reactions: reactionInclude,
           children: {
-            include: { author: { select: { id: true, name: true, avatarUrl: true } } },
+            include: {
+              author: { select: { id: true, name: true, avatarUrl: true } },
+              reactions: reactionInclude,
+            },
             orderBy: { createdAt: 'asc' },
           },
         },
@@ -180,6 +188,25 @@ export class CommentsService {
     ]);
 
     return { data, total, skip, take };
+  }
+
+  async toggleReaction(commentId: string, userId: string, emoji: string) {
+    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+    if (!comment) throw new NotFoundException('Comment not found');
+
+    const existing = await this.prisma.commentReaction.findUnique({
+      where: { commentId_userId_emoji: { commentId, userId, emoji } },
+    });
+
+    if (existing) {
+      await this.prisma.commentReaction.delete({ where: { id: existing.id } });
+      return { added: false, emoji };
+    }
+
+    await this.prisma.commentReaction.create({
+      data: { commentId, userId, emoji },
+    });
+    return { added: true, emoji };
   }
 
   async update(id: string, dto: UpdateCommentDto, userId: string) {

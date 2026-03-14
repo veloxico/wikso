@@ -89,10 +89,21 @@ export class HealthController {
 
     const allUp = Object.values(checks).every((c) => c.status === 'up');
 
+    // System info
+    const mem = process.memoryUsage();
+    const memoryUsage = {
+      rss: Math.round(mem.rss / 1024 / 1024 * 100) / 100,
+      heapUsed: Math.round(mem.heapUsed / 1024 / 1024 * 100) / 100,
+      heapTotal: Math.round(mem.heapTotal / 1024 / 1024 * 100) / 100,
+    };
+
     return {
       status: allUp ? 'ok' : 'degraded',
       version: this.appVersion,
       timestamp: new Date().toISOString(),
+      uptime: Math.floor(process.uptime()),
+      memoryUsage,
+      nodeVersion: process.version,
       checks,
     };
   }

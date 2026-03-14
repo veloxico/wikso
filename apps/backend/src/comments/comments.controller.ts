@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { ToggleReactionDto } from './dto/toggle-reaction.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Comments')
@@ -36,5 +37,11 @@ export class CommentsController {
   @ApiOperation({ summary: 'Delete a comment' })
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.commentsService.delete(id, user.id, user.role === 'ADMIN');
+  }
+
+  @Post('comments/:id/reactions')
+  @ApiOperation({ summary: 'Toggle a reaction on a comment' })
+  toggleReaction(@Param('id') id: string, @Body() dto: ToggleReactionDto, @CurrentUser() user: any) {
+    return this.commentsService.toggleReaction(id, user.id, dto.emoji);
   }
 }

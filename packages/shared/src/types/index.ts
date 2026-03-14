@@ -73,6 +73,13 @@ export interface PageVersion {
   author?: Pick<User, 'id' | 'name' | 'avatarUrl'>;
 }
 
+export interface CommentReaction {
+  id: string;
+  emoji: string;
+  userId: string;
+  user?: Pick<User, 'id' | 'name'>;
+}
+
 export interface Comment {
   id: string;
   pageId: string;
@@ -85,6 +92,7 @@ export interface Comment {
   updatedAt: string;
   children?: Comment[];
   author?: Pick<User, 'id' | 'name' | 'avatarUrl'>;
+  reactions?: CommentReaction[];
 }
 
 export interface Attachment {

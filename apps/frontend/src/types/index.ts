@@ -9,6 +9,7 @@ export {
   type Page,
   type PageVersion,
   type Comment,
+  type CommentReaction,
   type Attachment,
   type Tag,
   type PageTag,

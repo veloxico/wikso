@@ -335,6 +335,7 @@ const ptBR = {
       authProviders: 'Provedores de autenticação',
       email: 'E-mail',
       webhooks: 'Webhooks',
+      systemHealth: 'System Health',
       trash: 'Lixeira',
       import: 'Importar',
       groups: 'Grupos',

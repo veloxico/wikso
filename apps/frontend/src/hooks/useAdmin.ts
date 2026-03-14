@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
-import type { User } from '@/types';
 import { useTranslation } from '@/hooks/useTranslation';
 
 // ─── Interfaces ──────────────────────────────────────────
@@ -53,13 +52,29 @@ export interface AdminSpace {
   _count: { pages: number; permissions: number };
 }
 
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl?: string;
+  role: string;
+  status: string;
+  emailVerified: boolean;
+  invitedBy?: string;
+  createdAt: string;
+  lastLoginAt?: string;
+  lastLoginIp?: string;
+}
+
 export interface AdminWebhook {
   id: string;
   url: string;
   events: string[];
   active: boolean;
+  secret: string | null;
   userId: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface EmailStatus {
@@ -109,6 +124,48 @@ export function useAdminStats() {
   });
 }
 
+// ─── Activity Stats ─────────────────────────────────────
+
+export interface ActivityStatsEntry {
+  date: string;
+  users: number;
+  pages: number;
+  views: number;
+}
+
+export function useActivityStats() {
+  return useQuery<ActivityStatsEntry[]>({
+    queryKey: ['admin', 'stats', 'activity'],
+    queryFn: async () => {
+      const { data } = await api.get('/admin/stats/activity');
+      return data;
+    },
+  });
+}
+
+// ─── System Health ──────────────────────────────────────
+
+export interface SystemHealthData {
+  status: string;
+  version: string;
+  timestamp: string;
+  uptime: number;
+  memoryUsage: { rss: number; heapUsed: number; heapTotal: number };
+  nodeVersion: string;
+  checks: Record<string, { status: string; message?: string }>;
+}
+
+export function useSystemHealth() {
+  return useQuery<SystemHealthData>({
+    queryKey: ['admin', 'health'],
+    queryFn: async () => {
+      const { data } = await api.get('/health/detailed');
+      return data;
+    },
+    refetchInterval: 30000,
+  });
+}
+
 // ─── Users ───────────────────────────────────────────────
 
 export function useAdminUsers(
@@ -116,7 +173,7 @@ export function useAdminUsers(
   take = 20,
   filters?: { search?: string; role?: string; status?: string },
 ) {
-  return useQuery<User[]>({
+  return useQuery<AdminUser[]>({
     queryKey: ['admin', 'users', skip, take, filters],
     queryFn: async () => {
       const { data } = await api.get('/admin/users', {
@@ -228,6 +285,39 @@ export function useBulkInvite() {
   });
 }
 
+export function useBulkSuspendUsers() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (userIds: string[]) => {
+      const { data } = await api.post('/admin/users/bulk-suspend', { userIds });
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast.success(t('toasts.bulkSuspendSuccess', { count: data.suspended }));
+    },
+    onError: () => toast.error(t('toasts.bulkSuspendFailed')),
+  });
+}
+
+export function useBulkDeleteUsers() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (userIds: string[]) => {
+      const { data } = await api.post('/admin/users/bulk-delete', { userIds });
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success(t('toasts.bulkDeleteSuccess', { count: data.deleted }));
+    },
+    onError: () => toast.error(t('toasts.bulkDeleteFailed')),
+  });
+}
+
 export function useCreateUser() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -307,13 +397,44 @@ export function useAuthProviders() {
 
 // ─── Spaces ──────────────────────────────────────────────
 
-export function useAdminSpaces(skip = 0, take = 20) {
+export function useAdminSpaces(
+  skip = 0,
+  take = 20,
+  filters?: { search?: string; type?: string },
+) {
   return useQuery<AdminSpace[]>({
-    queryKey: ['admin', 'spaces', skip, take],
+    queryKey: ['admin', 'spaces', skip, take, filters],
     queryFn: async () => {
-      const { data } = await api.get('/admin/spaces', { params: { skip, take } });
+      const { data } = await api.get('/admin/spaces', {
+        params: { skip, take, ...filters },
+      });
       return Array.isArray(data) ? data : data.spaces ?? [];
     },
+  });
+}
+
+export function useUpdateAdminSpace() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async ({
+      spaceId,
+      ...dto
+    }: {
+      spaceId: string;
+      name?: string;
+      description?: string;
+      type?: string;
+      ownerId?: string;
+    }) => {
+      const { data } = await api.patch(`/admin/spaces/${spaceId}`, dto);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'spaces'] });
+      toast.success(t('toasts.spaceUpdated'));
+    },
+    onError: () => toast.error(t('toasts.spaceUpdateFailed')),
   });
 }
 
@@ -443,6 +564,56 @@ export function useToggleWebhook() {
   });
 }
 
+export function useCreateAdminWebhook() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (dto: { url: string; events: string[]; secret?: string }) => {
+      const { data } = await api.post('/admin/webhooks', dto);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'webhooks'] });
+      toast.success(t('toasts.webhookCreated'));
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || t('toasts.webhookCreateFailed'));
+    },
+  });
+}
+
+export function useUpdateAdminWebhook() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async ({ id, ...dto }: { id: string; url?: string; events?: string[]; secret?: string; active?: boolean }) => {
+      const { data } = await api.put(`/admin/webhooks/${id}`, dto);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'webhooks'] });
+      toast.success(t('toasts.webhookUpdated'));
+    },
+    onError: () => toast.error(t('toasts.webhookUpdateFailed')),
+  });
+}
+
+export function useDeleteAdminWebhook() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.delete(`/admin/webhooks/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'webhooks'] });
+      toast.success(t('toasts.webhookDeleted'));
+    },
+    onError: () => toast.error(t('toasts.webhookDeleteFailed')),
+  });
+}
+
 // ─── Trash ──────────────────────────────────────────────
 
 export interface AdminTrashedPage {
@@ -454,12 +625,12 @@ export interface AdminTrashedPage {
   author: { id: string; name: string } | null;
 }
 
-export function useAdminTrash(skip = 0, take = 20, search?: string) {
+export function useAdminTrash(skip = 0, take = 20, search?: string, spaceId?: string) {
   return useQuery<{ pages: AdminTrashedPage[]; total: number }>({
-    queryKey: ['admin', 'trash', skip, take, search],
+    queryKey: ['admin', 'trash', skip, take, search, spaceId],
     queryFn: async () => {
       const { data } = await api.get('/admin/trash', {
-        params: { skip, take, ...(search ? { search } : {}) },
+        params: { skip, take, ...(search ? { search } : {}), ...(spaceId ? { spaceId } : {}) },
       });
       return data;
     },
@@ -497,5 +668,39 @@ export function useAdminPermanentDelete() {
       toast.success(t('admin.trash.deleted'));
     },
     onError: () => toast.error(t('toasts.pageDeleteFailed')),
+  });
+}
+
+export function useBulkRestore() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (pageIds: string[]) => {
+      const { data } = await api.post('/admin/trash/bulk-restore', { pageIds });
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'trash'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success(t('admin.trash.bulkRestored', { count: data.restored }));
+    },
+    onError: () => toast.error(t('toasts.bulkRestoreFailed')),
+  });
+}
+
+export function useBulkDelete() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async (pageIds: string[]) => {
+      const { data } = await api.post('/admin/trash/bulk-delete', { pageIds });
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'trash'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success(t('admin.trash.bulkDeleted', { count: data.deleted }));
+    },
+    onError: () => toast.error(t('toasts.bulkDeleteFailed')),
   });
 }

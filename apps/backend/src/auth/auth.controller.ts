@@ -40,7 +40,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with email and password' })
   @HttpCode(HttpStatus.OK)
   login(@Req() req: any, @Body() _dto: LoginDto) {
-    return this.authService.login(req.user);
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+    return this.authService.login(req.user, ip);
   }
 
   @Post('refresh')
@@ -114,7 +115,8 @@ export class AuthController {
 
   // --- Helper: redirect to frontend with a one-time code (NOT tokens) ---
   private async oauthRedirect(req: any, res: any) {
-    const code = await this.authService.createOAuthCode(req.user);
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+    const code = await this.authService.createOAuthCode(req.user, ip);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     res.redirect(`${frontendUrl}/auth/callback?code=${code}`);
   }
