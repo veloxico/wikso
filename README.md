@@ -2,8 +2,14 @@
 
 **Wikso** — open-source, self-hosted alternative to Confluence. Real-time collaborative editing, page trees, spaces, full-text search, version history, and more.
 
+[![GitHub Release](https://img.shields.io/github/v/release/veloxico/wikso?style=flat&logo=github)](https://github.com/veloxico/wikso/releases)
+[![Docker Pulls BE](https://img.shields.io/docker/pulls/veloxico/wikso-be?style=flat&logo=docker&label=pulls%20(backend))](https://hub.docker.com/r/veloxico/wikso-be)
+[![Docker Pulls FE](https://img.shields.io/docker/pulls/veloxico/wikso-fe?style=flat&logo=docker&label=pulls%20(frontend))](https://hub.docker.com/r/veloxico/wikso-fe)
+[![License](https://img.shields.io/github/license/veloxico/wikso?style=flat)](LICENSE)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/veloxico?style=flat&logo=githubsponsors&label=Sponsor)](https://github.com/sponsors/veloxico)
 [![Crypto Donate](https://img.shields.io/badge/Crypto-Donate-blue?style=flat&logo=bitcoin)](#support-the-project)
+
+> **Live Demo:** [wikso.veloxico.com](https://wikso.veloxico.com)
 
 ## Tech Stack
 
@@ -21,25 +27,43 @@
 
 ## Features
 
+### Content & Editing
 - **Spaces & Page Trees** — organize content in workspaces with nested page hierarchies
 - **Real-time Collaboration** — multiple users can edit the same page simultaneously (Yjs + Hocuspocus)
-- **Rich Text Editor** — TipTap-based editor with tables, code blocks, images, mentions, task lists, and more
-- **Version History** — automatic snapshots every 5 minutes + manual save, with one-click restore
-- **Full-text Search** — powered by Meilisearch with instant results
+- **Rich Text Editor** — TipTap-based editor with tables, code blocks, callouts, images, mentions, task lists, Mermaid diagrams, and Excalidraw drawings
+- **Version History** — automatic snapshots every 5 minutes + manual save, with diff view and one-click restore
+- **Full-text Search** — powered by Meilisearch with instant results and command palette (Ctrl+K)
 - **Favorites & Recent Pages** — quick access to your most-used content
-- **Comments** — threaded discussions on any page
+- **Comments & Reactions** — threaded discussions on any page with emoji reactions
 - **Drag & Drop** — reorder pages in the tree via drag and drop
 - **Templates** — create pages from predefined templates
 - **Page Export** — export pages to PDF / Markdown
 - **File Attachments** — upload and attach files to pages (S3 / MinIO), configurable size limit (up to 100 MB)
-- **Avatar Upload** — profile photo with built-in image cropping
-- **Notifications** — in-app notifications for page changes
-- **Webhooks** — integrate with external services via webhook events
-- **Multi-language** — UI available in English, Russian, Spanish, Chinese
-- **Dark Mode** — full dark theme support
-- **Responsive** — works on desktop and mobile
-- **Admin Panel** — user management, space management, security & system settings
+- **Confluence Import** — migrate from Confluence with a single ZIP upload (Beta)
+
+### Admin Panel
+- **Dashboard** — system stats with 30-day activity charts (pages, views, users)
+- **User Management** — create, invite, suspend, delete users; bulk operations; last login & IP tracking
+- **Group Management** — organize users into groups with member management
+- **Space Administration** — search, filter by type, edit properties, transfer ownership
+- **Trash** — restore or permanently delete pages; bulk operations; filter by space
+- **Audit Log** — filterable activity log with CSV export
+- **Security & Access** — registration control, domain whitelist, email verification, password policy
+- **Auth Providers** — Google OAuth, GitHub OAuth, SAML SSO configuration status
+- **Email Configuration** — SMTP setup with provider presets and test email
+- **Webhooks** — full CRUD: create, edit, delete, enable/disable webhook integrations
+- **System Health** — live service status, uptime, memory usage, Node.js version
+- **Confluence Import** — upload Confluence XML export ZIP with real-time progress tracking (Beta)
+
+### Platform
+- **Multi-language** — UI available in English, Russian, Belarusian, Spanish, Spanish (AR), Portuguese, Portuguese (BR), Polish, Ukrainian, Chinese
+- **Dark Mode** — full dark theme support with system preference detection
+- **Responsive** — works on desktop, tablet, and mobile
 - **SSO** — Google, GitHub, SAML authentication
+- **Notifications** — in-app notifications for page changes
+- **Avatar Upload** — profile photo with built-in image cropping
+- **Keyboard Shortcuts** — editor shortcuts, command palette, global navigation
+- **Multi-arch Docker** — images available for amd64 and arm64
 
 ## Quick Start (Docker)
 
@@ -52,7 +76,7 @@ The fastest way to run Wikso — a single command, no build required. Pre-built 
 ### Launch
 
 ```bash
-git clone <your-repo-url> && cd wikso
+git clone https://github.com/veloxico/wikso.git && cd wikso
 docker compose up -d
 ```
 
@@ -60,10 +84,10 @@ That's it. Docker Compose pulls pre-built images from Docker Hub (`veloxico/wiks
 
 ### Docker Hub Images
 
-| Image | Description |
-|-------|-------------|
-| [`veloxico/wikso-be`](https://hub.docker.com/r/veloxico/wikso-be) | Backend — NestJS API + Hocuspocus WS |
-| [`veloxico/wikso-fe`](https://hub.docker.com/r/veloxico/wikso-fe) | Frontend — Next.js application |
+| Image | Architectures | Description |
+|-------|---------------|-------------|
+| [`veloxico/wikso-be`](https://hub.docker.com/r/veloxico/wikso-be) | amd64, arm64 | Backend — NestJS API + Hocuspocus WS |
+| [`veloxico/wikso-fe`](https://hub.docker.com/r/veloxico/wikso-fe) | amd64, arm64 | Frontend — Next.js application |
 
 ### Service URLs
 
@@ -220,7 +244,7 @@ wikso/
           features/    # Business logic components
         hooks/         # Custom React hooks
         store/         # Zustand stores (auth, sidebar, language)
-        i18n/          # Translations (en, ru, es, zh)
+        i18n/          # Translations (en, ru, be, es, esAR, pt, ptBR, pl, uk, zh)
         lib/           # Utilities, API client
   docker-compose.yml   # Full-stack containerized setup
   package.json         # Monorepo root (Turborepo)
