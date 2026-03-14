@@ -25,7 +25,7 @@ function createForgotSchema(t: (key: string) => string) {
 type ForgotValues = z.infer<ReturnType<typeof createForgotSchema>>;
 
 export default function ForgotPasswordPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center bg-background overflow-hidden">
+    <div key={locale} className="relative flex min-h-screen w-full items-center justify-center bg-background overflow-hidden">
       {/* Decorative background */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />

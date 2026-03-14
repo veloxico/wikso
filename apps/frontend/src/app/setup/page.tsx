@@ -52,7 +52,7 @@ const features = [
 export default function SetupPage() {
   const router = useRouter();
   const { setUser, setTokens } = useAuthStore();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [step, setStep] = useState<'welcome' | 'admin'>('welcome');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,7 +118,7 @@ export default function SetupPage() {
   // Step 1: Welcome
   if (step === 'welcome') {
     return (
-      <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-gray-50 dark:bg-zinc-950">
+      <div key={locale} className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-gray-50 dark:bg-zinc-950">
         {/* Background decorative elements */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />

@@ -31,7 +31,7 @@ type RegisterValues = z.infer<ReturnType<typeof createRegisterSchema>>;
 export default function RegisterPage() {
   const router = useRouter();
   const { setUser, setTokens } = useAuthStore();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [registrationEnabled, setRegistrationEnabled] = useState<boolean | null>(null);
   const [visible, setVisible] = useState(false);
@@ -66,7 +66,7 @@ export default function RegisterPage() {
   // Registration disabled
   if (registrationEnabled === false) {
     return (
-      <div className="relative flex min-h-screen w-full items-center justify-center bg-background overflow-hidden">
+      <div key={locale} className="relative flex min-h-screen w-full items-center justify-center bg-background overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
           <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
@@ -99,7 +99,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center bg-background overflow-hidden">
+    <div key={locale} className="relative flex min-h-screen w-full items-center justify-center bg-background overflow-hidden">
       {/* Decorative background */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
