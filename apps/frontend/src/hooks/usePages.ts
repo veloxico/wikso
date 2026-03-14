@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import type { Page } from '@/types';
@@ -23,6 +23,8 @@ export function usePage(slug: string, pageId: string) {
       return data;
     },
     enabled: !!slug && !!pageId,
+    // Keep previous page visible while new page loads — prevents flash/flicker on navigation
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Activity, Database, Server, Cpu, RefreshCw } from 'lucide-react';
+import { Activity, Database, Server, Cpu, RefreshCw, HardDrive } from 'lucide-react';
 import { useSystemHealth } from '@/hooks/useAdmin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -148,6 +148,41 @@ export default function AdminHealthPage() {
                 </p>
               </CardContent>
             </Card>
+
+            {/* Disk Usage */}
+            {health.diskUsage && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Disk Usage</CardTitle>
+                  <HardDrive className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-2 flex items-baseline gap-2">
+                    <span className="text-xl font-bold">
+                      {health.diskUsage.usedGB} GB
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      / {health.diskUsage.totalGB} GB ({health.diskUsage.usedPercent}%)
+                    </span>
+                  </div>
+                  <div className="h-2.5 w-full rounded-full bg-muted">
+                    <div
+                      className={`h-2.5 rounded-full transition-all ${
+                        health.diskUsage.usedPercent > 90
+                          ? 'bg-red-500'
+                          : health.diskUsage.usedPercent > 75
+                            ? 'bg-yellow-500'
+                            : 'bg-green-500'
+                      }`}
+                      style={{ width: `${health.diskUsage.usedPercent}%` }}
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Free: {health.diskUsage.freeGB} GB
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Node Version */}
             <Card>

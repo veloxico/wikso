@@ -345,47 +345,106 @@ export class AdminService {
 
   // ─── Activity Stats ──────────────────────────────────────
 
-  async getActivityStats() {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  private static readonly PERIOD_CONFIG: Record<string, { ms: number; groupBy: 'hour' | 'day'; slots: number }> = {
+    '12h': { ms: 12 * 60 * 60 * 1000,      groupBy: 'hour', slots: 12 },
+    '6h':  { ms: 6 * 60 * 60 * 1000,       groupBy: 'hour', slots: 6 },
+    '24h': { ms: 24 * 60 * 60 * 1000,      groupBy: 'hour', slots: 24 },
+    '7d':  { ms: 7 * 24 * 60 * 60 * 1000,  groupBy: 'day',  slots: 7 },
+    '14d': { ms: 14 * 24 * 60 * 60 * 1000, groupBy: 'day',  slots: 14 },
+    '30d': { ms: 30 * 24 * 60 * 60 * 1000, groupBy: 'day',  slots: 30 },
+  };
 
+  async getActivityStats(period: string = '30d') {
+    const config = AdminService.PERIOD_CONFIG[period] || AdminService.PERIOD_CONFIG['30d'];
+    const since = new Date(Date.now() - config.ms);
+
+    if (config.groupBy === 'hour') {
+      return this.getActivityByHour(since, config.slots);
+    }
+    return this.getActivityByDay(since, config.slots);
+  }
+
+  private async getActivityByDay(since: Date, slots: number) {
     const [usersPerDay, pagesPerDay, viewsPerDay] = await Promise.all([
       this.prisma.$queryRaw<{ date: string; count: bigint }[]>`
         SELECT DATE("createdAt") as date, COUNT(*)::bigint as count
         FROM "User"
-        WHERE "createdAt" >= ${thirtyDaysAgo}
+        WHERE "createdAt" >= ${since}
         GROUP BY DATE("createdAt")
         ORDER BY date
       `,
       this.prisma.$queryRaw<{ date: string; count: bigint }[]>`
         SELECT DATE("createdAt") as date, COUNT(*)::bigint as count
         FROM "Page"
-        WHERE "createdAt" >= ${thirtyDaysAgo} AND "deletedAt" IS NULL
+        WHERE "createdAt" >= ${since} AND "deletedAt" IS NULL
         GROUP BY DATE("createdAt")
         ORDER BY date
       `,
       this.prisma.$queryRaw<{ date: string; count: bigint }[]>`
         SELECT DATE("createdAt") as date, COUNT(*)::bigint as count
         FROM "PageView"
-        WHERE "createdAt" >= ${thirtyDaysAgo}
+        WHERE "createdAt" >= ${since}
         GROUP BY DATE("createdAt")
         ORDER BY date
       `,
     ]);
 
-    // Build a map for each metric keyed by date string
     const usersMap = new Map(usersPerDay.map((r) => [new Date(r.date).toISOString().slice(0, 10), Number(r.count)]));
     const pagesMap = new Map(pagesPerDay.map((r) => [new Date(r.date).toISOString().slice(0, 10), Number(r.count)]));
     const viewsMap = new Map(viewsPerDay.map((r) => [new Date(r.date).toISOString().slice(0, 10), Number(r.count)]));
 
-    // Generate all 30 days
     const result: { date: string; users: number; pages: number; views: number }[] = [];
-    for (let i = 29; i >= 0; i--) {
+    for (let i = slots - 1; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const key = d.toISOString().slice(0, 10);
       result.push({
         date: key,
+        users: usersMap.get(key) || 0,
+        pages: pagesMap.get(key) || 0,
+        views: viewsMap.get(key) || 0,
+      });
+    }
+
+    return result;
+  }
+
+  private async getActivityByHour(since: Date, slots: number) {
+    const [usersPerHour, pagesPerHour, viewsPerHour] = await Promise.all([
+      this.prisma.$queryRaw<{ hour: string; count: bigint }[]>`
+        SELECT date_trunc('hour', "createdAt") as hour, COUNT(*)::bigint as count
+        FROM "User"
+        WHERE "createdAt" >= ${since}
+        GROUP BY date_trunc('hour', "createdAt")
+        ORDER BY hour
+      `,
+      this.prisma.$queryRaw<{ hour: string; count: bigint }[]>`
+        SELECT date_trunc('hour', "createdAt") as hour, COUNT(*)::bigint as count
+        FROM "Page"
+        WHERE "createdAt" >= ${since} AND "deletedAt" IS NULL
+        GROUP BY date_trunc('hour', "createdAt")
+        ORDER BY hour
+      `,
+      this.prisma.$queryRaw<{ hour: string; count: bigint }[]>`
+        SELECT date_trunc('hour', "createdAt") as hour, COUNT(*)::bigint as count
+        FROM "PageView"
+        WHERE "createdAt" >= ${since}
+        GROUP BY date_trunc('hour', "createdAt")
+        ORDER BY hour
+      `,
+    ]);
+
+    const usersMap = new Map(usersPerHour.map((r) => [new Date(r.hour).toISOString().slice(0, 13), Number(r.count)]));
+    const pagesMap = new Map(pagesPerHour.map((r) => [new Date(r.hour).toISOString().slice(0, 13), Number(r.count)]));
+    const viewsMap = new Map(viewsPerHour.map((r) => [new Date(r.hour).toISOString().slice(0, 13), Number(r.count)]));
+
+    const result: { date: string; users: number; pages: number; views: number }[] = [];
+    const now = new Date();
+    for (let i = slots - 1; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const key = d.toISOString().slice(0, 13); // "2024-01-15T14"
+      result.push({
+        date: d.toISOString(),
         users: usersMap.get(key) || 0,
         pages: pagesMap.get(key) || 0,
         views: viewsMap.get(key) || 0,

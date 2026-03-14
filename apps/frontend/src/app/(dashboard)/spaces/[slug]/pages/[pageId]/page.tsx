@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Save, Clock, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal, Copy, FilePlus, MoveHorizontal } from 'lucide-react';
@@ -46,7 +46,7 @@ export default function PageEditorPage() {
   const slug = params.slug as string;
   const pageId = params.pageId as string;
 
-  const { data: page, isLoading } = usePage(slug, pageId);
+  const { data: page, isLoading, isPlaceholderData } = usePage(slug, pageId);
   const { data: space } = useSpace(slug);
   const { data: ancestors } = usePageAncestors(slug, pageId);
   const updatePage = useUpdatePage(slug, pageId);
@@ -55,6 +55,7 @@ export default function PageEditorPage() {
   const [title, setTitle] = useState('');
   const [titleInitialized, setTitleInitialized] = useState(false);
   const [editorInstance, setEditorInstance] = useState<any>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // View / Edit mode — default is view
   const [mode, setMode] = useState<'view' | 'edit'>('view');
@@ -83,12 +84,23 @@ export default function PageEditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId]);
 
+  // Reset title state when navigating to a different page
+  const prevPageIdRef = useRef(pageId);
   useEffect(() => {
-    if (page && !titleInitialized) {
+    if (prevPageIdRef.current !== pageId) {
+      prevPageIdRef.current = pageId;
+      setTitleInitialized(false);
+      setHasUnsavedChanges(false);
+      setMode('view');
+    }
+  }, [pageId]);
+
+  useEffect(() => {
+    if (page && !isPlaceholderData && !titleInitialized) {
       setTitle(page.title);
       setTitleInitialized(true);
     }
-  }, [page, titleInitialized]);
+  }, [page, isPlaceholderData, titleInitialized]);
 
   const handleSaveTitle = useCallback(() => {
     if (title && title !== page?.title) {
@@ -114,12 +126,14 @@ export default function PageEditorPage() {
       // Nothing changed but user pressed save — just confirm & switch mode
       toast.success(t('pages.pageSaved') || 'Page saved');
       setMode('view');
+      setHasUnsavedChanges(false);
       return;
     }
     updatePage.mutate(payload as any, {
       onSuccess: () => {
         toast.success(t('pages.pageSaved') || 'Page saved');
         setMode('view');
+        setHasUnsavedChanges(false);
       },
       onError: () => toast.error(t('pages.saveFailed') || 'Failed to save page'),
     });
@@ -149,7 +163,19 @@ export default function PageEditorPage() {
     });
   }, [pageId, toggleFavorite, t]);
 
-  if (isLoading) {
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && isEditing) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedChanges, isEditing]);
+
+  // Only show skeleton on very first load (no previous data to display).
+  // With placeholderData: keepPreviousData, the old page stays visible during navigation.
+  if (isLoading && !page) {
     return (
       <div className="p-8">
         <div className="mb-4 h-10 w-64 animate-pulse rounded bg-muted" />
@@ -159,7 +185,7 @@ export default function PageEditorPage() {
   }
 
   return (
-    <div className="relative">
+    <div className={cn('relative transition-opacity duration-200', isPlaceholderData && 'opacity-60 pointer-events-none')}>
       {/* Keyboard Shortcuts Dialog (global, triggered by Ctrl+/) */}
       <KeyboardShortcutsDialog />
 
@@ -187,7 +213,10 @@ export default function PageEditorPage() {
             {isEditing ? (
               <Input
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (e.target.value !== page?.title) setHasUnsavedChanges(true);
+                }}
                 onBlur={handleSaveTitle}
                 className="border-none bg-transparent text-3xl font-bold shadow-none focus-visible:ring-0 px-0"
                 placeholder={t('pages.untitled')}
@@ -243,7 +272,13 @@ export default function PageEditorPage() {
                   <Save className="h-4 w-4" />
                   {updatePage.isPending ? t('common.saving') : t('pages.save')}
                 </Button>
-                <Button onClick={() => setMode('view')} size="sm" variant="ghost" className="gap-2">
+                <Button onClick={() => {
+                  if (hasUnsavedChanges) {
+                    if (!window.confirm(t('pages.unsavedChangesWarning'))) return;
+                  }
+                  setMode('view');
+                  setHasUnsavedChanges(false);
+                }} size="sm" variant="ghost" className="gap-2">
                   <Eye className="h-4 w-4" />
                   {t('pages.view') || 'View'}
                 </Button>
@@ -313,6 +348,7 @@ export default function PageEditorPage() {
           editable={isEditing}
           onEditorReady={handleEditorReady}
           initialContent={page?.contentJson as Record<string, unknown> | null}
+          onContentChange={() => setHasUnsavedChanges(true)}
         />
 
         {/* Comments (collapsible) */}

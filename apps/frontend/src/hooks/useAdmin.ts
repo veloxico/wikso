@@ -133,11 +133,11 @@ export interface ActivityStatsEntry {
   views: number;
 }
 
-export function useActivityStats() {
+export function useActivityStats(period: string = '30d') {
   return useQuery<ActivityStatsEntry[]>({
-    queryKey: ['admin', 'stats', 'activity'],
+    queryKey: ['admin', 'stats', 'activity', period],
     queryFn: async () => {
-      const { data } = await api.get('/admin/stats/activity');
+      const { data } = await api.get('/admin/stats/activity', { params: { period } });
       return data;
     },
   });
@@ -151,6 +151,7 @@ export interface SystemHealthData {
   timestamp: string;
   uptime: number;
   memoryUsage: { rss: number; heapUsed: number; heapTotal: number };
+  diskUsage?: { totalGB: number; usedGB: number; freeGB: number; usedPercent: number } | null;
   nodeVersion: string;
   checks: Record<string, { status: string; message?: string }>;
 }

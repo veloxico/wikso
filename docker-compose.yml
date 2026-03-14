@@ -1,6 +1,9 @@
 services:
   backend:
-    image: veloxico/wikso-be:latest
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    image: veloxico/wikso-be:local
     ports:
       - '3000:3000'
       - '1234:1234'
@@ -60,7 +63,10 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: veloxico/wikso-fe:latest
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    image: veloxico/wikso-fe:local
     ports:
       - '3001:3000'
     environment:

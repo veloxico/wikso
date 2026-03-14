@@ -9,6 +9,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { GlobalRole } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+import { execSync } from 'child_process';
 
 @ApiTags('Health')
 @SkipThrottle()
@@ -97,12 +98,47 @@ export class HealthController {
       heapTotal: Math.round(mem.heapTotal / 1024 / 1024 * 100) / 100,
     };
 
+    // Disk usage
+    let diskUsage: { totalGB: number; usedGB: number; freeGB: number; usedPercent: number } | null = null;
+    try {
+      if (process.platform === 'win32') {
+        // Windows: use wmic
+        const output = execSync('wmic logicaldisk where "DeviceID=\'C:\'" get Size,FreeSpace /format:csv', { encoding: 'utf-8' });
+        const lines = output.trim().split('\n').filter(l => l.trim());
+        const last = lines[lines.length - 1].split(',');
+        const freeSpace = parseInt(last[1], 10);
+        const totalSize = parseInt(last[2], 10);
+        diskUsage = {
+          totalGB: Math.round(totalSize / (1024 ** 3) * 100) / 100,
+          usedGB: Math.round((totalSize - freeSpace) / (1024 ** 3) * 100) / 100,
+          freeGB: Math.round(freeSpace / (1024 ** 3) * 100) / 100,
+          usedPercent: Math.round((totalSize - freeSpace) / totalSize * 100),
+        };
+      } else {
+        // Linux/macOS: use df
+        const output = execSync('df -k / | tail -1', { encoding: 'utf-8' });
+        const parts = output.trim().split(/\s+/);
+        const totalKB = parseInt(parts[1], 10);
+        const usedKB = parseInt(parts[2], 10);
+        const freeKB = parseInt(parts[3], 10);
+        diskUsage = {
+          totalGB: Math.round(totalKB / (1024 ** 2) * 100) / 100,
+          usedGB: Math.round(usedKB / (1024 ** 2) * 100) / 100,
+          freeGB: Math.round(freeKB / (1024 ** 2) * 100) / 100,
+          usedPercent: totalKB > 0 ? Math.round(usedKB / totalKB * 100) : 0,
+        };
+      }
+    } catch {
+      // Disk info unavailable — leave null
+    }
+
     return {
       status: allUp ? 'ok' : 'degraded',
       version: this.appVersion,
       timestamp: new Date().toISOString(),
       uptime: Math.floor(process.uptime()),
       memoryUsage,
+      diskUsage,
       nodeVersion: process.version,
       checks,
     };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -11,7 +11,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
-import { useSidebarStore } from '@/store/sidebarStore';
+import { useSidebarStore, MIN_WIDTH, MAX_WIDTH } from '@/store/sidebarStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSpaces } from '@/hooks/useSpaces';
 import { usePages, useCreatePage } from '@/hooks/usePages';
@@ -24,6 +24,47 @@ import { UserMenu } from '@/components/features/UserMenu';
 import { WiksoLogo } from '@/components/ui/WiksoLogo';
 import { Button } from '@/components/ui/button';
 import type { Space } from '@/types';
+
+/* ─── Resize handle ────────────────────────────────────────────────── */
+
+function ResizeHandle({ onResize }: { onResize: (width: number) => void }) {
+  const handleRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragging.current) return;
+      e.preventDefault();
+      onResize(e.clientX);
+    };
+    const onMouseUp = () => {
+      if (dragging.current) {
+        dragging.current = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    };
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [onResize]);
+
+  return (
+    <div
+      ref={handleRef}
+      className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize z-20 hover:bg-primary/30 active:bg-primary/50 transition-colors"
+      onMouseDown={(e) => {
+        e.preventDefault();
+        dragging.current = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      }}
+    />
+  );
+}
 
 /* ─── SpaceTreeNode ─────────────────────────────────────────────────── */
 
@@ -112,13 +153,13 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
 
       {/* Expanded content: actions + page tree */}
       {isExpanded && (
-        <div className="ml-3 border-l border-border/50 pl-2">
+        <div className="pl-2">
           {/* New Page (opens template picker) */}
-          <div className="flex items-center gap-1 py-1 px-1">
+          <div className="flex items-center py-0.5 px-0.5">
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 flex-1 justify-start gap-1.5 text-xs text-muted-foreground px-2"
+              className="h-6 flex-1 justify-start gap-1.5 text-xs text-muted-foreground px-2"
               onClick={() => setShowTemplates(true)}
               disabled={createPage.isPending}
             >
@@ -136,7 +177,7 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
             {isLoading && (
               <div className="space-y-1.5 p-2">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-5 animate-pulse rounded bg-muted" />
+                  <div key={i} className="h-4 animate-pulse rounded bg-muted" />
                 ))}
               </div>
             )}
@@ -163,7 +204,7 @@ export function UnifiedSidebar() {
   const pathname = usePathname();
   const { user } = useAuthStore();
   const { t } = useTranslation();
-  const { collapsed, toggle, hydrate } = useSidebarStore();
+  const { collapsed, toggle, hydrate, width, setWidth } = useSidebarStore();
   const { data: spaces, isLoading: spacesLoading } = useSpaces();
 
   // Hydrate sidebar collapsed state from localStorage on mount
@@ -199,6 +240,10 @@ export function UnifiedSidebar() {
       return next;
     });
   }, []);
+
+  const handleResize = useCallback((x: number) => {
+    setWidth(x);
+  }, [setWidth]);
 
   /* ── Collapsed (icon-only) sidebar ── */
   if (collapsed) {
@@ -302,7 +347,13 @@ export function UnifiedSidebar() {
   /* ── Expanded (full) sidebar ── */
   return (
     <>
-    <aside className="flex h-screen w-60 flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-all duration-200">
+    <aside
+      className="relative flex h-screen flex-col border-r border-border bg-sidebar text-sidebar-foreground shrink-0"
+      style={{ width: `${width}px`, minWidth: `${MIN_WIDTH}px`, maxWidth: `${MAX_WIDTH}px` }}
+    >
+      {/* Resize handle */}
+      <ResizeHandle onResize={handleResize} />
+
       {/* ── Logo + collapse toggle ── */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <Link href="/spaces" className="flex items-center gap-2">

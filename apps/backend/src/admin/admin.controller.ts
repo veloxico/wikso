@@ -194,9 +194,9 @@ export class AdminController {
   }
 
   @Get('stats/activity')
-  @ApiOperation({ summary: 'Get daily activity stats for last 30 days' })
-  getActivityStats() {
-    return this.adminService.getActivityStats();
+  @ApiOperation({ summary: 'Get activity stats with configurable time range' })
+  getActivityStats(@Query('period') period?: string) {
+    return this.adminService.getActivityStats(period);
   }
 
   // ─── Auth Providers ────────────────────────────────────

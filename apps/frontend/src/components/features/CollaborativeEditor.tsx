@@ -41,7 +41,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Highlighter, Superscript as SuperscriptIcon, Subscript as SubscriptIcon,
   Plus, Trash2, Columns, Rows,
-  Palette, PenTool, GitBranch,
+  Palette, PenTool, GitBranch, CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -93,6 +93,8 @@ interface CollaborativeEditorProps {
   onEditorReady?: (editor: any) => void;
   /** Pre-loaded page content (avoids extra API call for imported pages). */
   initialContent?: Record<string, unknown> | null;
+  /** Called when editor content changes (useful for unsaved-changes tracking). */
+  onContentChange?: () => void;
 }
 
 const COLORS = ['#958DF1', '#F98181', '#FBBC88', '#FAF594', '#70CFF8', '#94FADB', '#B9F18D'];
@@ -113,7 +115,7 @@ function getRandomColor() {
 
 type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
-export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEditorReady, initialContent }: CollaborativeEditorProps) {
+export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEditorReady, initialContent, onContentChange }: CollaborativeEditorProps) {
   const user = useAuthStore((s) => s.user);
   const { t } = useTranslation();
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
@@ -121,7 +123,11 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [showColorPicker, setShowColorPicker] = useState<'text' | 'highlight' | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'editing' | 'saving' | 'saved'>('idle');
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const onContentChangeRef = useRef(onContentChange);
+  onContentChangeRef.current = onContentChange;
 
   // A fresh Y.Doc is created for each pageId so old page content
   // never bleeds into a different page when navigating.
@@ -358,6 +364,9 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
           return false;
         },
       },
+      onUpdate: () => {
+        onContentChangeRef.current?.();
+      },
     },
     [ydoc, provider, synced],
   );
@@ -443,6 +452,25 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
     if (e.target) e.target.value = '';
   }, [handleImageUpload]);
 
+  // Save status indicator: track editing → saved transitions
+  useEffect(() => {
+    if (!editor || !editable) return;
+    const handler = () => {
+      setSaveStatus('editing');
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        setSaveStatus('saved');
+        // Auto-reset to idle after 3 seconds
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }, 1500);
+    };
+    editor.on('update', handler);
+    return () => {
+      editor.off('update', handler);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [editor, editable]);
+
   // Close popovers on click outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -516,6 +544,18 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
 
   const ToolbarDivider = () => <div className="mx-0.5 h-6 w-px bg-border" />;
 
+  /** Build a tooltip string with optional keyboard shortcut */
+  const tip = (label: string, shortcut?: string) => {
+    if (!shortcut) return label;
+    // Detect Mac — show ⌘ instead of Ctrl
+    const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+    const formatted = shortcut
+      .replace('Ctrl', isMac ? '⌘' : 'Ctrl')
+      .replace('Shift', isMac ? '⇧' : 'Shift')
+      .replace('Alt', isMac ? '⌥' : 'Alt');
+    return `${label} (${formatted})`;
+  };
+
   const charCount = editor.storage.characterCount;
 
   return (
@@ -531,42 +571,42 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       {editable && (
         <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/30 p-1 sticky top-0 z-10">
           {/* Text formatting */}
-          <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title={t('editor.bold')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title={tip(t('editor.bold'), 'Ctrl+B')}>
             <Bold className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title={t('editor.italic')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title={tip(t('editor.italic'), 'Ctrl+I')}>
             <Italic className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title={t('editor.underline')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title={tip(t('editor.underline'), 'Ctrl+U')}>
             <UnderlineIcon className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title={t('editor.strikethrough')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title={tip(t('editor.strikethrough'), 'Ctrl+Shift+X')}>
             <Strikethrough className="h-4 w-4" />
           </ToolbarButton>
 
           <ToolbarDivider />
 
           {/* Headings */}
-          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })} title={t('editor.heading1')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })} title={tip(t('editor.heading1'), 'Ctrl+Alt+1')}>
             <Heading1 className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title={t('editor.heading2')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title={tip(t('editor.heading2'), 'Ctrl+Alt+2')}>
             <Heading2 className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })} title={t('editor.heading3')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })} title={tip(t('editor.heading3'), 'Ctrl+Alt+3')}>
             <Heading3 className="h-4 w-4" />
           </ToolbarButton>
 
           <ToolbarDivider />
 
           {/* Lists */}
-          <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title={t('editor.bulletList')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title={tip(t('editor.bulletList'), 'Ctrl+Shift+8')}>
             <List className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title={t('editor.orderedList')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title={tip(t('editor.orderedList'), 'Ctrl+Shift+7')}>
             <ListOrdered className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleTaskList().run()} isActive={editor.isActive('taskList')} title={t('editor.taskList')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleTaskList().run()} isActive={editor.isActive('taskList')} title={tip(t('editor.taskList'), 'Ctrl+Shift+9')}>
             <ListChecks className="h-4 w-4" />
           </ToolbarButton>
 
@@ -678,7 +718,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
                 }
               }}
               isActive={editor.isActive('link')}
-              title={t('editor.link')}
+              title={tip(t('editor.link'), 'Ctrl+K')}
             >
               <LinkIcon className="h-4 w-4" />
             </ToolbarButton>
@@ -722,10 +762,10 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
           >
             <TableIcon className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} isActive={editor.isActive('codeBlock')} title={t('editor.codeBlock')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} isActive={editor.isActive('codeBlock')} title={tip(t('editor.codeBlock'), 'Ctrl+Alt+C')}>
             <Code className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title={t('editor.blockquote')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title={tip(t('editor.blockquote'), 'Ctrl+Shift+B')}>
             <Quote className="h-4 w-4" />
           </ToolbarButton>
           <ToolbarButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title={t('editor.divider')}>
@@ -743,10 +783,10 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
 
           <ToolbarDivider />
 
-          <ToolbarButton onClick={() => editor.chain().focus().undo().run()} title={t('editor.undo')}>
+          <ToolbarButton onClick={() => editor.chain().focus().undo().run()} title={tip(t('editor.undo'), 'Ctrl+Z')}>
             <Undo className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().redo().run()} title={t('editor.redo')}>
+          <ToolbarButton onClick={() => editor.chain().focus().redo().run()} title={tip(t('editor.redo'), 'Ctrl+Shift+Z')}>
             <Redo className="h-4 w-4" />
           </ToolbarButton>
 
@@ -759,6 +799,22 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
             {charCount && (
               <span className="text-xs text-muted-foreground">
                 {charCount.characters()} {t('common.characters')}
+              </span>
+            )}
+            {editable && saveStatus !== 'idle' && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                {saveStatus === 'editing' && (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    {t('editor.syncing')}
+                  </>
+                )}
+                {saveStatus === 'saved' && (
+                  <>
+                    <CheckCircle2 className="h-3 w-3 text-green-500" />
+                    {t('editor.changesSaved')}
+                  </>
+                )}
               </span>
             )}
             <div className="flex items-center gap-1">

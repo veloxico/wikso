@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Settings, Users, BarChart3, Activity, MessageSquare, Eye, UserCheck } from 'lucide-react';
+import { Settings, Users, BarChart3, Activity, MessageSquare } from 'lucide-react';
 import { useAdminStats, useActivityStats } from '@/hooks/useAdmin';
 import { useSystemSettings, useUpdateSettings } from '@/hooks/useSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,19 +9,65 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/hooks/useTranslation';
 
-function ActivityChart({ data }: { data: { date: string; users: number; pages: number; views: number }[] }) {
+const PERIOD_OPTIONS = [
+  { value: '12h', label: '12h' },
+  { value: '6h', label: '6h' },
+  { value: '24h', label: '24h' },
+  { value: '7d', label: '7d' },
+  { value: '14d', label: '14d' },
+  { value: '30d', label: '30d' },
+] as const;
+
+function formatXLabel(dateStr: string, period: string): string {
+  if (['12h', '6h', '24h'].includes(period)) {
+    // Hourly data — show HH:mm
+    const d = new Date(dateStr);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  // Daily data — show MM-DD
+  return dateStr.slice(5, 10);
+}
+
+function getXLabelInterval(dataLength: number, period: string): number {
+  if (period === '12h') return 2;
+  if (period === '6h') return 1;
+  if (period === '24h') return 3;
+  if (period === '7d') return 1;
+  if (period === '14d') return 2;
+  return 5; // 30d
+}
+
+interface ActivityChartProps {
+  data: { date: string; users: number; pages: number; views: number }[];
+  period: string;
+}
+
+function ActivityChart({ data, period }: ActivityChartProps) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
   const chartWidth = 700;
-  const chartHeight = 200;
+  const chartHeight = 220;
   const padding = { top: 20, right: 20, bottom: 30, left: 40 };
   const innerW = chartWidth - padding.left - padding.right;
   const innerH = chartHeight - padding.top - padding.bottom;
 
-  const maxViews = useMemo(() => Math.max(...data.map((d) => d.views), 1), [data]);
-  const maxPages = useMemo(() => Math.max(...data.map((d) => d.pages), 1), [data]);
-  const maxUsers = useMemo(() => Math.max(...data.map((d) => d.users), 1), [data]);
-  const maxVal = Math.max(maxViews, maxPages, maxUsers, 1);
+  const maxVal = useMemo(() => {
+    const max = Math.max(
+      ...data.map((d) => d.views),
+      ...data.map((d) => d.pages),
+      ...data.map((d) => d.users),
+      1,
+    );
+    return max;
+  }, [data]);
 
-  const toX = (i: number) => padding.left + (i / (data.length - 1)) * innerW;
+  const totals = useMemo(() => ({
+    views: data.reduce((s, d) => s + d.views, 0),
+    pages: data.reduce((s, d) => s + d.pages, 0),
+    users: data.reduce((s, d) => s + d.users, 0),
+  }), [data]);
+
+  const toX = (i: number) => padding.left + (i / Math.max(data.length - 1, 1)) * innerW;
   const toY = (v: number) => padding.top + innerH - (v / maxVal) * innerH;
 
   const makePolyline = (key: 'pages' | 'views' | 'users') =>
@@ -32,83 +78,146 @@ function ActivityChart({ data }: { data: { date: string; users: number; pages: n
     return `${toX(0)},${toY(0)} ${points.join(' ')} ${toX(data.length - 1)},${toY(0)}`;
   };
 
-  // Y-axis ticks
-  const yTicks = [0, Math.round(maxVal / 2), maxVal];
+  const yTicks = [...new Set([0, Math.round(maxVal / 4), Math.round(maxVal / 2), Math.round(maxVal * 3 / 4), maxVal])];
+  const labelInterval = getXLabelInterval(data.length, period);
 
   return (
-    <div className="w-full overflow-x-auto">
-      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full" style={{ minWidth: 400 }}>
-        {/* Grid lines */}
-        {yTicks.map((tick) => (
-          <g key={tick}>
-            <line
-              x1={padding.left}
-              y1={toY(tick)}
-              x2={chartWidth - padding.right}
-              y2={toY(tick)}
-              stroke="currentColor"
-              strokeOpacity={0.1}
-            />
-            <text
-              x={padding.left - 6}
-              y={toY(tick) + 4}
-              textAnchor="end"
-              className="fill-muted-foreground"
-              fontSize={10}
-            >
-              {tick}
-            </text>
-          </g>
-        ))}
-
-        {/* X-axis labels (every 5 days) */}
-        {data.map((d, i) =>
-          i % 5 === 0 ? (
-            <text
-              key={d.date}
-              x={toX(i)}
-              y={chartHeight - 5}
-              textAnchor="middle"
-              className="fill-muted-foreground"
-              fontSize={9}
-            >
-              {d.date.slice(5)}
-            </text>
-          ) : null,
-        )}
-
-        {/* Views area + line (green) */}
-        <polygon points={makeArea('views')} fill="rgb(34,197,94)" fillOpacity={0.1} />
-        <polyline points={makePolyline('views')} fill="none" stroke="rgb(34,197,94)" strokeWidth={2} />
-
-        {/* Pages area + line (blue) */}
-        <polygon points={makeArea('pages')} fill="rgb(59,130,246)" fillOpacity={0.1} />
-        <polyline points={makePolyline('pages')} fill="none" stroke="rgb(59,130,246)" strokeWidth={2} />
-
-        {/* Users area + line (purple) */}
-        <polygon points={makeArea('users')} fill="rgb(168,85,247)" fillOpacity={0.1} />
-        <polyline points={makePolyline('users')} fill="none" stroke="rgb(168,85,247)" strokeWidth={2} />
-      </svg>
-
-      {/* Legend */}
-      <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground justify-center">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-500" /> Pages
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-500" /> Views
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-purple-500" /> Users
-        </span>
+    <div className="w-full">
+      {/* Summary stats */}
+      <div className="mb-4 flex items-center gap-6 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-500" />
+          <span className="text-muted-foreground">Views:</span>
+          <span className="font-semibold">{totals.views.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-500" />
+          <span className="text-muted-foreground">Pages:</span>
+          <span className="font-semibold">{totals.pages.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-purple-500" />
+          <span className="text-muted-foreground">Users:</span>
+          <span className="font-semibold">{totals.users.toLocaleString()}</span>
+        </div>
       </div>
+
+      <div className="w-full overflow-x-auto">
+        <svg
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          className="w-full"
+          style={{ minWidth: 400 }}
+          onMouseLeave={() => setHoveredIdx(null)}
+        >
+          {/* Grid lines */}
+          {yTicks.map((tick) => (
+            <g key={tick}>
+              <line
+                x1={padding.left}
+                y1={toY(tick)}
+                x2={chartWidth - padding.right}
+                y2={toY(tick)}
+                stroke="currentColor"
+                strokeOpacity={0.08}
+              />
+              <text
+                x={padding.left - 6}
+                y={toY(tick) + 4}
+                textAnchor="end"
+                className="fill-muted-foreground"
+                fontSize={10}
+              >
+                {tick}
+              </text>
+            </g>
+          ))}
+
+          {/* X-axis labels */}
+          {data.map((d, i) =>
+            i % labelInterval === 0 ? (
+              <text
+                key={i}
+                x={toX(i)}
+                y={chartHeight - 5}
+                textAnchor="middle"
+                className="fill-muted-foreground"
+                fontSize={9}
+              >
+                {formatXLabel(d.date, period)}
+              </text>
+            ) : null,
+          )}
+
+          {/* Views area + line (green) */}
+          <polygon points={makeArea('views')} fill="rgb(34,197,94)" fillOpacity={0.08} />
+          <polyline points={makePolyline('views')} fill="none" stroke="rgb(34,197,94)" strokeWidth={2} />
+
+          {/* Pages area + line (blue) */}
+          <polygon points={makeArea('pages')} fill="rgb(59,130,246)" fillOpacity={0.08} />
+          <polyline points={makePolyline('pages')} fill="none" stroke="rgb(59,130,246)" strokeWidth={2} />
+
+          {/* Users area + line (purple) */}
+          <polygon points={makeArea('users')} fill="rgb(168,85,247)" fillOpacity={0.08} />
+          <polyline points={makePolyline('users')} fill="none" stroke="rgb(168,85,247)" strokeWidth={2} />
+
+          {/* Hover interaction areas */}
+          {data.map((d, i) => (
+            <g key={i}>
+              <rect
+                x={toX(i) - innerW / data.length / 2}
+                y={padding.top}
+                width={innerW / data.length}
+                height={innerH}
+                fill="transparent"
+                onMouseEnter={() => setHoveredIdx(i)}
+              />
+              {hoveredIdx === i && (
+                <>
+                  <line
+                    x1={toX(i)}
+                    y1={padding.top}
+                    x2={toX(i)}
+                    y2={padding.top + innerH}
+                    stroke="currentColor"
+                    strokeOpacity={0.2}
+                    strokeDasharray="4 2"
+                  />
+                  <circle cx={toX(i)} cy={toY(d.views)} r={3.5} fill="rgb(34,197,94)" />
+                  <circle cx={toX(i)} cy={toY(d.pages)} r={3.5} fill="rgb(59,130,246)" />
+                  <circle cx={toX(i)} cy={toY(d.users)} r={3.5} fill="rgb(168,85,247)" />
+                </>
+              )}
+            </g>
+          ))}
+        </svg>
+      </div>
+
+      {/* Tooltip */}
+      {hoveredIdx !== null && data[hoveredIdx] && (
+        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground justify-center bg-muted/50 rounded-md py-1.5 px-3">
+          <span className="font-medium text-foreground">{formatXLabel(data[hoveredIdx].date, period)}</span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+            {data[hoveredIdx].views}
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-blue-500" />
+            {data[hoveredIdx].pages}
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-purple-500" />
+            {data[hoveredIdx].users}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function AdminGeneralPage() {
   const { data: stats, isLoading: statsLoading } = useAdminStats();
-  const { data: activityData, isLoading: activityLoading } = useActivityStats();
+  const [activityPeriod, setActivityPeriod] = useState('7d');
+  const { data: activityData, isLoading: activityLoading, isFetching: activityFetching } = useActivityStats(activityPeriod);
   const { data: settings, isLoading: settingsLoading } = useSystemSettings();
   const updateSettings = useUpdateSettings();
   const { t } = useTranslation();
@@ -170,17 +279,34 @@ export default function AdminGeneralPage() {
 
       {/* Activity Chart */}
       <Card className="mb-8">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Activity (Last 30 Days)
+            Activity
           </CardTitle>
+          <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+            {PERIOD_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setActivityPeriod(opt.value)}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  activityPeriod === opt.value
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </CardHeader>
         <CardContent>
           {activityLoading ? (
-            <div className="h-[230px] animate-pulse rounded bg-muted" />
+            <div className="h-[280px] animate-pulse rounded bg-muted" />
           ) : activityData && activityData.length > 0 ? (
-            <ActivityChart data={activityData} />
+            <div className={`transition-opacity duration-200 ${activityFetching ? 'opacity-60' : ''}`}>
+              <ActivityChart data={activityData} period={activityPeriod} />
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-8">No activity data available</p>
           )}

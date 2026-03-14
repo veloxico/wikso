@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { FileText, Users, Clock, Globe, Lock, User, Activity, ArrowRight, Settings } from 'lucide-react';
+import { FileText, Users, Clock, Globe, Lock, User, Activity, ArrowRight, Settings, Plus } from 'lucide-react';
 import { useSpace, useSpaceMembers } from '@/hooks/useSpaces';
 import { usePages } from '@/hooks/usePages';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -109,11 +109,22 @@ export default function SpacePage() {
             </CardHeader>
             <CardContent className="pt-0">
               {recentPages.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />
-                  <p className="text-sm text-muted-foreground">{t('spaces.noPages') || 'No pages yet'}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {t('spaces.createFirstPage') || 'Create your first page using the button in the sidebar'}
+                <div className="text-center py-12">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                    <FileText className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="mb-1 text-base font-semibold">{t('spaces.noPages')}</h3>
+                  <p className="mb-4 text-sm text-muted-foreground max-w-xs mx-auto">
+                    {t('spaces.emptyStateDescription')}
+                  </p>
+                  <Button asChild size="sm" className="gap-2">
+                    <Link href={`/spaces/${slug}/pages/new`}>
+                      <Plus className="h-4 w-4" />
+                      {t('spaces.createFirstPageButton')}
+                    </Link>
+                  </Button>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    {t('spaces.slashCommandHint')}
                   </p>
                 </div>
               ) : (

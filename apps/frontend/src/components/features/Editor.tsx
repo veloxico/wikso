@@ -155,46 +155,58 @@ export function Editor({ content, onChange, editable = true, spaceSlug }: Editor
 
   const ToolbarDivider = () => <div className="mx-0.5 h-6 w-px bg-border" />;
 
+  /** Build a tooltip string with optional keyboard shortcut */
+  const tip = (label: string, shortcut?: string) => {
+    if (!shortcut) return label;
+    // Detect Mac — show ⌘ instead of Ctrl
+    const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+    const formatted = shortcut
+      .replace('Ctrl', isMac ? '⌘' : 'Ctrl')
+      .replace('Shift', isMac ? '⇧' : 'Shift')
+      .replace('Alt', isMac ? '⌥' : 'Alt');
+    return `${label} (${formatted})`;
+  };
+
   return (
     <div className="rounded-lg border border-border overflow-hidden">
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
 
       {editable && (
         <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/30 p-1">
-          <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title={t('editor.bold')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title={tip(t('editor.bold'), 'Ctrl+B')}>
             <Bold className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title={t('editor.italic')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title={tip(t('editor.italic'), 'Ctrl+I')}>
             <Italic className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title={t('editor.underline')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title={tip(t('editor.underline'), 'Ctrl+U')}>
             <UnderlineIcon className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title={t('editor.strikethrough')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title={tip(t('editor.strikethrough'), 'Ctrl+Shift+X')}>
             <Strikethrough className="h-4 w-4" />
           </ToolbarButton>
 
           <ToolbarDivider />
 
-          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })} title={t('editor.heading1')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })} title={tip(t('editor.heading1'), 'Ctrl+Alt+1')}>
             <Heading1 className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title={t('editor.heading2')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title={tip(t('editor.heading2'), 'Ctrl+Alt+2')}>
             <Heading2 className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })} title={t('editor.heading3')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })} title={tip(t('editor.heading3'), 'Ctrl+Alt+3')}>
             <Heading3 className="h-4 w-4" />
           </ToolbarButton>
 
           <ToolbarDivider />
 
-          <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title={t('editor.bulletList')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title={tip(t('editor.bulletList'), 'Ctrl+Shift+8')}>
             <List className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title={t('editor.orderedList')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title={tip(t('editor.orderedList'), 'Ctrl+Shift+7')}>
             <ListOrdered className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleTaskList().run()} isActive={editor.isActive('taskList')} title={t('editor.taskList')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleTaskList().run()} isActive={editor.isActive('taskList')} title={tip(t('editor.taskList'), 'Ctrl+Shift+9')}>
             <ListChecks className="h-4 w-4" />
           </ToolbarButton>
 
@@ -259,7 +271,7 @@ export function Editor({ content, onChange, editable = true, spaceSlug }: Editor
                 }
               }}
               isActive={editor.isActive('link')}
-              title={t('editor.link')}
+              title={tip(t('editor.link'), 'Ctrl+K')}
             >
               <LinkIcon className="h-4 w-4" />
             </ToolbarButton>
@@ -282,10 +294,10 @@ export function Editor({ content, onChange, editable = true, spaceSlug }: Editor
           <ToolbarButton onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} title={t('editor.insertTable')}>
             <TableIcon className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} isActive={editor.isActive('codeBlock')} title={t('editor.codeBlock')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} isActive={editor.isActive('codeBlock')} title={tip(t('editor.codeBlock'), 'Ctrl+Alt+C')}>
             <Code className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title={t('editor.blockquote')}>
+          <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title={tip(t('editor.blockquote'), 'Ctrl+Shift+B')}>
             <Quote className="h-4 w-4" />
           </ToolbarButton>
           <ToolbarButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title={t('editor.divider')}>
@@ -303,10 +315,10 @@ export function Editor({ content, onChange, editable = true, spaceSlug }: Editor
 
           <ToolbarDivider />
 
-          <ToolbarButton onClick={() => editor.chain().focus().undo().run()} title={t('editor.undo')}>
+          <ToolbarButton onClick={() => editor.chain().focus().undo().run()} title={tip(t('editor.undo'), 'Ctrl+Z')}>
             <Undo className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().redo().run()} title={t('editor.redo')}>
+          <ToolbarButton onClick={() => editor.chain().focus().redo().run()} title={tip(t('editor.redo'), 'Ctrl+Shift+Z')}>
             <Redo className="h-4 w-4" />
           </ToolbarButton>
 
