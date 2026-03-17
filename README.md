@@ -7,6 +7,7 @@
 [![Docker Pulls FE](https://img.shields.io/docker/pulls/veloxico/wikso-fe?style=flat&logo=docker&label=pulls%20(frontend))](https://hub.docker.com/r/veloxico/wikso-fe)
 [![License](https://img.shields.io/github/license/veloxico/wikso?style=flat)](LICENSE)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/veloxico?style=flat&logo=githubsponsors&label=Sponsor)](https://github.com/sponsors/veloxico)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b?style=flat&logo=ko-fi)](https://ko-fi.com/alexkoss)
 [![Crypto Donate](https://img.shields.io/badge/Crypto-Donate-blue?style=flat&logo=bitcoin)](#support-the-project)
 
 > **Live Demo:** [wikso.veloxico.com](https://wikso.veloxico.com)
@@ -265,6 +266,9 @@ pnpm format           # Format code with Prettier
 ## Support the Project
 
 If you find Wikso useful, consider supporting its development:
+
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub_Sponsors-Support-ea4aaa?style=for-the-badge&logo=githubsponsors)](https://github.com/sponsors/veloxico)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy_me_a_coffee-ff5e5b?style=for-the-badge&logo=ko-fi)](https://ko-fi.com/alexkoss)
 
 | Network | Address |
 |---------|---------|
