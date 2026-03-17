@@ -334,7 +334,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       ],
       editorProps: {
         attributes: {
-          class: 'wikso-editor prose prose-sm dark:prose-invert max-w-none min-h-[calc(100vh-280px)] focus:outline-none px-4 py-3',
+          class: 'wikso-editor prose prose-sm dark:prose-invert max-w-none min-h-[calc(100vh-200px)] focus:outline-none py-4',
         },
         handleDrop: (_view, event, _slice, moved) => {
           if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
@@ -485,7 +485,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
 
   if (!synced) {
     return (
-      <div className="flex items-center justify-center rounded-lg border border-border p-12">
+      <div className="flex items-center justify-center p-12">
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
           {status === 'disconnected' ? (
             <>
@@ -559,7 +559,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
   const charCount = editor.storage.characterCount;
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden flex flex-col">
+    <div className="overflow-hidden flex flex-col">
       <input
         ref={fileInputRef}
         type="file"
@@ -569,7 +569,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       />
 
       {editable && (
-        <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/30 p-1 sticky top-0 z-10">
+        <div className="flex flex-wrap items-center gap-0.5 border-b border-border/50 p-1.5 sticky top-0 z-10 bg-background">
           {/* Text formatting */}
           <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title={tip(t('editor.bold'), 'Ctrl+B')}>
             <Bold className="h-4 w-4" />
@@ -871,8 +871,8 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
         </div>
       )}
 
-      {/* Editor content */}
-      <div className="relative flex-1">
+      {/* Editor content — centered */}
+      <div className="relative flex-1 mx-auto w-full max-w-[912px] px-6">
         <EditorContent editor={editor} />
       </div>
     </div>

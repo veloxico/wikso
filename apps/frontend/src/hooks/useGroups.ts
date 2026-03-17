@@ -149,6 +149,55 @@ export function useRemoveGroupMember(groupId: string) {
   });
 }
 
+export function useUserGroups(userId: string) {
+  return useQuery<Array<{ id: string; groupId: string; group: { id: string; name: string; description: string | null; _count: { members: number } } }>>({
+    queryKey: ['groups', 'user', userId],
+    queryFn: async () => {
+      const { data } = await api.get(`/groups/user/${userId}`);
+      return data;
+    },
+    enabled: !!userId,
+  });
+}
+
+export function useAddUserToGroup() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async ({ groupId, userId }: { groupId: string; userId: string }) => {
+      const { data } = await api.post(`/groups/${groupId}/members`, { userId });
+      return data;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['groups', 'user', vars.userId] });
+      queryClient.invalidateQueries({ queryKey: ['groups', vars.groupId] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      toast.success(t('toasts.groupMemberAdded'));
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || t('toasts.groupMemberAddFailed'));
+    },
+  });
+}
+
+export function useRemoveUserFromGroup() {
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  return useMutation({
+    mutationFn: async ({ groupId, userId }: { groupId: string; userId: string }) => {
+      const { data } = await api.delete(`/groups/${groupId}/members/${userId}`);
+      return data;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['groups', 'user', vars.userId] });
+      queryClient.invalidateQueries({ queryKey: ['groups', vars.groupId] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      toast.success(t('toasts.groupMemberRemoved'));
+    },
+    onError: () => toast.error(t('toasts.groupMemberRemoveFailed')),
+  });
+}
+
 export function useSearchGroups(query: string) {
   return useQuery<Array<{ id: string; name: string; description: string | null; _count: { members: number } }>>({
     queryKey: ['groups', 'search', query],

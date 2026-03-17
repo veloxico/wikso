@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   Pencil,
   Plus,
+  X,
+  Shield,
 } from 'lucide-react';
 import {
   useAdminUsers,
@@ -27,7 +29,9 @@ import {
   useBulkDeleteUsers,
 } from '@/hooks/useAdmin';
 import type { AdminUser } from '@/hooks/useAdmin';
+import { useUserGroups, useSearchGroups, useAddUserToGroup, useRemoveUserFromGroup } from '@/hooks/useGroups';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -86,11 +90,18 @@ export default function AdminUsersPage() {
   const [createRole, setCreateRole] = useState('USER');
 
   // Edit user dialog
-  const [editUser, setEditUser] = useState<any>(null);
+  const [editUser, setEditUser] = useState<AdminUser | null>(null);
   const [editName, setEditName] = useState('');
   const [editRole, setEditRole] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editConfirmPassword, setEditConfirmPassword] = useState('');
+
+  // Group management in edit dialog
+  const [groupSearch, setGroupSearch] = useState('');
+  const { data: userGroups } = useUserGroups(editUser?.id || '');
+  const { data: searchedGroups } = useSearchGroups(groupSearch);
+  const addUserToGroup = useAddUserToGroup();
+  const removeUserFromGroup = useRemoveUserFromGroup();
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -150,7 +161,7 @@ export default function AdminUsersPage() {
   const handleBulkDelete = () => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    if (!confirm(`Delete ${ids.length} selected user(s)? This cannot be undone.`)) return;
+    if (!confirm(t('admin.users.confirmBulkDelete', { count: ids.length }))) return;
     bulkDelete.mutate(ids, {
       onSuccess: () => setSelectedIds(new Set()),
     });
@@ -201,19 +212,24 @@ export default function AdminUsersPage() {
         setUserPassword.mutateAsync({ userId: editUser.id, password: editPassword }),
       );
     }
-    Promise.all(promises).then(() => {
-      setEditUser(null);
-      setEditPassword('');
-      setEditConfirmPassword('');
-    });
+    Promise.all(promises)
+      .then(() => {
+        setEditUser(null);
+        setEditPassword('');
+        setEditConfirmPassword('');
+      })
+      .catch(() => {
+        // Individual mutation onError handlers show toasts; keep dialog open for retry
+      });
   };
 
-  const openEditDialog = (user: any) => {
+  const openEditDialog = (user: AdminUser) => {
     setEditUser(user);
     setEditName(user.name);
     setEditRole(user.role);
     setEditPassword('');
     setEditConfirmPassword('');
+    setGroupSearch('');
   };
 
   return (
@@ -354,7 +370,7 @@ export default function AdminUsersPage() {
 
       {/* Edit User Dialog */}
       <Dialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t('admin.users.editUser')}</DialogTitle>
             <DialogDescription>{editUser?.email}</DialogDescription>
@@ -379,6 +395,70 @@ export default function AdminUsersPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Groups section */}
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                {t('admin.users.groups')}
+              </p>
+              {/* Current groups */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {userGroups && userGroups.length > 0 ? (
+                  userGroups.map((membership) => (
+                    <Badge key={membership.id} variant="secondary" className="gap-1 pr-1">
+                      {membership.group.name}
+                      <button
+                        onClick={() => editUser && removeUserFromGroup.mutate({ groupId: membership.group.id, userId: editUser.id })}
+                        disabled={removeUserFromGroup.isPending}
+                        className="ml-1 rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive transition-colors disabled:opacity-50"
+                        aria-label={`${t('admin.users.removeFromGroup')}: ${membership.group.name}`}
+                        title={t('admin.users.removeFromGroup')}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">{t('admin.users.noGroups')}</span>
+                )}
+              </div>
+              {/* Add to group */}
+              <div className="relative">
+                <Input
+                  placeholder={t('admin.users.searchGroupsToAdd')}
+                  value={groupSearch}
+                  onChange={(e) => setGroupSearch(e.target.value)}
+                  onBlur={() => setTimeout(() => setGroupSearch(''), 200)}
+                  className="h-8 text-sm"
+                />
+                {groupSearch && searchedGroups && searchedGroups.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-md" role="listbox">
+                    {searchedGroups
+                      .filter((g) => !userGroups?.some((ug) => ug.group.id === g.id))
+                      .map((group) => (
+                        <button
+                          key={group.id}
+                          role="option"
+                          disabled={addUserToGroup.isPending}
+                          onClick={() => {
+                            if (editUser) addUserToGroup.mutate({ groupId: group.id, userId: editUser.id });
+                            setGroupSearch('');
+                          }}
+                          className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-accent transition-colors first:rounded-t-md last:rounded-b-md disabled:opacity-50"
+                        >
+                          <span>{group.name}</span>
+                          <span className="text-xs text-muted-foreground">{group._count.members} {t('admin.groups.memberCount')?.toLowerCase()}</span>
+                        </button>
+                      ))}
+                    {searchedGroups.filter((g) => !userGroups?.some((ug) => ug.group.id === g.id)).length === 0 && (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">{t('admin.users.allGroupsAssigned')}</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="border-t pt-4">
               <p className="text-sm font-medium mb-3">{t('admin.users.setPassword')}</p>
               <div className="grid grid-cols-2 gap-3">
@@ -461,7 +541,7 @@ export default function AdminUsersPage() {
       {selectedIds.size > 0 && (
         <div className="mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3">
           <span className="text-sm font-medium">
-            {selectedIds.size} selected
+            {t('admin.users.selected', { count: selectedIds.size })}
           </span>
           <div className="flex gap-2 ml-auto">
             <Button
@@ -472,7 +552,7 @@ export default function AdminUsersPage() {
               disabled={bulkSuspend.isPending}
             >
               <Ban className="h-4 w-4" />
-              Suspend Selected ({selectedIds.size})
+              {t('admin.users.suspendSelected', { count: selectedIds.size })}
             </Button>
             <Button
               variant="outline"
@@ -482,7 +562,7 @@ export default function AdminUsersPage() {
               disabled={bulkDelete.isPending}
             >
               <Trash2 className="h-4 w-4" />
-              Delete Selected ({selectedIds.size})
+              {t('admin.users.deleteSelected', { count: selectedIds.size })}
             </Button>
           </div>
         </div>
@@ -517,8 +597,8 @@ export default function AdminUsersPage() {
                       <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.roleColumn')}</th>
                       <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.statusColumn')}</th>
                       <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.joinedColumn')}</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Last Login</th>
-                      <th className="pb-3 font-medium text-muted-foreground">IP</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.lastLoginColumn')}</th>
+                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.ipColumn')}</th>
                       <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.actionsColumn')}</th>
                     </tr>
                   </thead>

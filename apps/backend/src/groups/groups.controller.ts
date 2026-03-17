@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { GroupsService } from './groups.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -35,11 +35,19 @@ export class GroupsController {
     return this.groupsService.findAll(Number(skip) || 0, Number(take) || 20, search);
   }
 
+  @Get('user/:userId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(GlobalRole.ADMIN)
+  @ApiOperation({ summary: 'Get groups for a specific user' })
+  findByUser(@Param('userId') userId: string) {
+    return this.groupsService.findByUser(userId);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(GlobalRole.ADMIN)
   @ApiOperation({ summary: 'Get group by ID' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.groupsService.findOne(id);
   }
 

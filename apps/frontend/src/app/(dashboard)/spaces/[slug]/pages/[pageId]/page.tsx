@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Save, Clock, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal, Copy, FilePlus, MoveHorizontal } from 'lucide-react';
+import { Save, Clock, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal, Copy, FilePlus, MoveHorizontal, ScanEye } from 'lucide-react';
 import { usePage, useUpdatePage, useDuplicatePage, useCreatePage, usePageAncestors } from '@/hooks/usePages';
 import { useSpace } from '@/hooks/useSpaces';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -16,6 +16,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DeletePageDialog } from '@/components/features/DeletePageDialog';
@@ -35,11 +36,6 @@ const CollaborativeEditor = dynamic(
   { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-lg bg-muted" /> }
 );
 
-const TableOfContents = dynamic(
-  () => import('@/components/features/TableOfContents').then((m) => m.TableOfContents),
-  { ssr: false }
-);
-
 export default function PageEditorPage() {
   const params = useParams();
   const router = useRouter();
@@ -57,10 +53,11 @@ export default function PageEditorPage() {
   const [editorInstance, setEditorInstance] = useState<any>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // View / Edit mode — default is view
-  const [mode, setMode] = useState<'view' | 'edit'>('view');
+  // View / Edit / Preview mode — default is view
+  const [mode, setMode] = useState<'view' | 'edit' | 'preview'>('view');
   const { canEdit } = usePagePermissions(slug, pageId);
   const isEditing = mode === 'edit' && canEdit;
+  const isPreviewing = mode === 'preview';
 
   // Dialogs
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -165,13 +162,13 @@ export default function PageEditorPage() {
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges && isEditing) {
+      if (hasUnsavedChanges && (isEditing || isPreviewing)) {
         e.preventDefault();
       }
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
-  }, [hasUnsavedChanges, isEditing]);
+  }, [hasUnsavedChanges, isEditing, isPreviewing]);
 
   // Only show skeleton on very first load (no previous data to display).
   // With placeholderData: keepPreviousData, the old page stays visible during navigation.
@@ -189,57 +186,22 @@ export default function PageEditorPage() {
       {/* Keyboard Shortcuts Dialog (global, triggered by Ctrl+/) */}
       <KeyboardShortcutsDialog />
 
-      {/* Table of Contents sidebar */}
-      <TableOfContents editor={editorInstance} />
-
-      {/* Main content area — offset for TOC sidebar on large screens */}
-      <div className="px-8 py-4 lg:mr-64">
-        {/* Breadcrumbs — full hierarchy: Space > ...ancestors > current page */}
-        <Breadcrumbs
-          className="mb-4"
-          items={[
-            { label: space?.name || slug, href: `/spaces/${slug}` },
-            ...(ancestors || []).map((a) => ({
-              label: a.title,
-              href: `/spaces/${slug}/pages/${a.id}`,
-            })),
-            { label: page?.title || 'Page' },
-          ]}
-        />
-
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {isEditing ? (
-              <Input
-                value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  if (e.target.value !== page?.title) setHasUnsavedChanges(true);
-                }}
-                onBlur={handleSaveTitle}
-                className="border-none bg-transparent text-3xl font-bold shadow-none focus-visible:ring-0 px-0"
-                placeholder={t('pages.untitled')}
-              />
-            ) : (
-              <h1 className="text-3xl font-bold truncate px-0">
-                {title || page?.title || t('pages.untitled')}
-              </h1>
-            )}
-            <button
-              onClick={handleToggleFavorite}
-              className={cn(
-                'shrink-0 p-1.5 rounded-md transition-colors',
-                favoriteStatus?.isFavorite
-                  ? 'text-yellow-500 hover:text-yellow-600'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-              title={favoriteStatus?.isFavorite ? (t('pages.removeFromFavorites') || 'Remove from favorites') : (t('pages.addToFavorites') || 'Add to favorites')}
-            >
-              <Star className={cn('h-5 w-5', favoriteStatus?.isFavorite && 'fill-current')} />
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
+      {/* Main content area — compact header like Confluence */}
+      <div className="mx-auto w-full max-w-[912px] px-6 pt-2 pb-0">
+        {/* Row 1: Breadcrumbs + action buttons */}
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <Breadcrumbs
+            className="min-w-0 shrink"
+            items={[
+              { label: space?.name || slug, href: `/spaces/${slug}` },
+              ...(ancestors || []).map((a) => ({
+                label: a.title,
+                href: `/spaces/${slug}/pages/${a.id}`,
+              })),
+              { label: page?.title || 'Page' },
+            ]}
+          />
+          <div className="flex items-center gap-1.5 shrink-0">
             {page?.updatedAt && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
@@ -248,28 +210,26 @@ export default function PageEditorPage() {
             )}
             <PageExport editor={editorInstance} pageTitle={title || t('pages.untitled')} />
 
-            {/* Version history button */}
             <Button
               variant="ghost"
               size="sm"
-              className="gap-2"
+              className="gap-1.5 h-7 text-xs"
               onClick={() => setShowVersionHistory(true)}
             >
-              <History className="h-4 w-4" />
+              <History className="h-3.5 w-3.5" />
               {t('pages.versionHistory')}
             </Button>
 
-            {/* View/Edit toggle */}
             {mode === 'view' && canEdit && (
-              <Button onClick={() => setMode('edit')} size="sm" className="gap-2">
-                <Pencil className="h-4 w-4" />
+              <Button onClick={() => setMode('edit')} size="sm" className="gap-1.5 h-7 text-xs">
+                <Pencil className="h-3.5 w-3.5" />
                 {t('pages.edit') || 'Edit'}
               </Button>
             )}
-            {isEditing && (
+            {isEditing && !isPreviewing && (
               <>
-                <Button onClick={handleSave} disabled={updatePage.isPending} size="sm" className="gap-2">
-                  <Save className="h-4 w-4" />
+                <Button onClick={handleSave} disabled={updatePage.isPending} size="sm" className="gap-1.5 h-7 text-xs">
+                  <Save className="h-3.5 w-3.5" />
                   {updatePage.isPending ? t('common.saving') : t('pages.save')}
                 </Button>
                 <Button onClick={() => {
@@ -278,22 +238,36 @@ export default function PageEditorPage() {
                   }
                   setMode('view');
                   setHasUnsavedChanges(false);
-                }} size="sm" variant="ghost" className="gap-2">
-                  <Eye className="h-4 w-4" />
+                }} size="sm" variant="ghost" className="gap-1.5 h-7 text-xs">
+                  <Eye className="h-3.5 w-3.5" />
                   {t('pages.view') || 'View'}
                 </Button>
               </>
             )}
+            {isPreviewing && (
+              <Button onClick={() => setMode('edit')} size="sm" variant="outline" className="gap-1.5 h-7 text-xs">
+                <Pencil className="h-3.5 w-3.5" />
+                {t('pages.backToEditing') || 'Back to editing'}
+              </Button>
+            )}
 
-            {/* More actions dropdown */}
             {canEdit && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {isEditing && (
+                    <>
+                      <DropdownMenuItem onClick={() => setMode('preview')}>
+                        <ScanEye className="h-4 w-4" />
+                        {t('pages.preview') || 'Preview'}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem
                     onClick={handleCreateChildPage}
                     disabled={createChildPage.isPending}
@@ -314,6 +288,7 @@ export default function PageEditorPage() {
                     <MoveHorizontal className="h-4 w-4" />
                     {t('pages.movePage') || 'Move'}
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onClick={() => setShowDeleteDialog(true)}
@@ -327,31 +302,77 @@ export default function PageEditorPage() {
           </div>
         </div>
 
-        {/* Tags */}
-        {page?.tags && (
-          <div className="mb-4">
-            <TagManager
-              slug={slug}
-              pageId={pageId}
-              pageTags={(page.tags as any[]).filter((pt: any) => pt.tag).map((pt: any) => ({
-                tagId: pt.tagId,
-                tag: { id: pt.tag.id, name: pt.tag.name },
-              }))}
-            />
+        {/* Row 2: Title + star + tags — all inline */}
+        <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-1.5 min-w-0 shrink">
+            {isEditing ? (
+              <Input
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (e.target.value !== page?.title) setHasUnsavedChanges(true);
+                }}
+                onBlur={handleSaveTitle}
+                className="border-none bg-transparent text-2xl font-bold shadow-none focus-visible:ring-0 px-0 h-auto py-0"
+                placeholder={t('pages.untitled')}
+              />
+            ) : (
+              <h1 className="text-2xl font-bold truncate px-0">
+                {title || page?.title || t('pages.untitled')}
+              </h1>
+            )}
+            <button
+              onClick={handleToggleFavorite}
+              className={cn(
+                'shrink-0 p-1 rounded-md transition-colors',
+                favoriteStatus?.isFavorite
+                  ? 'text-yellow-500 hover:text-yellow-600'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+              title={favoriteStatus?.isFavorite ? (t('pages.removeFromFavorites') || 'Remove from favorites') : (t('pages.addToFavorites') || 'Add to favorites')}
+            >
+              <Star className={cn('h-4 w-4', favoriteStatus?.isFavorite && 'fill-current')} />
+            </button>
+          </div>
+
+          {/* Tags inline */}
+          {page?.tags && (
+            <div className="shrink-0">
+              <TagManager
+                slug={slug}
+                pageId={pageId}
+                pageTags={(page.tags as any[]).filter((pt: any) => pt.tag).map((pt: any) => ({
+                  tagId: pt.tagId,
+                  tag: { id: pt.tag.id, name: pt.tag.name },
+                }))}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Preview banner */}
+        {isPreviewing && (
+          <div className="mb-1 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 dark:border-blue-800 dark:bg-blue-950/50">
+            <ScanEye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+              {t('pages.previewMode') || 'Preview mode — this is how the page will look after publishing'}
+            </span>
           </div>
         )}
+      </div>
 
-        {/* Collaborative Editor (Yjs + Hocuspocus) */}
-        <CollaborativeEditor
-          pageId={pageId}
-          spaceSlug={slug}
-          editable={isEditing}
-          onEditorReady={handleEditorReady}
-          initialContent={page?.contentJson as Record<string, unknown> | null}
-          onContentChange={() => setHasUnsavedChanges(true)}
-        />
+      {/* Collaborative Editor — toolbar stretches full width, content centered */}
+      <CollaborativeEditor
+        pageId={pageId}
+        spaceSlug={slug}
+        editable={isEditing}
+        onEditorReady={handleEditorReady}
+        initialContent={page?.contentJson as Record<string, unknown> | null}
+        onContentChange={() => setHasUnsavedChanges(true)}
+      />
 
-        {/* Comments (collapsible) */}
+      {/* Comments — centered */}
+      <div className="mx-auto w-full max-w-[912px] px-6">
         <div className="mt-4 border-t border-border pt-4">
           <button
             onClick={() => setShowComments(!showComments)}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   UsersRound,
   Search,
@@ -23,8 +23,9 @@ import {
   useAddGroupMember,
   useRemoveGroupMember,
 } from '@/hooks/useGroups';
+import type { Group } from '@/hooks/useGroups';
 import { useAdminUsers } from '@/hooks/useAdmin';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,6 +60,7 @@ function GroupMembersPanel({ groupId }: { groupId: string }) {
             placeholder={t('admin.groups.searchUsersToAdd')}
             value={memberSearch}
             onChange={(e) => setMemberSearch(e.target.value)}
+            onBlur={() => setTimeout(() => setMemberSearch(''), 200)}
             className="pl-9 h-8 text-sm"
           />
         </div>
@@ -66,11 +68,13 @@ function GroupMembersPanel({ groupId }: { groupId: string }) {
 
       {/* Search results to add */}
       {memberSearch && filteredUsers.length > 0 && (
-        <div className="mb-3 rounded-md border border-border bg-background">
+        <div className="mb-3 rounded-md border border-border bg-background" role="listbox">
           {filteredUsers.slice(0, 5).map((user: any) => (
-            <div
+            <button
               key={user.id}
-              className="flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/50 cursor-pointer"
+              role="option"
+              disabled={addMember.isPending}
+              className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-muted/50 transition-colors disabled:opacity-50"
               onClick={() => {
                 addMember.mutate(user.id);
                 setMemberSearch('');
@@ -84,7 +88,7 @@ function GroupMembersPanel({ groupId }: { groupId: string }) {
                 <span className="text-muted-foreground">{user.email}</span>
               </div>
               <UserPlus className="h-4 w-4 text-primary" />
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -111,6 +115,7 @@ function GroupMembersPanel({ groupId }: { groupId: string }) {
                 variant="ghost"
                 size="sm"
                 className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                disabled={removeMember.isPending}
                 onClick={() => removeMember.mutate(m.user.id)}
               >
                 <X className="h-3.5 w-3.5" />
@@ -121,6 +126,120 @@ function GroupMembersPanel({ groupId }: { groupId: string }) {
       ) : (
         <p className="text-sm text-muted-foreground">{t('admin.groups.noMembers')}</p>
       )}
+    </div>
+  );
+}
+
+function EditGroupMembers({ groupId }: { groupId: string }) {
+  const { t } = useTranslation();
+  const { data: members, isLoading } = useGroupMembers(groupId);
+  const removeMember = useRemoveGroupMember(groupId);
+  const addMember = useAddGroupMember(groupId);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [memberFilter, setMemberFilter] = useState('');
+  const { data: searchUsers } = useAdminUsers(0, 10, { search: memberSearch || undefined });
+
+  const memberUserIds = new Set(members?.map((m) => m.user.id) || []);
+  const filteredNewUsers = searchUsers?.filter((u: any) => !memberUserIds.has(u.id)) || [];
+
+  // Filter current members by name or email
+  const filteredMembers = members?.filter((m) => {
+    if (!memberFilter) return true;
+    const q = memberFilter.toLowerCase();
+    return m.user.name?.toLowerCase().includes(q) || m.user.email?.toLowerCase().includes(q);
+  });
+
+  return (
+    <div>
+      <p className="text-sm font-medium mb-3 flex items-center gap-2">
+        <UsersRound className="h-4 w-4" />
+        {t('admin.groups.memberCount')} ({members?.length || 0})
+      </p>
+
+      {/* Search/filter current members */}
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder={t('admin.groups.filterMembers')}
+          value={memberFilter}
+          onChange={(e) => setMemberFilter(e.target.value)}
+          className="pl-9 h-8 text-sm"
+        />
+      </div>
+
+      {/* Current members list */}
+      <div className="rounded-md border border-border max-h-[200px] overflow-y-auto mb-3">
+        {isLoading ? (
+          <div className="space-y-2 p-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-8 animate-pulse rounded bg-muted" />
+            ))}
+          </div>
+        ) : filteredMembers && filteredMembers.length > 0 ? (
+          filteredMembers.map((m) => (
+            <div key={m.id} className="flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/50 border-b border-border last:border-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                  {m.user.name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+                <span className="font-medium truncate">{m.user.name}</span>
+                <span className="text-muted-foreground truncate text-xs">{m.user.email}</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                disabled={removeMember.isPending}
+                onClick={() => removeMember.mutate(m.user.id)}
+                aria-label={`${t('admin.users.removeFromGroup')}: ${m.user.name}`}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))
+        ) : members && members.length > 0 && memberFilter ? (
+          <p className="text-sm text-muted-foreground p-3">{t('search.noResults')}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground p-3">{t('admin.groups.noMembers')}</p>
+        )}
+      </div>
+
+      {/* Add new members */}
+      <div className="relative">
+        <UserPlus className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder={t('admin.groups.searchUsersToAdd')}
+          value={memberSearch}
+          onChange={(e) => setMemberSearch(e.target.value)}
+          onBlur={() => setTimeout(() => setMemberSearch(''), 200)}
+          className="pl-9 h-8 text-sm"
+        />
+        {memberSearch && filteredNewUsers.length > 0 && (
+          <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-md" role="listbox">
+            {filteredNewUsers.slice(0, 5).map((user: any) => (
+              <button
+                key={user.id}
+                role="option"
+                disabled={addMember.isPending}
+                onClick={() => {
+                  addMember.mutate(user.id);
+                  setMemberSearch('');
+                }}
+                className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-accent transition-colors first:rounded-t-md last:rounded-b-md disabled:opacity-50"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                    {user.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <span>{user.name}</span>
+                  <span className="text-muted-foreground text-xs">{user.email}</span>
+                </div>
+                <UserPlus className="h-4 w-4 text-primary shrink-0" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -137,7 +256,7 @@ export default function AdminGroupsPage() {
   const [createDescription, setCreateDescription] = useState('');
 
   // Edit dialog
-  const [editGroup, setEditGroup] = useState<any>(null);
+  const [editGroup, setEditGroup] = useState<Group | null>(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
 
@@ -171,7 +290,7 @@ export default function AdminGroupsPage() {
     );
   };
 
-  const openEditDialog = (group: any) => {
+  const openEditDialog = (group: Group) => {
     setEditGroup(group);
     setEditName(group.name);
     setEditDescription(group.description || '');
@@ -229,11 +348,12 @@ export default function AdminGroupsPage() {
 
       {/* Edit Group Dialog */}
       <Dialog open={!!editGroup} onOpenChange={(open) => !open && setEditGroup(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{t('admin.groups.editGroup')}</DialogTitle>
+            <DialogDescription>{editGroup?.name}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
+          <div className="space-y-4 pt-2 overflow-y-auto flex-1 min-h-0">
             <div className="space-y-2">
               <Label>{t('common.name')}</Label>
               <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
@@ -242,7 +362,15 @@ export default function AdminGroupsPage() {
               <Label>{t('common.description')}</Label>
               <Input value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
             </div>
-            <div className="flex justify-end gap-2">
+
+            {/* Members section */}
+            {editGroup && (
+              <div className="border-t pt-4">
+                <EditGroupMembers groupId={editGroup.id} />
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setEditGroup(null)}>{t('common.cancel')}</Button>
               <Button
                 onClick={handleEditSave}
@@ -295,10 +423,9 @@ export default function AdminGroupsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {groups.map((group: any) => (
-                      <>
+                    {groups.map((group) => (
+                      <React.Fragment key={group.id}>
                         <tr
-                          key={group.id}
                           className="border-b border-border last:border-0 cursor-pointer hover:bg-muted/30"
                           onClick={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}
                         >
@@ -346,13 +473,13 @@ export default function AdminGroupsPage() {
                           </td>
                         </tr>
                         {expandedGroup === group.id && (
-                          <tr key={`${group.id}-members`}>
+                          <tr>
                             <td colSpan={4} className="p-0">
                               <GroupMembersPanel groupId={group.id} />
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>

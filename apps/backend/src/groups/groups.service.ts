@@ -111,9 +111,22 @@ export class GroupsService {
     return { message: 'Member removed from group' };
   }
 
+  async findByUser(userId: string) {
+    return this.prisma.groupMember.findMany({
+      where: { userId },
+      include: {
+        group: {
+          include: { _count: { select: { members: true } } },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   async search(query: string, limit = 10) {
+    if (!query || query.trim().length === 0) return [];
     return this.prisma.group.findMany({
-      where: { name: { contains: query, mode: 'insensitive' } },
+      where: { name: { contains: query.trim(), mode: 'insensitive' } },
       select: { id: true, name: true, description: true, _count: { select: { members: true } } },
       take: limit,
       orderBy: { name: 'asc' },

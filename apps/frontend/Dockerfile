@@ -27,10 +27,8 @@ ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 
 RUN pnpm --filter @wikso/frontend run build
 
-# Production stage
+# Production stage — standalone output, no node_modules needed
 FROM node:20-alpine AS runner
-
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 WORKDIR /app
 
@@ -38,18 +36,13 @@ ENV NODE_ENV=production
 ENV NEXT_PUBLIC_API_URL=http://localhost:3000
 ENV NEXT_PUBLIC_WS_URL=ws://localhost:1234
 
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-COPY patches ./patches
-COPY packages/shared/package.json ./packages/shared/
-COPY apps/frontend/package.json ./apps/frontend/
-
-RUN pnpm install --frozen-lockfile --prod
-
-COPY packages/shared ./packages/shared
-COPY --from=builder /app/apps/frontend/.next ./apps/frontend/.next
+# Copy standalone server (includes only needed node_modules)
+COPY --from=builder /app/apps/frontend/.next/standalone ./
+# Copy static assets and public files
+COPY --from=builder /app/apps/frontend/.next/static ./apps/frontend/.next/static
 COPY --from=builder /app/apps/frontend/public ./apps/frontend/public
 
 WORKDIR /app/apps/frontend
 
 EXPOSE 3000
-CMD ["pnpm", "start"]
+CMD ["node", "server.js"]
