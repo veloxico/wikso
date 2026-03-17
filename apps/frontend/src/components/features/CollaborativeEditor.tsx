@@ -113,6 +113,22 @@ function getRandomColor() {
   return COLORS[Math.floor(Math.random() * COLORS.length)];
 }
 
+// Cache the WebSocket URL globally so we don't fetch /api/client-config on every page switch
+let cachedWsUrl: string | null = null;
+async function getWsUrl(): Promise<string> {
+  if (cachedWsUrl) return cachedWsUrl;
+  try {
+    const res = await fetch('/api/client-config');
+    const cfg = await res.json();
+    cachedWsUrl = cfg.wsUrl;
+    return cachedWsUrl!;
+  } catch {
+    const fallback = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:1234';
+    cachedWsUrl = fallback;
+    return fallback;
+  }
+}
+
 type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
 export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEditorReady, initialContent, onContentChange }: CollaborativeEditorProps) {
@@ -153,15 +169,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
     const initProvider = async () => {
       if (destroyed) return;
 
-      let wsUrl: string;
-      try {
-        const res = await fetch('/api/client-config');
-        const cfg = await res.json();
-        wsUrl = cfg.wsUrl;
-      } catch {
-        // Fallback for local development without the config endpoint
-        wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:1234';
-      }
+      const wsUrl = await getWsUrl();
 
       if (destroyed) return;
 
@@ -212,17 +220,16 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
           syncedFlag = true;
           setSynced(true);
         }
-      }, 500);
+      }, 150);
     };
 
-    // Defer to next macrotask — in React Strict Mode the first mount's
-    // cleanup runs synchronously, so the async function won't proceed
-    // past the first `if (destroyed)` check for the throwaway cycle.
-    const timerId = setTimeout(initProvider, 0);
+    // Start provider initialization immediately.  The async nature of
+    // initProvider (awaiting getWsUrl) already defers actual work past
+    // the synchronous cleanup in React Strict Mode's throwaway cycle.
+    initProvider();
 
     return () => {
       destroyed = true;
-      clearTimeout(timerId);
       if (syncFallbackTimer) clearTimeout(syncFallbackTimer);
       if (provider) {
         provider.destroy();
@@ -484,30 +491,38 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
   }, []);
 
   if (!synced) {
+    // Show a minimal skeleton instead of a jarring full-screen spinner.
+    // The editor typically syncs in <200ms; this avoids a layout shift.
+    if (status === 'disconnected') {
+      return (
+        <div className="flex items-center justify-center p-12">
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <WifiOff className="h-8 w-8" />
+            <p className="text-sm">{t('editor.unableToConnect')}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setStatus('connecting');
+                provider?.connect();
+              }}
+            >
+              {t('common.tryAgain')}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    // Lightweight placeholder that matches editor layout — no spinner
     return (
-      <div className="flex items-center justify-center p-12">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          {status === 'disconnected' ? (
-            <>
-              <WifiOff className="h-8 w-8" />
-              <p className="text-sm">{t('editor.unableToConnect')}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setStatus('connecting');
-                  provider?.connect();
-                }}
-              >
-                {t('common.tryAgain')}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <p className="text-sm">{t('editor.connecting')}</p>
-            </>
-          )}
+      <div className="overflow-hidden flex flex-col">
+        <div className="border-b border-border/50 p-1.5 h-[44px]" />
+        <div className="flex-1 mx-auto w-full max-w-[912px] px-6 py-4">
+          <div className="space-y-3 animate-pulse">
+            <div className="h-4 bg-muted rounded w-3/4" />
+            <div className="h-4 bg-muted rounded w-1/2" />
+            <div className="h-4 bg-muted rounded w-5/6" />
+          </div>
         </div>
       </div>
     );
