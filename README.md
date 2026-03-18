@@ -40,7 +40,7 @@
 - **Templates** — create pages from predefined templates
 - **Page Export** — export pages to PDF / Markdown
 - **File Attachments** — upload and attach files to pages (S3 / MinIO), configurable size limit (up to 100 MB)
-- **Confluence Import** — migrate from Confluence with a single ZIP upload (Beta)
+- **Confluence Import** — migrate from Confluence Cloud with a single ZIP upload (Beta)
 
 ### Admin Panel
 - **Dashboard** — system stats with 30-day activity charts (pages, views, users)
@@ -54,7 +54,7 @@
 - **Email Configuration** — SMTP setup with provider presets and test email
 - **Webhooks** — full CRUD: create, edit, delete, enable/disable webhook integrations
 - **System Health** — live service status, uptime, memory usage, Node.js version
-- **Confluence Import** — upload Confluence XML export ZIP with real-time progress tracking (Beta)
+- **Confluence Import** — upload Confluence Cloud XML export ZIP with real-time progress tracking (Beta)
 
 ### Platform
 - **Multi-language** — UI available in English, Russian, Belarusian, Spanish, Spanish (AR), Portuguese, Portuguese (BR), Polish, Ukrainian, Chinese
