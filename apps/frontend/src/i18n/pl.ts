@@ -70,6 +70,9 @@ const pl = {
       disabledDescription:
         'Publiczna rejestracja jest obecnie wyłączona. Skontaktuj się z administratorem, aby otrzymać zaproszenie.',
       backToLogin: 'Powrót do logowania',
+      checkEmailTitle: 'Sprawdź pocztę',
+      checkEmailDescription:
+        'Wysłaliśmy Ci link weryfikacyjny. Sprawdź skrzynkę odbiorczą i kliknij link, aby zweryfikować konto.',
     },
     forgotPassword: {
       title: 'Resetowanie hasła',
@@ -92,6 +95,15 @@ const pl = {
       invalidTitle: 'Nieprawidłowe zaproszenie',
       invalidDescription:
         'Ten link zaproszenia jest nieprawidłowy lub wygasł. Skontaktuj się z administratorem, aby otrzymać nowe zaproszenie.',
+      goToLogin: 'Przejdź do logowania',
+    },
+    verifyEmail: {
+      verifying: 'Weryfikacja adresu email...',
+      successTitle: 'Email zweryfikowany',
+      successDescription: 'Twój email został pomyślnie zweryfikowany. Możesz się teraz zalogować.',
+      errorTitle: 'Błąd weryfikacji',
+      invalidToken: 'Nieprawidłowy lub brakujący token weryfikacji.',
+      failed: 'Weryfikacja emaila nie powiodła się. Link mógł wygasnąć.',
       goToLogin: 'Przejdź do logowania',
     },
     callback: {
@@ -460,6 +472,7 @@ const pl = {
       suspendSelected: 'Zawieś ({count})',
       deleteSelected: 'Usuń ({count})',
       confirmBulkDelete: 'Usunąć {count} wybranych użytkowników? Tej czynności nie można cofnąć.',
+      emailNotVerified: 'Email niezweryfikowany',
     },
     groups: {
       title: 'Zarządzanie grupami',
@@ -774,6 +787,7 @@ const pl = {
     subscript: 'Indeks dolny',
     link: 'Link',
     insertImage: 'Wstaw obraz',
+    imageUploadFailed: 'Nie udało się przesłać obrazu',
     insertTable: 'Wstaw tabelę',
     codeBlock: 'Blok kodu',
     blockquote: 'Cytat',

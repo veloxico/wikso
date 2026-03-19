@@ -33,7 +33,7 @@ import { cn } from '@/lib/utils';
 // Dynamic imports for client-only components
 const CollaborativeEditor = dynamic(
   () => import('@/components/features/CollaborativeEditor').then((m) => m.CollaborativeEditor),
-  { ssr: false, loading: () => <div className="h-96 animate-pulse rounded-lg bg-muted" /> }
+  { ssr: false }
 );
 
 export default function PageEditorPage() {
@@ -182,7 +182,7 @@ export default function PageEditorPage() {
   }
 
   return (
-    <div className={cn('relative transition-opacity duration-200', isPlaceholderData && 'opacity-60 pointer-events-none')}>
+    <div className="relative">
       {/* Keyboard Shortcuts Dialog (global, triggered by Ctrl+/) */}
       <KeyboardShortcutsDialog />
 

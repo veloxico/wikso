@@ -70,6 +70,9 @@ const esAR = {
       disabledDescription:
         'El registro público está deshabilitado actualmente. Contactá al administrador para obtener una invitación.',
       backToLogin: 'Volver al inicio de sesión',
+      checkEmailTitle: 'Revisá tu correo',
+      checkEmailDescription:
+        'Te enviamos un enlace de verificación. Revisá tu bandeja de entrada y hacé clic en el enlace para verificar tu cuenta.',
     },
     forgotPassword: {
       title: 'Restablecer contraseña',
@@ -92,6 +95,15 @@ const esAR = {
       invalidTitle: 'Invitación inválida',
       invalidDescription:
         'Este enlace de invitación es inválido o expiró. Contactá al administrador para una nueva invitación.',
+      goToLogin: 'Ir al inicio de sesión',
+    },
+    verifyEmail: {
+      verifying: 'Verificando tu correo...',
+      successTitle: 'Correo verificado',
+      successDescription: 'Tu correo fue verificado exitosamente. Ya podés iniciar sesión.',
+      errorTitle: 'Error de verificación',
+      invalidToken: 'Token de verificación inválido o faltante.',
+      failed: 'La verificación del correo falló. El enlace puede haber expirado.',
       goToLogin: 'Ir al inicio de sesión',
     },
     callback: {
@@ -460,6 +472,7 @@ const esAR = {
       suspendSelected: 'Suspender ({count})',
       deleteSelected: 'Eliminar ({count})',
       confirmBulkDelete: '¿Eliminar {count} usuario(s) seleccionado(s)? Esta acción no se puede deshacer.',
+      emailNotVerified: 'Email no verificado',
     },
     groups: {
       title: 'Gestión de grupos',
@@ -774,6 +787,7 @@ const esAR = {
     subscript: 'Subíndice',
     link: 'Enlace',
     insertImage: 'Insertar imagen',
+    imageUploadFailed: 'Error al subir la imagen',
     insertTable: 'Insertar tabla',
     codeBlock: 'Bloque de código',
     blockquote: 'Cita',

@@ -6,7 +6,7 @@ const publicPaths = ['/login', '/register', '/forgot-password', '/auth', '/auth/
 // Runtime API URL for server-side proxying (resolved at request time, not build time)
 const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Next.js route handlers (not proxied to backend)

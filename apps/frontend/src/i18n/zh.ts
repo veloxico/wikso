@@ -70,6 +70,9 @@ const zh = {
       disabledDescription:
         '公开注册当前已禁用。请联系管理员获取邀请。',
       backToLogin: '返回登录',
+      checkEmailTitle: '请查收邮件',
+      checkEmailDescription:
+        '我们已发送验证链接到您的邮箱。请查收并点击链接验证您的账号。',
     },
     forgotPassword: {
       title: '重置密码',
@@ -92,6 +95,15 @@ const zh = {
       invalidTitle: '无效的邀请',
       invalidDescription:
         '此邀请链接无效或已过期。请联系管理员获取新的邀请。',
+      goToLogin: '前往登录',
+    },
+    verifyEmail: {
+      verifying: '正在验证您的邮箱...',
+      successTitle: '邮箱已验证',
+      successDescription: '您的邮箱已成功验证。现在可以登录了。',
+      errorTitle: '验证失败',
+      invalidToken: '无效或缺失的验证令牌。',
+      failed: '邮箱验证失败。链接可能已过期。',
       goToLogin: '前往登录',
     },
     callback: {
@@ -460,6 +472,7 @@ const zh = {
       suspendSelected: '停用所选 ({count})',
       deleteSelected: '删除所选 ({count})',
       confirmBulkDelete: '删除 {count} 个选中的用户？此操作无法撤销。',
+      emailNotVerified: '邮箱未验证',
     },
     groups: {
       title: '用户组管理',
@@ -774,6 +787,7 @@ const zh = {
     subscript: '下标',
     link: '链接',
     insertImage: '插入图片',
+    imageUploadFailed: '图片上传失败',
     insertTable: '插入表格',
     codeBlock: '代码块',
     blockquote: '引用',

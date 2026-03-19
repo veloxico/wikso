@@ -48,6 +48,7 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { api } from '@/lib/api';
+import { toast } from 'sonner';
 
 /**
  * Normalize ProseMirror JSON node type names from snake_case (as
@@ -136,6 +137,8 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
   const { t } = useTranslation();
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [synced, setSynced] = useState(false);
+  // Delay showing the loading skeleton to avoid a brief flash on fast connections
+  const [showSkeleton, setShowSkeleton] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [showColorPicker, setShowColorPicker] = useState<'text' | 'highlight' | null>(null);
@@ -228,8 +231,14 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
     // the synchronous cleanup in React Strict Mode's throwaway cycle.
     initProvider();
 
+    // Only show loading skeleton after 300ms — avoids flash on fast connections
+    const skeletonTimer = setTimeout(() => {
+      if (!destroyed && !syncedFlag) setShowSkeleton(true);
+    }, 300);
+
     return () => {
       destroyed = true;
+      clearTimeout(skeletonTimer);
       if (syncFallbackTimer) clearTimeout(syncFallbackTimer);
       if (provider) {
         provider.destroy();
@@ -238,6 +247,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       setProviderState(null);
       newDoc.destroy();
       setSynced(false);
+      setShowSkeleton(false);
       setStatus('connecting');
     };
   }, [pageId]);
@@ -255,18 +265,11 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       // Relative path works because Next.js rewrites /api/* to the backend.
       const permanentUrl = `/api/v1/attachments/${data.id}/file`;
       editorRef.current.chain().focus().setImage({ src: permanentUrl, alt: file.name }).run();
-    } catch {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        editorRef.current?.chain().focus().setImage({ src: result, alt: file.name }).run();
-      };
-      reader.onerror = () => {
-        console.error('Failed to read image file:', file.name);
-      };
-      reader.readAsDataURL(file);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || t('editor.imageUploadFailed');
+      toast.error(message);
     }
-  }, [pageId]);
+  }, [pageId, t]);
 
   const editorRef = useRef<ReturnType<typeof useEditor>>(null);
 
@@ -491,8 +494,6 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
   }, []);
 
   if (!synced) {
-    // Show a minimal skeleton instead of a jarring full-screen spinner.
-    // The editor typically syncs in <200ms; this avoids a layout shift.
     if (status === 'disconnected') {
       return (
         <div className="flex items-center justify-center p-12">
@@ -513,7 +514,11 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
         </div>
       );
     }
-    // Lightweight placeholder that matches editor layout — no spinner
+    // Don't show anything for the first 300ms to avoid flash on fast connections.
+    // Only render skeleton if sync is taking longer than expected.
+    if (!showSkeleton) {
+      return <div className="overflow-hidden flex flex-col min-h-[calc(100vh-200px)]" />;
+    }
     return (
       <div className="overflow-hidden flex flex-col">
         <div className="border-b border-border/50 p-1.5 h-[44px]" />

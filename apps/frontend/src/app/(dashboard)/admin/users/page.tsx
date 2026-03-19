@@ -651,15 +651,22 @@ export default function AdminUsersPage() {
                             </Select>
                           </td>
                           <td className="py-3">
-                            <span
-                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                user.status === 'SUSPENDED'
-                                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                              }`}
-                            >
-                              {user.status === 'SUSPENDED' ? t('common.suspended') : t('common.active')}
-                            </span>
+                            <div className="flex flex-col gap-1">
+                              <span
+                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium w-fit ${
+                                  user.status === 'SUSPENDED'
+                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                    : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                }`}
+                              >
+                                {user.status === 'SUSPENDED' ? t('common.suspended') : t('common.active')}
+                              </span>
+                              {!user.emailVerified && (
+                                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium w-fit bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                  {t('admin.users.emailNotVerified')}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 text-muted-foreground">
                             {new Date(user.createdAt).toLocaleDateString(locale)}

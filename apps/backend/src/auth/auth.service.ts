@@ -94,6 +94,11 @@ export class AuthService {
       }
       const isMatch = await bcrypt.compare(pass, user.passwordHash);
       if (isMatch) {
+        // Block login if email verification is required and email is not verified
+        const settings = await this.settingsService.getSettings();
+        if (settings.emailVerificationRequired && !user.emailVerified) {
+          throw new ForbiddenException('Please verify your email before logging in.');
+        }
         const { passwordHash, ...result } = user;
         return result;
       }

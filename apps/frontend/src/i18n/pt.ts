@@ -70,6 +70,9 @@ const pt = {
       disabledDescription:
         'O registo público está atualmente desativado. Contacte o administrador para obter um convite.',
       backToLogin: 'Voltar ao início de sessão',
+      checkEmailTitle: 'Verifique o seu email',
+      checkEmailDescription:
+        'Enviámos-lhe um link de verificação. Verifique a sua caixa de entrada e clique no link para verificar a sua conta.',
     },
     forgotPassword: {
       title: 'Repor palavra-passe',
@@ -93,6 +96,15 @@ const pt = {
       invalidDescription:
         'Este link de convite é inválido ou expirou. Contacte o administrador para um novo convite.',
       goToLogin: 'Ir para o início de sessão',
+    },
+    verifyEmail: {
+      verifying: 'A verificar o seu email...',
+      successTitle: 'Email verificado',
+      successDescription: 'O seu email foi verificado com sucesso. Já pode iniciar sessão.',
+      errorTitle: 'Erro de verificação',
+      invalidToken: 'Token de verificação inválido ou em falta.',
+      failed: 'A verificação do email falhou. O link pode ter expirado.',
+      goToLogin: 'Ir para o login',
     },
     callback: {
       failed: 'Erro de autenticação',
@@ -460,6 +472,7 @@ const pt = {
       suspendSelected: 'Suspender ({count})',
       deleteSelected: 'Eliminar ({count})',
       confirmBulkDelete: 'Eliminar {count} utilizador(es) selecionado(s)? Esta ação não pode ser desfeita.',
+      emailNotVerified: 'Email não verificado',
     },
     groups: {
       title: 'Gestão de grupos',
@@ -774,6 +787,7 @@ const pt = {
     subscript: 'Subscrito',
     link: 'Ligação',
     insertImage: 'Inserir imagem',
+    imageUploadFailed: 'Falha ao carregar a imagem',
     insertTable: 'Inserir tabela',
     codeBlock: 'Bloco de código',
     blockquote: 'Citação',

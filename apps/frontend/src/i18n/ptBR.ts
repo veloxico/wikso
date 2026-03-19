@@ -70,6 +70,9 @@ const ptBR = {
       disabledDescription:
         'O cadastro público está desativado no momento. Entre em contato com o administrador para obter um convite.',
       backToLogin: 'Voltar ao login',
+      checkEmailTitle: 'Verifique seu email',
+      checkEmailDescription:
+        'Enviamos um link de verificação. Verifique sua caixa de entrada e clique no link para verificar sua conta.',
     },
     forgotPassword: {
       title: 'Redefinir senha',
@@ -92,6 +95,15 @@ const ptBR = {
       invalidTitle: 'Convite inválido',
       invalidDescription:
         'Este link de convite é inválido ou expirou. Entre em contato com o administrador para um novo convite.',
+      goToLogin: 'Ir para o login',
+    },
+    verifyEmail: {
+      verifying: 'Verificando seu email...',
+      successTitle: 'Email verificado',
+      successDescription: 'Seu email foi verificado com sucesso. Agora você pode fazer login.',
+      errorTitle: 'Erro de verificação',
+      invalidToken: 'Token de verificação inválido ou ausente.',
+      failed: 'A verificação do email falhou. O link pode ter expirado.',
       goToLogin: 'Ir para o login',
     },
     callback: {
@@ -460,6 +472,7 @@ const ptBR = {
       suspendSelected: 'Suspender ({count})',
       deleteSelected: 'Excluir ({count})',
       confirmBulkDelete: 'Excluir {count} usuário(s) selecionado(s)? Esta ação não pode ser desfeita.',
+      emailNotVerified: 'Email não verificado',
     },
     groups: {
       title: 'Gerenciamento de grupos',
@@ -774,6 +787,7 @@ const ptBR = {
     subscript: 'Subscrito',
     link: 'Link',
     insertImage: 'Inserir imagem',
+    imageUploadFailed: 'Falha ao carregar a imagem',
     insertTable: 'Inserir tabela',
     codeBlock: 'Bloco de código',
     blockquote: 'Citação',

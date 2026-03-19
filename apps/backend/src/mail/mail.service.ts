@@ -193,7 +193,7 @@ export class MailService implements OnModuleInit {
   // ─── Email Templates ────────────────────────────────────
 
   async sendVerificationEmail(email: string, name: string, token: string) {
-    const url = `${process.env.APP_URL || 'http://localhost:3000'}/auth/verify-email?token=${token}`;
+    const url = `${process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:3000'}/auth/verify-email?token=${token}`;
     const safeName = escapeHtml(name);
     await this.send(email, 'Verify your email', `
       <h2>Hello ${safeName}!</h2>
@@ -203,7 +203,7 @@ export class MailService implements OnModuleInit {
   }
 
   async sendPasswordResetEmail(email: string, name: string, token: string) {
-    const url = `${process.env.APP_URL || 'http://localhost:3000'}/auth/reset-password?token=${token}`;
+    const url = `${process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:3000'}/auth/reset-password?token=${token}`;
     const safeName = escapeHtml(name);
     await this.send(email, 'Reset your password', `
       <h2>Hello ${safeName}!</h2>
@@ -231,7 +231,7 @@ export class MailService implements OnModuleInit {
   }
 
   async sendInvitationEmail(email: string, name: string, token: string) {
-    const url = `${process.env.FRONTEND_URL || 'http://localhost:3001'}/auth/accept-invite?token=${token}`;
+    const url = `${process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:3000'}/auth/accept-invite?token=${token}`;
     const safeName = escapeHtml(name);
     await this.send(email, 'You have been invited to Wikso', `
       <h2>Hello ${safeName}!</h2>

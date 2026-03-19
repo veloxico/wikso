@@ -70,6 +70,9 @@ const en = {
       disabledDescription:
         'Public registration is currently disabled. Please contact your administrator to get an invitation.',
       backToLogin: 'Back to Login',
+      checkEmailTitle: 'Check your email',
+      checkEmailDescription:
+        'We sent you a verification link. Please check your inbox and click the link to verify your account.',
     },
     forgotPassword: {
       title: 'Reset password',
@@ -92,6 +95,15 @@ const en = {
       invalidTitle: 'Invalid Invitation',
       invalidDescription:
         'This invitation link is invalid or has expired. Please contact your administrator for a new invitation.',
+      goToLogin: 'Go to Login',
+    },
+    verifyEmail: {
+      verifying: 'Verifying your email...',
+      successTitle: 'Email Verified',
+      successDescription: 'Your email has been verified successfully. You can now log in.',
+      errorTitle: 'Verification Failed',
+      invalidToken: 'Invalid or missing verification token.',
+      failed: 'Email verification failed. The link may have expired.',
       goToLogin: 'Go to Login',
     },
     callback: {
@@ -460,6 +472,7 @@ const en = {
       suspendSelected: 'Suspend Selected ({count})',
       deleteSelected: 'Delete Selected ({count})',
       confirmBulkDelete: 'Delete {count} selected user(s)? This cannot be undone.',
+      emailNotVerified: 'Email not verified',
     },
     groups: {
       title: 'Group Management',
@@ -774,6 +787,7 @@ const en = {
     subscript: 'Subscript',
     link: 'Link',
     insertImage: 'Insert Image',
+    imageUploadFailed: 'Failed to upload image',
     insertTable: 'Insert Table',
     codeBlock: 'Code Block',
     blockquote: 'Blockquote',
