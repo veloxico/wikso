@@ -101,14 +101,29 @@ export class AdminService {
 
     // Prevent deleting the last admin
     const target = await this.prisma.user.findUnique({ where: { id }, select: { role: true } });
-    if (target?.role === GlobalRole.ADMIN) {
+    if (!target) throw new NotFoundException('User not found');
+    if (target.role === GlobalRole.ADMIN) {
       const adminCount = await this.prisma.user.count({ where: { role: GlobalRole.ADMIN } });
       if (adminCount <= 1) {
         throw new ForbiddenException('Cannot delete the last admin account');
       }
     }
 
-    await this.prisma.user.delete({ where: { id } });
+    await this.prisma.$transaction(async (tx) => {
+      // Transfer space ownership to the admin performing the deletion
+      await tx.space.updateMany({ where: { ownerId: id }, data: { ownerId: currentUserId } });
+      // Nullify references that support null
+      await tx.auditLog.updateMany({ where: { userId: id }, data: { userId: null } });
+      await tx.pageView.updateMany({ where: { userId: id }, data: { userId: null } });
+      // Delete owned entities
+      await tx.webhook.deleteMany({ where: { userId: id } });
+      await tx.comment.deleteMany({ where: { authorId: id } });
+      await tx.pageVersion.updateMany({ where: { authorId: id }, data: { authorId: currentUserId } });
+      await tx.page.updateMany({ where: { authorId: id }, data: { authorId: currentUserId } });
+      // Now safe to delete — remaining cascade relations handle the rest
+      await tx.user.delete({ where: { id } });
+    });
+
     return { message: 'User deleted' };
   }
 
@@ -170,8 +185,16 @@ export class AdminService {
       return { deleted: 0, skipped: userIds.length };
     }
 
-    await this.prisma.user.deleteMany({
-      where: { id: { in: idsToDelete } },
+    await this.prisma.$transaction(async (tx) => {
+      const where = { in: idsToDelete };
+      await tx.space.updateMany({ where: { ownerId: { in: idsToDelete } }, data: { ownerId: adminId } });
+      await tx.auditLog.updateMany({ where: { userId: { in: idsToDelete } }, data: { userId: null } });
+      await tx.pageView.updateMany({ where: { userId: { in: idsToDelete } }, data: { userId: null } });
+      await tx.webhook.deleteMany({ where: { userId: { in: idsToDelete } } });
+      await tx.comment.deleteMany({ where: { authorId: { in: idsToDelete } } });
+      await tx.pageVersion.updateMany({ where: { authorId: { in: idsToDelete } }, data: { authorId: adminId } });
+      await tx.page.updateMany({ where: { authorId: { in: idsToDelete } }, data: { authorId: adminId } });
+      await tx.user.deleteMany({ where: { id: { in: idsToDelete } } });
     });
 
     return { deleted: idsToDelete.length, skipped: userIds.length - idsToDelete.length };
