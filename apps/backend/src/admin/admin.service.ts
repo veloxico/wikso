@@ -115,11 +115,19 @@ export class AdminService {
       // Nullify references that support null
       await tx.auditLog.updateMany({ where: { userId: id }, data: { userId: null } });
       await tx.pageView.updateMany({ where: { userId: id }, data: { userId: null } });
-      // Delete owned entities
-      await tx.webhook.deleteMany({ where: { userId: id } });
-      await tx.comment.deleteMany({ where: { authorId: id } });
+      // Reassign authored content to the admin performing the deletion
       await tx.pageVersion.updateMany({ where: { authorId: id }, data: { authorId: currentUserId } });
       await tx.page.updateMany({ where: { authorId: id }, data: { authorId: currentUserId } });
+      // Delete reactions on user's comments, then comments themselves
+      const userCommentIds = (await tx.comment.findMany({ where: { authorId: id }, select: { id: true } })).map(c => c.id);
+      if (userCommentIds.length > 0) {
+        await tx.commentReaction.deleteMany({ where: { commentId: { in: userCommentIds } } });
+      }
+      // Delete user's own reactions
+      await tx.commentReaction.deleteMany({ where: { userId: id } });
+      // Delete child comments first (replies), then parent comments
+      await tx.comment.deleteMany({ where: { authorId: id, parentId: { not: null } } });
+      await tx.comment.deleteMany({ where: { authorId: id } });
       // Now safe to delete — remaining cascade relations handle the rest
       await tx.user.delete({ where: { id } });
     });

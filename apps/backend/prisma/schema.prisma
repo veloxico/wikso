@@ -39,6 +39,8 @@ model User {
   templates     PageTemplate[]
   groupMemberships GroupMember[]
   commentReactions CommentReaction[]
+  webhooks      Webhook[]
+  attachments   Attachment[]
 }
 
 model OAuthAccount {
@@ -178,6 +180,7 @@ model Attachment {
   storageKey String
   createdAt  DateTime @default(now())
   page       Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  uploader   User     @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
 }
 
 model Tag {
@@ -216,7 +219,7 @@ model AuditLog {
   entityId   String
   meta       Json?
   createdAt  DateTime @default(now())
-  user       User?    @relation(fields: [userId], references: [id])
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Webhook {
@@ -228,6 +231,7 @@ model Webhook {
   userId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model SystemSettings {
