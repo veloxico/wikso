@@ -36,9 +36,11 @@ export default function DashboardLayout({
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar: search + new page */}
         {!isAdminContext && (
-          <div className="flex items-center border-b border-border bg-background px-6 py-2 shrink-0">
-            <TopSearchBar />
-            <div className="ml-auto">
+          <div className="flex items-center border-b border-border bg-background px-3 md:px-6 py-2 shrink-0">
+            <div className="pl-10 md:pl-0 flex-1 min-w-0">
+              <TopSearchBar />
+            </div>
+            <div className="ml-auto shrink-0">
               <NewPageButton />
             </div>
           </div>

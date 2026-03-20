@@ -33,8 +33,8 @@ export default function DashboardPage() {
 
   if (isEmpty) {
     return (
-      <div className="p-8">
-        <div className="flex flex-col items-center justify-center py-24 text-center">
+      <div className="p-4 md:p-8">
+        <div className="flex flex-col items-center justify-center py-12 md:py-24 text-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-6">
             <Sparkles className="h-10 w-10" />
           </div>
@@ -54,9 +54,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Welcome header */}
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         <h1 className="text-2xl font-bold">
           {displayName
             ? t('dashboard.welcome', { name: displayName })
@@ -65,7 +65,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="flex flex-wrap items-center gap-3 mb-8">
+      <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-6 md:mb-8">
         <Button asChild>
           <Link href="/spaces">
             <Plus className="mr-2 h-4 w-4" />

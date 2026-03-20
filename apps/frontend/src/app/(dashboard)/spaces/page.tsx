@@ -75,9 +75,9 @@ export default function SpacesPage() {
   }, [spaces]);
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between gap-2">
         <div>
           <h1 className="text-3xl font-bold">{t('spaces.title')}</h1>
           <p className="text-muted-foreground mt-1">

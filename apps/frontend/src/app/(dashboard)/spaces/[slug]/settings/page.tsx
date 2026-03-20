@@ -102,7 +102,7 @@ export default function SpaceSettingsPage() {
 
   if (spaceLoading) {
     return (
-      <div className="mx-auto max-w-2xl p-8">
+      <div className="mx-auto max-w-2xl p-4 md:p-8">
         <div className="space-y-6">
           <div className="h-9 w-48 animate-pulse rounded bg-muted" />
           <div className="h-64 animate-pulse rounded-lg border bg-muted/50" />
@@ -113,7 +113,7 @@ export default function SpaceSettingsPage() {
 
   if (spaceError) {
     return (
-      <div className="mx-auto max-w-2xl p-8">
+      <div className="mx-auto max-w-2xl p-4 md:p-8">
         <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-center">
           <h2 className="mb-2 text-lg font-semibold">{t('spaces.settings.loadFailed')}</h2>
           <p className="mb-4 text-sm text-muted-foreground">{t('spaces.settings.loadFailedDescription')}</p>
@@ -126,7 +126,7 @@ export default function SpaceSettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl p-8">
+    <div className="mx-auto max-w-2xl p-4 md:p-8">
       <Link href={`/spaces/${slug}`} className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="h-4 w-4" />
         {t('spaces.settings.backToSpace')}

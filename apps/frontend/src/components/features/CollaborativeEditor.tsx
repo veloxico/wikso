@@ -524,7 +524,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
     return (
       <div className="overflow-hidden flex flex-col">
         <div className="border-b border-border/50 p-1.5 h-[44px]" />
-        <div className="flex-1 mx-auto w-full max-w-[912px] px-6 py-4">
+        <div className="flex-1 mx-auto w-full max-w-[912px] px-3 md:px-6 py-4">
           <div className="space-y-3 animate-pulse">
             <div className="h-4 bg-muted rounded w-3/4" />
             <div className="h-4 bg-muted rounded w-1/2" />
@@ -752,7 +752,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
                   onChange={(e) => setLinkUrl(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
                   placeholder="https://..."
-                  className="h-7 w-48 rounded border border-input bg-background px-2 text-sm"
+                  className="h-7 w-36 sm:w-48 rounded border border-input bg-background px-2 text-sm"
                   autoFocus
                 />
                 <Button size="sm" variant="ghost" className="h-7 px-2" onClick={handleAddLink}>
@@ -817,14 +817,14 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
           <EmojiPickerButton editor={editor} title={t('editor.emoji') || 'Emoji'} />
 
           {/* Connection status + character count */}
-          <div className="ml-auto flex items-center gap-3 px-2">
+          <div className="ml-auto flex items-center gap-2 md:gap-3 px-1 md:px-2">
             {charCount && (
-              <span className="text-xs text-muted-foreground">
+              <span className="hidden sm:inline text-xs text-muted-foreground">
                 {charCount.characters()} {t('common.characters')}
               </span>
             )}
             {editable && saveStatus !== 'idle' && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground">
                 {saveStatus === 'editing' && (
                   <>
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -894,7 +894,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       )}
 
       {/* Editor content — centered */}
-      <div className="relative flex-1 mx-auto w-full max-w-[912px] px-6">
+      <div className="relative flex-1 mx-auto w-full max-w-[912px] px-3 md:px-6">
         <EditorContent editor={editor} />
       </div>
     </div>

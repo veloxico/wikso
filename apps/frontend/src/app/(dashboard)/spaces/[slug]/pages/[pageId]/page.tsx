@@ -174,7 +174,7 @@ export default function PageEditorPage() {
   // With placeholderData: keepPreviousData, the old page stays visible during navigation.
   if (isLoading && !page) {
     return (
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <div className="mb-4 h-10 w-64 animate-pulse rounded bg-muted" />
         <div className="h-96 animate-pulse rounded-lg bg-muted" />
       </div>
@@ -187,7 +187,7 @@ export default function PageEditorPage() {
       <KeyboardShortcutsDialog />
 
       {/* Main content area — compact header like Confluence */}
-      <div className="mx-auto w-full max-w-[912px] px-6 pt-2 pb-0">
+      <div className="mx-auto w-full max-w-[912px] px-3 md:px-6 pt-2 pb-0">
         {/* Row 1: Breadcrumbs + action buttons */}
         <div className="flex items-center justify-between gap-2 mb-1">
           <Breadcrumbs
@@ -201,9 +201,9 @@ export default function PageEditorPage() {
               { label: page?.title || 'Page' },
             ]}
           />
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
             {page?.updatedAt && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
                 {new Date(page.updatedAt).toLocaleDateString(locale)}
               </span>
@@ -213,7 +213,7 @@ export default function PageEditorPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="gap-1.5 h-7 text-xs"
+              className="gap-1.5 h-7 text-xs hidden sm:inline-flex"
               onClick={() => setShowVersionHistory(true)}
             >
               <History className="h-3.5 w-3.5" />
@@ -372,7 +372,7 @@ export default function PageEditorPage() {
       />
 
       {/* Comments — centered */}
-      <div className="mx-auto w-full max-w-[912px] px-6">
+      <div className="mx-auto w-full max-w-[912px] px-3 md:px-6">
         <div className="mt-4 border-t border-border pt-4">
           <button
             onClick={() => setShowComments(!showComments)}

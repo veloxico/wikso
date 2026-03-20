@@ -35,11 +35,11 @@ export default function SpacePage() {
   const totalPages = pages ? flattenPages(pages).length : 0;
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Space header */}
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <TypeIcon className="h-6 w-6" />
             </div>
