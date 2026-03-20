@@ -35,9 +35,9 @@ export function MobileSidebar() {
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[280px] sm:w-60 p-0">
-        <div onClick={handleClick}>
-          {isAdminContext ? <AdminSidebar /> : <UnifiedSidebar />}
+      <SheetContent side="left" className="w-[280px] p-0 overflow-y-auto" showCloseButton={false}>
+        <div onClick={handleClick} className="flex flex-col h-full">
+          {isAdminContext ? <AdminSidebar /> : <UnifiedSidebar isMobile />}
         </div>
       </SheetContent>
     </Sheet>

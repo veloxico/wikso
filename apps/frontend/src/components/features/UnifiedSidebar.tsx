@@ -200,7 +200,7 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
 
 /* ─── UnifiedSidebar ────────────────────────────────────────────────── */
 
-export function UnifiedSidebar() {
+export function UnifiedSidebar({ isMobile = false }: { isMobile?: boolean } = {}) {
   const pathname = usePathname();
   const { user } = useAuthStore();
   const { t } = useTranslation();
@@ -245,8 +245,8 @@ export function UnifiedSidebar() {
     setWidth(x);
   }, [setWidth]);
 
-  /* ── Collapsed (icon-only) sidebar ── */
-  if (collapsed) {
+  /* ── Collapsed (icon-only) sidebar — skip in mobile sheet ── */
+  if (collapsed && !isMobile) {
     return (
     <>
       <aside className="flex h-screen w-14 flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-all duration-200">
@@ -348,11 +348,14 @@ export function UnifiedSidebar() {
   return (
     <>
     <aside
-      className="relative flex h-screen flex-col border-r border-border bg-sidebar text-sidebar-foreground shrink-0"
-      style={{ width: `${width}px`, minWidth: `${MIN_WIDTH}px`, maxWidth: `${MAX_WIDTH}px` }}
+      className={cn(
+        "relative flex flex-col border-r border-border bg-sidebar text-sidebar-foreground shrink-0",
+        isMobile ? "h-full w-full" : "h-screen",
+      )}
+      style={isMobile ? undefined : { width: `${width}px`, minWidth: `${MIN_WIDTH}px`, maxWidth: `${MAX_WIDTH}px` }}
     >
-      {/* Resize handle */}
-      <ResizeHandle onResize={handleResize} />
+      {/* Resize handle — desktop only */}
+      {!isMobile && <ResizeHandle onResize={handleResize} />}
 
       {/* ── Logo + collapse toggle ── */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -360,9 +363,11 @@ export function UnifiedSidebar() {
           <WiksoLogo showText={false} className="h-7 w-7" />
           <span className="text-base font-semibold">Wikso</span>
         </Link>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={toggle} title={t('sidebar.collapse') || 'Collapse sidebar'}>
-          <PanelLeftClose className="h-4 w-4" />
-        </Button>
+        {!isMobile && (
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={toggle} title={t('sidebar.collapse') || 'Collapse sidebar'}>
+            <PanelLeftClose className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* ── Quick nav ── */}
