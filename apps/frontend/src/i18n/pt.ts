@@ -374,7 +374,7 @@ const pt = {
       authProviders: 'Fornecedores de autenticação',
       email: 'E-mail',
       webhooks: 'Webhooks',
-      systemHealth: 'System Health',
+      systemHealth: 'Estado do sistema',
       trash: 'Lixo',
       import: 'Importar',
       groups: 'Grupos',

@@ -374,7 +374,7 @@ const ru = {
       authProviders: 'Провайдеры аутентификации',
       email: 'Email',
       webhooks: 'Вебхуки',
-      systemHealth: 'System Health',
+      systemHealth: 'Состояние системы',
       trash: 'Корзина',
       import: 'Импорт',
       groups: 'Группы',

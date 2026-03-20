@@ -63,8 +63,8 @@ export class AdminController {
     @Query('status') status?: string,
   ) {
     return this.adminService.getUsers(
-      Number(skip) || 0,
-      Number(take) || 20,
+      Math.max(Number(skip) || 0, 0),
+      Math.min(Math.max(Number(take) || 20, 1), 100),
       search,
       role,
       status,

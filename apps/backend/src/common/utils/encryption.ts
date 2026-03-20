@@ -5,9 +5,19 @@ const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 
 function getEncryptionKey(): Buffer {
-  const raw = process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || '';
+  const raw = process.env.ENCRYPTION_KEY || '';
   if (!raw) {
-    throw new Error('No encryption key available. Set ENCRYPTION_KEY or JWT_SECRET.');
+    // Fallback to JWT_SECRET but warn — they should be separate keys
+    const fallback = process.env.JWT_SECRET || '';
+    if (!fallback) {
+      throw new Error('No encryption key available. Set ENCRYPTION_KEY env variable.');
+    }
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[security] ENCRYPTION_KEY is not set — falling back to JWT_SECRET. Set a separate ENCRYPTION_KEY for production.');
+    }
+    const key = Buffer.alloc(32);
+    Buffer.from(fallback, 'utf8').copy(key);
+    return key;
   }
   // Ensure exactly 32 bytes for AES-256
   const key = Buffer.alloc(32);

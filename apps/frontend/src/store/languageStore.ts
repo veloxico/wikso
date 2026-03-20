@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { api } from '@/lib/api';
 
-export type Locale = 'en' | 'ru' | 'uk' | 'be' | 'pl' | 'es' | 'esAR' | 'pt' | 'ptBR' | 'zh';
+export type Locale = 'en' | 'ru' | 'uk' | 'be' | 'pl' | 'es' | 'esAR' | 'pt' | 'ptBR' | 'zh' | 'tr';
 
 export const SUPPORTED_LOCALES: { value: Locale; label: string; nativeLabel: string }[] = [
   { value: 'en', label: 'English', nativeLabel: 'English' },
@@ -14,6 +14,7 @@ export const SUPPORTED_LOCALES: { value: Locale; label: string; nativeLabel: str
   { value: 'pt', label: 'Portuguese', nativeLabel: 'Português' },
   { value: 'ptBR', label: 'Portuguese (Brazil)', nativeLabel: 'Português (Brasil)' },
   { value: 'zh', label: 'Chinese', nativeLabel: '中文' },
+  { value: 'tr', label: 'Turkish', nativeLabel: 'Türkçe' },
 ];
 
 const VALID_LOCALES = new Set<string>(SUPPORTED_LOCALES.map((l) => l.value));

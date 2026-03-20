@@ -211,6 +211,8 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
         return result;
       };
 
+      if (destroyed) { provider.destroy(); return; }
+
       provider.connect();
       providerRef.current = provider;
       setProviderState(provider);

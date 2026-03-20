@@ -4,6 +4,7 @@ import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 import { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
 import { PenTool, Trash2, Pencil, GripVertical } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import DOMPurify from 'dompurify';
 
 const ExcalidrawCanvas = lazy(() => import('./ExcalidrawCanvas'));
 
@@ -139,7 +140,7 @@ export function ExcalidrawView({ node, updateAttributes, deleteNode, editor }: N
             {previewSvg ? (
               <div
                 className="excalidraw-block-svg"
-                dangerouslySetInnerHTML={{ __html: previewSvg }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewSvg, { USE_PROFILES: { svg: true, svgFilters: true } }) }}
               />
             ) : (
               <div className="excalidraw-block-placeholder">

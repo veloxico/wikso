@@ -52,5 +52,6 @@ export function useImportStatus(jobId: string | null, enabled = true) {
       if (data.phase === 'done' || data.phase === 'error') return false;
       return 2000;
     },
+    refetchIntervalInBackground: false,
   });
 }

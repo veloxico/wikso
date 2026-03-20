@@ -43,16 +43,7 @@ function OAuthCallbackContent() {
       return;
     }
 
-    // Legacy fallback: direct tokens in URL (will be removed in future)
-    const accessToken = searchParams.get('accessToken');
-    const refreshToken = searchParams.get('refreshToken');
-    if (accessToken && refreshToken) {
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      document.cookie = `accessToken=${accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-      setTokens(accessToken, refreshToken);
-      router.replace('/spaces');
-    } else if (!code) {
+    if (!code) {
       setError(t('auth.callback.missingTokens'));
     }
   }, [searchParams, router, setTokens, t]);

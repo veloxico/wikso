@@ -374,7 +374,7 @@ const zh = {
       authProviders: '认证提供商',
       email: '邮件',
       webhooks: 'Webhooks',
-      systemHealth: 'System Health',
+      systemHealth: '系统健康',
       trash: '回收站',
       import: '导入',
       groups: '用户组',

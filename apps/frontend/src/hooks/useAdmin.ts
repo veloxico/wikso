@@ -164,6 +164,7 @@ export function useSystemHealth() {
       return data;
     },
     refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
 }
 

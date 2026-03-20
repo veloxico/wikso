@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
@@ -34,6 +34,17 @@ export class CommentsService {
       select: { deletedAt: true },
     });
     if (!targetPage || targetPage.deletedAt) throw new NotFoundException('Page not found');
+
+    // Validate parent comment belongs to the same page
+    if (dto.parentId) {
+      const parent = await this.prisma.comment.findUnique({
+        where: { id: dto.parentId },
+        select: { pageId: true },
+      });
+      if (!parent || parent.pageId !== pageId) {
+        throw new BadRequestException('Parent comment does not belong to this page');
+      }
+    }
 
     const comment = await this.prisma.comment.create({
       data: { ...dto, pageId, authorId },

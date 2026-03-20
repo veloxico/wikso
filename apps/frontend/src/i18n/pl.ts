@@ -374,7 +374,7 @@ const pl = {
       authProviders: 'Dostawcy uwierzytelniania',
       email: 'E-mail',
       webhooks: 'Webhooki',
-      systemHealth: 'System Health',
+      systemHealth: 'Stan systemu',
       trash: 'Kosz',
       import: 'Import',
       groups: 'Grupy',

@@ -95,10 +95,9 @@ export class WebhooksService {
       }
 
       // Fallback: fire synchronously
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10_000);
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10_000);
-
         await fetch(webhook.url, {
           method: 'POST',
           headers: {
@@ -108,10 +107,10 @@ export class WebhooksService {
           body: JSON.stringify({ event, payload, timestamp: new Date().toISOString() }),
           signal: controller.signal,
         });
-
-        clearTimeout(timeoutId);
       } catch (err) {
         this.logger.warn(`Webhook ${webhook.id} failed: ${err.message}`);
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
   }

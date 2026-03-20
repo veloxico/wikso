@@ -374,7 +374,7 @@ const esAR = {
       authProviders: 'Proveedores de autenticación',
       email: 'Correo electrónico',
       webhooks: 'Webhooks',
-      systemHealth: 'System Health',
+      systemHealth: 'Estado del sistema',
       trash: 'Papelera',
       import: 'Importar',
       groups: 'Grupos',

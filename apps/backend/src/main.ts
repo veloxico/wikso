@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -17,6 +18,7 @@ async function bootstrap() {
     origin: process.env.FRONTEND_URL || 'http://localhost:3001',
     credentials: true,
   });
+  app.use(helmet());
   app.setGlobalPrefix('api');
   app.enableVersioning({
     type: VersioningType.URI,
@@ -24,14 +26,16 @@ async function bootstrap() {
   });
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
 
-  const config = new DocumentBuilder()
-    .setTitle('Wikso API')
-    .setDescription('Wikso — wiki & knowledge base API')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const swaggerDoc = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, swaggerDoc);
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Wikso API')
+      .setDescription('Wikso — wiki & knowledge base API')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const swaggerDoc = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('docs', app, swaggerDoc);
+  }
 
   const port = process.env.PORT || 3000;
   await app.listen(port);

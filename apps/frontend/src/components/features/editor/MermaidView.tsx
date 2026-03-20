@@ -4,6 +4,7 @@ import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 import { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { Eye, Pencil, Trash2, GitBranch } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import DOMPurify from 'dompurify';
 
 export function MermaidView({ node, updateAttributes, deleteNode, editor }: NodeViewProps) {
   const { t } = useTranslation();
@@ -69,7 +70,7 @@ export function MermaidView({ node, updateAttributes, deleteNode, editor }: Node
       const renderEl = document.getElementById(currentRenderId);
       if (renderEl) renderEl.remove();
 
-      setSvgOutput(svg);
+      setSvgOutput(DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } }));
       setError(null);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

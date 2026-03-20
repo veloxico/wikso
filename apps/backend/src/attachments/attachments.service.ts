@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import {
@@ -13,7 +13,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuid } from 'uuid';
 
 @Injectable()
-export class AttachmentsService implements OnModuleInit {
+export class AttachmentsService implements OnModuleInit, OnModuleDestroy {
   private s3: S3Client;
   private bucket: string;
 
@@ -57,6 +57,10 @@ export class AttachmentsService implements OnModuleInit {
     }
   }
 
+  onModuleDestroy() {
+    this.s3.destroy();
+  }
+
   /** Blocked MIME types that could be used for XSS or code execution. */
   private static readonly BLOCKED_MIMES = new Set([
     'text/html', 'application/xhtml+xml',
@@ -82,7 +86,11 @@ export class AttachmentsService implements OnModuleInit {
       );
     }
 
-    const storageKey = `${pageId}/${uuid()}-${file.originalname}`;
+    // Sanitize filename: remove path separators and control chars, limit length
+    const safeName = file.originalname
+      .replace(/[/\\:*?"<>|\x00-\x1f]/g, '_')
+      .substring(0, 200);
+    const storageKey = `${pageId}/${uuid()}-${safeName}`;
 
     await this.s3.send(
       new PutObjectCommand({
