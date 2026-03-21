@@ -84,7 +84,7 @@ function ActivityChart({ data, period }: ActivityChartProps) {
   return (
     <div className="w-full">
       {/* Summary stats */}
-      <div className="mb-4 flex items-center gap-6 text-sm">
+      <div className="mb-4 flex flex-wrap items-center gap-3 sm:gap-6 text-sm">
         <div className="flex items-center gap-2">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-500" />
           <span className="text-muted-foreground">Views:</span>
@@ -194,7 +194,7 @@ function ActivityChart({ data, period }: ActivityChartProps) {
 
       {/* Tooltip */}
       {hoveredIdx !== null && data[hoveredIdx] && (
-        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground justify-center bg-muted/50 rounded-md py-1.5 px-3">
+        <div className="mt-2 flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground justify-center bg-muted/50 rounded-md py-1.5 px-3">
           <span className="font-medium text-foreground">{formatXLabel(data[hoveredIdx].date, period)}</span>
           <span className="flex items-center gap-1">
             <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
@@ -241,10 +241,10 @@ export default function AdminGeneralPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center gap-3">
-        <Settings className="h-7 w-7 text-primary" />
+      <div className="mb-4 sm:mb-8 flex items-center gap-3">
+        <Settings className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">{t('admin.general.title')}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t('admin.general.title')}</h1>
           {settings?.appVersion && (
             <p className="text-xs text-muted-foreground mt-0.5">
               {t('admin.general.version', { version: settings.appVersion })}
@@ -279,12 +279,12 @@ export default function AdminGeneralPage() {
 
       {/* Activity Chart */}
       <Card className="mb-8">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             Activity
           </CardTitle>
-          <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+          <div className="flex items-center gap-1 rounded-lg bg-muted p-1 flex-wrap">
             {PERIOD_OPTIONS.map((opt) => (
               <button
                 key={opt.value}

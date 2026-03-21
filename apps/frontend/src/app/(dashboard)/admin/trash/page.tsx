@@ -107,19 +107,19 @@ export default function AdminTrashPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+      <div className="mb-4 sm:mb-8 flex items-center gap-3">
+        <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
           <Trash2 className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">{t('admin.trash.title')}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t('admin.trash.title')}</h1>
           <p className="text-sm text-muted-foreground">{t('admin.trash.description')}</p>
         </div>
       </div>
 
       {/* Search + Space filter */}
       <div className="mb-4 flex gap-2 flex-wrap">
-        <form onSubmit={handleSearch} className="flex gap-2 flex-1 min-w-[250px]">
+        <form onSubmit={handleSearch} className="flex gap-2 flex-1 min-w-0">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -134,7 +134,7 @@ export default function AdminTrashPage() {
           </Button>
         </form>
         <Select value={spaceFilter || 'ALL'} onValueChange={handleSpaceFilter}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder={t('admin.trash.filterBySpace', { fallback: 'Filter by space' })} />
           </SelectTrigger>
           <SelectContent>
@@ -150,7 +150,7 @@ export default function AdminTrashPage() {
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-2">
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 sm:px-4 sm:gap-3">
           <span className="text-sm font-medium">
             {selectedIds.size} {t('admin.trash.selected', { fallback: 'selected' })}
           </span>
@@ -223,7 +223,7 @@ export default function AdminTrashPage() {
                         <td className="py-3">
                           <div className="flex items-center gap-2">
                             <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <span className="font-medium truncate max-w-[250px]">{page.title}</span>
+                            <span className="font-medium truncate max-w-[150px] sm:max-w-[250px]">{page.title}</span>
                           </div>
                         </td>
                         <td className="py-3">

@@ -57,9 +57,9 @@ export default function AdminImportPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center gap-3">
-        <Upload className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold">{t('admin.import.title')}</h1>
+      <div className="mb-4 sm:mb-8 flex flex-wrap items-center gap-3">
+        <Upload className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+        <h1 className="text-xl sm:text-2xl font-bold">{t('admin.import.title')}</h1>
         <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
           Beta
         </span>

@@ -54,7 +54,7 @@ function GroupMembersPanel({ groupId }: { groupId: string }) {
   return (
     <div className="border-t border-border px-6 py-4 bg-muted/30">
       <div className="mb-3 flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
+        <div className="relative flex-1 max-w-full sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder={t('admin.groups.searchUsersToAdd')}
@@ -298,10 +298,10 @@ export default function AdminGroupsPage() {
 
   return (
     <div>
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 sm:mb-8 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <UsersRound className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl font-bold">{t('admin.groups.title')}</h1>
+          <UsersRound className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold">{t('admin.groups.title')}</h1>
         </div>
         <Button onClick={() => setShowCreate(true)} className="gap-2">
           <Plus className="h-4 w-4 shrink-0" />

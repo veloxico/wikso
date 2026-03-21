@@ -48,10 +48,10 @@ export default function AdminHealthPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center gap-3">
-        <Activity className="h-7 w-7 text-primary" />
+      <div className="mb-4 sm:mb-8 flex items-center gap-3">
+        <Activity className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">System Health</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">System Health</h1>
           {lastUpdated && (
             <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
               <RefreshCw className="h-3 w-3" /> Auto-refreshes every 30s &middot; Last: {lastUpdated}
@@ -98,7 +98,7 @@ export default function AdminHealthPage() {
                     {svc.status === 'up' ? 'Connected' : 'Down'}
                   </span>
                   {svc.message && (
-                    <span className="ml-2 text-xs text-red-500 truncate max-w-[180px]" title={svc.message}>
+                    <span className="ml-2 text-xs text-red-500 truncate max-w-[100px] sm:max-w-[180px]" title={svc.message}>
                       {svc.message}
                     </span>
                   )}

@@ -148,9 +148,9 @@ export default function AdminEmailPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center gap-3">
-        <Mail className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold">{t('admin.email.title')}</h1>
+      <div className="mb-4 sm:mb-8 flex items-center gap-3">
+        <Mail className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+        <h1 className="text-xl sm:text-2xl font-bold">{t('admin.email.title')}</h1>
       </div>
 
       <div className="space-y-6">

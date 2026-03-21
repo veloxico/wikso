@@ -234,10 +234,10 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 sm:mb-8 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Users className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl font-bold">{t('admin.users.title')}</h1>
+          <Users className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold">{t('admin.users.title')}</h1>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowInvite(!showInvite)} className="gap-2">
@@ -503,7 +503,7 @@ export default function AdminUsersPage() {
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder={t('admin.users.searchPlaceholder')}
@@ -516,7 +516,7 @@ export default function AdminUsersPage() {
           />
         </div>
         <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v === 'all' ? '' : v); setPage(0); }}>
-          <SelectTrigger className="w-32">
+          <SelectTrigger className="w-full sm:w-32">
             <SelectValue placeholder={t('admin.users.roleColumn')} />
           </SelectTrigger>
           <SelectContent>
@@ -526,7 +526,7 @@ export default function AdminUsersPage() {
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v === 'all' ? '' : v); setPage(0); }}>
-          <SelectTrigger className="w-36">
+          <SelectTrigger className="w-full sm:w-36">
             <SelectValue placeholder={t('admin.users.statusColumn')} />
           </SelectTrigger>
           <SelectContent>
@@ -539,11 +539,11 @@ export default function AdminUsersPage() {
 
       {/* Bulk Action Bar */}
       {selectedIds.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3">
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 sm:px-4 sm:py-3 sm:gap-3">
           <span className="text-sm font-medium">
             {t('admin.users.selected', { count: selectedIds.size })}
           </span>
-          <div className="flex gap-2 ml-auto">
+          <div className="flex flex-wrap gap-2 ml-auto">
             <Button
               variant="outline"
               size="sm"

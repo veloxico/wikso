@@ -13,7 +13,7 @@ export default function SearchPage() {
   const { t, locale } = useTranslation();
 
   return (
-    <div className="mx-auto max-w-3xl p-8">
+    <div className="mx-auto max-w-3xl p-4 md:p-8">
       <h1 className="mb-6 text-3xl font-bold">{t('search.title')}</h1>
 
       <div className="relative mb-8">

@@ -85,9 +85,9 @@ export default function AdminSpacesPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center gap-3">
-        <FolderOpen className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold">{t('admin.spaces.title')}</h1>
+      <div className="mb-4 sm:mb-8 flex items-center gap-3">
+        <FolderOpen className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+        <h1 className="text-xl sm:text-2xl font-bold">{t('admin.spaces.title')}</h1>
       </div>
 
       {/* Search */}
@@ -107,7 +107,7 @@ export default function AdminSpacesPage() {
       </form>
 
       {/* Type filter pills */}
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex flex-wrap gap-2">
         {SPACE_TYPES.map((type) => (
           <Button
             key={type}

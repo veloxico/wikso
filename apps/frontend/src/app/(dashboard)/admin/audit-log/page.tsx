@@ -88,9 +88,9 @@ export default function AdminAuditLogPage() {
 
   return (
     <div>
-      <div className="mb-8 flex flex-wrap items-center gap-3">
-        <ScrollText className="h-7 w-7 text-primary" />
-        <h1 className="text-2xl font-bold">{t('admin.auditLog.title')}</h1>
+      <div className="mb-4 sm:mb-8 flex flex-wrap items-center gap-3">
+        <ScrollText className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+        <h1 className="text-xl sm:text-2xl font-bold">{t('admin.auditLog.title')}</h1>
         <Button
           variant="outline"
           size="sm"
@@ -201,10 +201,10 @@ export default function AdminAuditLogPage() {
                         </span>{' '}
                         <span className="text-muted-foreground">{entry.entityType}</span>
                       </p>
-                      <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                      <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
                         <span>{new Date(entry.createdAt).toLocaleString(locale)}</span>
                         {entry.entityId && (
-                          <span className="font-mono truncate max-w-[200px]">
+                          <span className="font-mono truncate max-w-[120px] sm:max-w-[200px]">
                             ID: {entry.entityId}
                           </span>
                         )}

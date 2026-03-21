@@ -148,7 +148,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="mx-auto max-w-lg p-8">
+    <div className="mx-auto max-w-lg p-4 md:p-8">
       <h1 className="mb-6 text-3xl font-bold">{t('profile.title')}</h1>
 
       {/* Profile Info */}

@@ -200,10 +200,10 @@ export default function AdminWebhooksPage() {
 
   return (
     <div>
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 sm:mb-8 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Webhook className="h-7 w-7 text-primary" />
-          <h1 className="text-2xl font-bold">{t('admin.webhooks.title')}</h1>
+          <Webhook className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold">{t('admin.webhooks.title')}</h1>
         </div>
         <Button onClick={openCreate} className="gap-2">
           <Plus className="h-4 w-4 shrink-0" />
