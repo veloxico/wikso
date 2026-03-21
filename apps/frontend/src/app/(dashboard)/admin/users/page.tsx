@@ -234,19 +234,19 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Users className="h-7 w-7 text-primary" />
           <h1 className="text-2xl font-bold">{t('admin.users.title')}</h1>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowInvite(!showInvite)} className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            {t('admin.users.inviteUser')}
+            <UserPlus className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">{t('admin.users.inviteUser')}</span>
           </Button>
           <Button onClick={() => setShowCreate(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            {t('admin.users.createUser')}
+            <Plus className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">{t('admin.users.createUser')}</span>
           </Button>
         </div>
       </div>

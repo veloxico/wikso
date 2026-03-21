@@ -88,22 +88,22 @@ export default function AdminAuditLogPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center gap-3">
+      <div className="mb-8 flex flex-wrap items-center gap-3">
         <ScrollText className="h-7 w-7 text-primary" />
         <h1 className="text-2xl font-bold">{t('admin.auditLog.title')}</h1>
         <Button
           variant="outline"
           size="sm"
-          className="ml-auto"
+          className="ml-auto gap-1.5"
           onClick={handleExportCsv}
           disabled={exporting}
         >
           {exporting ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Download className="h-4 w-4 mr-1.5" />
+            <Download className="h-4 w-4" />
           )}
-          Export CSV
+          <span className="hidden sm:inline">Export CSV</span>
         </Button>
       </div>
 

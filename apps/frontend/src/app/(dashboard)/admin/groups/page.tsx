@@ -298,14 +298,14 @@ export default function AdminGroupsPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <UsersRound className="h-7 w-7 text-primary" />
           <h1 className="text-2xl font-bold">{t('admin.groups.title')}</h1>
         </div>
         <Button onClick={() => setShowCreate(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          {t('admin.groups.createGroup')}
+          <Plus className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">{t('admin.groups.createGroup')}</span>
         </Button>
       </div>
 
