@@ -57,7 +57,7 @@
 - **Confluence Import** — upload Confluence Cloud XML export ZIP with real-time progress tracking (Beta)
 
 ### Platform
-- **Multi-language** — UI available in English, Russian, Belarusian, Spanish, Spanish (AR), Portuguese, Portuguese (BR), Polish, Ukrainian, Chinese
+- **Multi-language** — UI available in English, Russian, Belarusian, Spanish, Spanish (AR), Portuguese, Portuguese (BR), Polish, Ukrainian, Chinese, Turkish
 - **Dark Mode** — full dark theme support with system preference detection
 - **Responsive** — works on desktop, tablet, and mobile
 - **SSO** — Google, GitHub, SAML authentication
@@ -220,6 +220,52 @@ docker push veloxico/wikso-fe:latest
 | `NEXT_PUBLIC_API_URL` | Backend API URL (browser) | `http://localhost:3000` |
 | `NEXT_PUBLIC_WS_URL` | Hocuspocus WebSocket URL | `ws://localhost:1234` |
 
+## Architecture
+
+```mermaid
+graph TB
+    subgraph Client["Browser"]
+        FE["Next.js 16 + React 19<br/>TailwindCSS 4 · shadcn/ui"]
+        ED["TipTap Editor<br/>Yjs CRDT"]
+    end
+
+    subgraph Docker["Docker Compose"]
+        subgraph App["Application Layer"]
+            API["NestJS 11 API<br/>:3000"]
+            HP["Hocuspocus<br/>WebSocket :1234"]
+        end
+
+        subgraph Data["Data Layer"]
+            PG[("PostgreSQL 16")]
+            RD[("Redis")]
+            MS[("Meilisearch")]
+            S3[("MinIO / S3")]
+        end
+    end
+
+    FE -- "REST API<br/>JWT Auth" --> API
+    ED -- "WebSocket<br/>Yjs sync" --> HP
+
+    API -- "Prisma ORM" --> PG
+    API -- "Cache & Sessions" --> RD
+    API -- "Full-text indexing" --> MS
+    API -- "File uploads" --> S3
+    HP -- "Doc persistence" --> PG
+
+    style Client fill:#1e293b,stroke:#3b82f6,color:#f8fafc
+    style Docker fill:#0f172a,stroke:#64748b,color:#f8fafc
+    style App fill:#172554,stroke:#3b82f6,color:#f8fafc
+    style Data fill:#1a2e05,stroke:#22c55e,color:#f8fafc
+    style FE fill:#1e3a5f,stroke:#60a5fa,color:#f8fafc
+    style ED fill:#1e3a5f,stroke:#60a5fa,color:#f8fafc
+    style API fill:#1e3a5f,stroke:#f59e0b,color:#f8fafc
+    style HP fill:#1e3a5f,stroke:#f59e0b,color:#f8fafc
+    style PG fill:#1c2a1c,stroke:#4ade80,color:#f8fafc
+    style RD fill:#2a1c1c,stroke:#f87171,color:#f8fafc
+    style MS fill:#2a2a1c,stroke:#facc15,color:#f8fafc
+    style S3 fill:#1c2a2a,stroke:#2dd4bf,color:#f8fafc
+```
+
 ## Project Structure
 
 ```
@@ -245,7 +291,7 @@ wikso/
           features/    # Business logic components
         hooks/         # Custom React hooks
         store/         # Zustand stores (auth, sidebar, language)
-        i18n/          # Translations (en, ru, be, es, esAR, pt, ptBR, pl, uk, zh)
+        i18n/          # Translations (en, ru, be, es, esAR, pt, ptBR, pl, uk, zh, tr)
         lib/           # Utilities, API client
   docker-compose.yml   # Full-stack containerized setup
   package.json         # Monorepo root (Turborepo)
