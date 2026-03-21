@@ -1,0 +1,12 @@
+<svg viewBox="2 2 96 82" width="200" height="164" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Left page — outer face -->
+  <path d="M46 12 L6 36 L16 80 L46 60 Z" fill="#6AADFF"/>
+  <!-- Left page — inner face -->
+  <path d="M46 12 L30 22 L16 80 L46 60 Z" fill="#2D6BDD"/>
+  <!-- Right page — outer face -->
+  <path d="M54 12 L94 36 L84 80 L54 60 Z" fill="#5B9FFF"/>
+  <!-- Right page — inner face -->
+  <path d="M54 12 L70 22 L84 80 L54 60 Z" fill="#1A4FAA"/>
+  <!-- Center spine -->
+  <path d="M46 12 L50 6 L54 12 L54 60 L50 64 L46 60 Z" fill="#8AC4FF"/>
+</svg>

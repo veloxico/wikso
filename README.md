@@ -1,14 +1,23 @@
-# Wikso
+<p align="center">
+  <img src="docs/logo.svg" width="80" alt="Wikso logo" />
+</p>
 
-**Wikso** — open-source, self-hosted alternative to Confluence. Real-time collaborative editing, page trees, spaces, full-text search, version history, and more.
+<h1 align="center">Wikso</h1>
 
-[![GitHub Release](https://img.shields.io/github/v/release/veloxico/wikso?style=flat&logo=github)](https://github.com/veloxico/wikso/releases)
-[![Docker Pulls BE](https://img.shields.io/docker/pulls/veloxico/wikso-be?style=flat&logo=docker&label=pulls%20(backend))](https://hub.docker.com/r/veloxico/wikso-be)
-[![Docker Pulls FE](https://img.shields.io/docker/pulls/veloxico/wikso-fe?style=flat&logo=docker&label=pulls%20(frontend))](https://hub.docker.com/r/veloxico/wikso-fe)
-[![License](https://img.shields.io/github/license/veloxico/wikso?style=flat)](LICENSE)
-[![GitHub Sponsors](https://img.shields.io/github/sponsors/veloxico?style=flat&logo=githubsponsors&label=Sponsor)](https://github.com/sponsors/veloxico)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b?style=flat&logo=ko-fi)](https://ko-fi.com/alexkoss)
-[![Crypto Donate](https://img.shields.io/badge/Crypto-Donate-blue?style=flat&logo=bitcoin)](#support-the-project)
+<p align="center">
+  Open-source, self-hosted alternative to Confluence.<br/>
+  Real-time collaborative editing, page trees, spaces, full-text search, version history, and more.
+</p>
+
+<p align="center">
+  <a href="https://github.com/veloxico/wikso/releases"><img src="https://img.shields.io/github/v/release/veloxico/wikso?style=flat&logo=github" alt="GitHub Release" /></a>
+  <a href="https://hub.docker.com/r/veloxico/wikso-be"><img src="https://img.shields.io/docker/pulls/veloxico/wikso-be?style=flat&logo=docker&label=pulls%20(backend)" alt="Docker Pulls BE" /></a>
+  <a href="https://hub.docker.com/r/veloxico/wikso-fe"><img src="https://img.shields.io/docker/pulls/veloxico/wikso-fe?style=flat&logo=docker&label=pulls%20(frontend)" alt="Docker Pulls FE" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/veloxico/wikso?style=flat" alt="License" /></a>
+  <a href="https://github.com/sponsors/veloxico"><img src="https://img.shields.io/github/sponsors/veloxico?style=flat&logo=githubsponsors&label=Sponsor" alt="GitHub Sponsors" /></a>
+  <a href="https://ko-fi.com/alexkoss"><img src="https://img.shields.io/badge/Ko--fi-Support-ff5e5b?style=flat&logo=ko-fi" alt="Ko-fi" /></a>
+  <a href="#support-the-project"><img src="https://img.shields.io/badge/Crypto-Donate-blue?style=flat&logo=bitcoin" alt="Crypto Donate" /></a>
+</p>
 
 > **Live Demo:** [wikso.veloxico.com](https://wikso.veloxico.com)
 
