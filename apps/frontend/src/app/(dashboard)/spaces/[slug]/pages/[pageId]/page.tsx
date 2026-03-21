@@ -188,8 +188,8 @@ export default function PageEditorPage() {
 
       {/* Main content area — compact header like Confluence */}
       <div className="mx-auto w-full max-w-[912px] px-3 md:px-6 pt-2 pb-0">
-        {/* Row 1: Breadcrumbs + action buttons */}
-        <div className="flex items-center justify-between gap-2 mb-1">
+        {/* Row 1: Breadcrumbs */}
+        <div className="flex items-center gap-2 mb-1">
           <Breadcrumbs
             className="min-w-0 shrink"
             items={[
@@ -201,110 +201,11 @@ export default function PageEditorPage() {
               { label: page?.title || 'Page' },
             ]}
           />
-          <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
-            {page?.updatedAt && (
-              <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {new Date(page.updatedAt).toLocaleDateString(locale)}
-              </span>
-            )}
-            <PageExport editor={editorInstance} pageTitle={title || t('pages.untitled')} />
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 h-7 text-xs hidden sm:inline-flex"
-              onClick={() => setShowVersionHistory(true)}
-            >
-              <History className="h-3.5 w-3.5" />
-              {t('pages.versionHistory')}
-            </Button>
-
-            {mode === 'view' && canEdit && (
-              <Button onClick={() => setMode('edit')} size="sm" className="gap-1.5 h-7 text-xs">
-                <Pencil className="h-3.5 w-3.5" />
-                {t('pages.edit') || 'Edit'}
-              </Button>
-            )}
-            {isEditing && !isPreviewing && (
-              <>
-                <Button onClick={handleSave} disabled={updatePage.isPending} size="sm" className="gap-1.5 h-7 text-xs">
-                  <Save className="h-3.5 w-3.5" />
-                  {updatePage.isPending ? t('common.saving') : t('pages.save')}
-                </Button>
-                <Button onClick={() => {
-                  if (hasUnsavedChanges) {
-                    if (!window.confirm(t('pages.unsavedChangesWarning'))) return;
-                  }
-                  setMode('view');
-                  setHasUnsavedChanges(false);
-                }} size="sm" variant="ghost" className="gap-1.5 h-7 text-xs">
-                  <Eye className="h-3.5 w-3.5" />
-                  {t('pages.view') || 'View'}
-                </Button>
-              </>
-            )}
-            {isPreviewing && (
-              <Button onClick={() => setMode('edit')} size="sm" variant="outline" className="gap-1.5 h-7 text-xs">
-                <Pencil className="h-3.5 w-3.5" />
-                {t('pages.backToEditing') || 'Back to editing'}
-              </Button>
-            )}
-
-            {canEdit && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {isEditing && (
-                    <>
-                      <DropdownMenuItem onClick={() => setMode('preview')}>
-                        <ScanEye className="h-4 w-4" />
-                        {t('pages.preview') || 'Preview'}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem
-                    onClick={handleCreateChildPage}
-                    disabled={createChildPage.isPending}
-                  >
-                    <FilePlus className="h-4 w-4" />
-                    {t('pages.createChildPage')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => duplicatePage.mutate(pageId)}
-                    disabled={duplicatePage.isPending}
-                  >
-                    <Copy className="h-4 w-4" />
-                    {t('pages.duplicate')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setShowMoveDialog(true)}
-                  >
-                    <MoveHorizontal className="h-4 w-4" />
-                    {t('pages.movePage') || 'Move'}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => setShowDeleteDialog(true)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    {t('pages.deletePage')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
         </div>
 
-        {/* Row 2: Title + star + tags — all inline */}
-        <div className="flex items-center gap-2 mb-1">
-          <div className="flex items-center gap-1.5 min-w-0 shrink">
+        {/* Row 2: Title + star */}
+        <div className="flex items-center gap-1.5 mb-1 min-w-0">
+          <div className="flex-1 min-w-0">
             {isEditing ? (
               <Input
                 value={title}
@@ -313,31 +214,29 @@ export default function PageEditorPage() {
                   if (e.target.value !== page?.title) setHasUnsavedChanges(true);
                 }}
                 onBlur={handleSaveTitle}
-                className="border-none bg-transparent text-2xl font-bold shadow-none focus-visible:ring-0 px-0 h-auto py-0"
+                className="border-none bg-transparent text-xl sm:text-2xl font-bold shadow-none focus-visible:ring-0 px-0 h-auto py-0"
                 placeholder={t('pages.untitled')}
               />
             ) : (
-              <h1 className="text-2xl font-bold truncate px-0">
+              <h1 className="text-xl sm:text-2xl font-bold truncate px-0">
                 {title || page?.title || t('pages.untitled')}
               </h1>
             )}
-            <button
-              onClick={handleToggleFavorite}
-              className={cn(
-                'shrink-0 p-1 rounded-md transition-colors',
-                favoriteStatus?.isFavorite
-                  ? 'text-yellow-500 hover:text-yellow-600'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-              title={favoriteStatus?.isFavorite ? (t('pages.removeFromFavorites') || 'Remove from favorites') : (t('pages.addToFavorites') || 'Add to favorites')}
-            >
-              <Star className={cn('h-4 w-4', favoriteStatus?.isFavorite && 'fill-current')} />
-            </button>
           </div>
-
-          {/* Tags inline */}
+          <button
+            onClick={handleToggleFavorite}
+            className={cn(
+              'shrink-0 p-1 rounded-md transition-colors',
+              favoriteStatus?.isFavorite
+                ? 'text-yellow-500 hover:text-yellow-600'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+            title={favoriteStatus?.isFavorite ? (t('pages.removeFromFavorites') || 'Remove from favorites') : (t('pages.addToFavorites') || 'Add to favorites')}
+          >
+            <Star className={cn('h-4 w-4', favoriteStatus?.isFavorite && 'fill-current')} />
+          </button>
           {page?.tags && (
-            <div className="shrink-0">
+            <div className="shrink-0 hidden sm:block">
               <TagManager
                 slug={slug}
                 pageId={pageId}
@@ -347,6 +246,111 @@ export default function PageEditorPage() {
                 }))}
               />
             </div>
+          )}
+        </div>
+
+        {/* Row 3: Action buttons */}
+        <div className="flex items-center gap-1 mb-1 flex-wrap">
+          {page?.updatedAt && (
+            <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground mr-1">
+              <Clock className="h-3 w-3" />
+              {new Date(page.updatedAt).toLocaleDateString(locale)}
+            </span>
+          )}
+          <PageExport editor={editorInstance} pageTitle={title || t('pages.untitled')} />
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 h-7 text-xs hidden sm:inline-flex"
+            onClick={() => setShowVersionHistory(true)}
+          >
+            <History className="h-3.5 w-3.5" />
+            {t('pages.versionHistory')}
+          </Button>
+
+          {mode === 'view' && canEdit && (
+            <Button onClick={() => setMode('edit')} size="sm" className="gap-1.5 h-7 text-xs">
+              <Pencil className="h-3.5 w-3.5" />
+              {t('pages.edit') || 'Edit'}
+            </Button>
+          )}
+          {isEditing && !isPreviewing && (
+            <>
+              <Button onClick={handleSave} disabled={updatePage.isPending} size="sm" className="gap-1.5 h-7 text-xs">
+                <Save className="h-3.5 w-3.5" />
+                {updatePage.isPending ? t('common.saving') : t('pages.save')}
+              </Button>
+              <Button onClick={() => {
+                if (hasUnsavedChanges) {
+                  if (!window.confirm(t('pages.unsavedChangesWarning'))) return;
+                }
+                setMode('view');
+                setHasUnsavedChanges(false);
+              }} size="sm" variant="ghost" className="gap-1.5 h-7 text-xs">
+                <Eye className="h-3.5 w-3.5" />
+                {t('pages.view') || 'View'}
+              </Button>
+            </>
+          )}
+          {isPreviewing && (
+            <Button onClick={() => setMode('edit')} size="sm" variant="outline" className="gap-1.5 h-7 text-xs">
+              <Pencil className="h-3.5 w-3.5" />
+              {t('pages.backToEditing') || 'Back to editing'}
+            </Button>
+          )}
+
+          {canEdit && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="sm:hidden" onClick={() => setShowVersionHistory(true)}>
+                  <History className="h-4 w-4" />
+                  {t('pages.versionHistory')}
+                </DropdownMenuItem>
+                {isEditing && (
+                  <>
+                    <DropdownMenuItem onClick={() => setMode('preview')}>
+                      <ScanEye className="h-4 w-4" />
+                      {t('pages.preview') || 'Preview'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem
+                  onClick={handleCreateChildPage}
+                  disabled={createChildPage.isPending}
+                >
+                  <FilePlus className="h-4 w-4" />
+                  {t('pages.createChildPage')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => duplicatePage.mutate(pageId)}
+                  disabled={duplicatePage.isPending}
+                >
+                  <Copy className="h-4 w-4" />
+                  {t('pages.duplicate')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setShowMoveDialog(true)}
+                >
+                  <MoveHorizontal className="h-4 w-4" />
+                  {t('pages.movePage') || 'Move'}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {t('pages.deletePage')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
 

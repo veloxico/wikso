@@ -316,9 +316,9 @@ export function PageExport({ editor, pageTitle }: PageExportProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <Download className="w-4 h-4" />
-          {t('editor.export')}
+        <Button variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
+          <Download className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">{t('editor.export')}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
