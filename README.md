@@ -223,47 +223,16 @@ docker push veloxico/wikso-fe:latest
 ## Architecture
 
 ```mermaid
-graph TB
-    subgraph Client["Browser"]
-        FE["Next.js 16 + React 19<br/>TailwindCSS 4 · shadcn/ui"]
-        ED["TipTap Editor<br/>Yjs CRDT"]
-    end
+graph LR
+    FE["🖥 Frontend<br/>Next.js 16 · React 19<br/>TailwindCSS 4 · shadcn/ui"]
+    BE["⚙ Backend<br/>NestJS 11 · Prisma 6<br/>Hocuspocus · Yjs"]
 
-    subgraph Docker["Docker Compose"]
-        subgraph App["Application Layer"]
-            API["NestJS 11 API<br/>:3000"]
-            HP["Hocuspocus<br/>WebSocket :1234"]
-        end
+    FE --> BE
 
-        subgraph Data["Data Layer"]
-            PG[("PostgreSQL 16")]
-            RD[("Redis")]
-            MS[("Meilisearch")]
-            S3[("MinIO / S3")]
-        end
-    end
-
-    FE -- "REST API<br/>JWT Auth" --> API
-    ED -- "WebSocket<br/>Yjs sync" --> HP
-
-    API -- "Prisma ORM" --> PG
-    API -- "Cache & Sessions" --> RD
-    API -- "Full-text indexing" --> MS
-    API -- "File uploads" --> S3
-    HP -- "Doc persistence" --> PG
-
-    style Client fill:#1e293b,stroke:#3b82f6,color:#f8fafc
-    style Docker fill:#0f172a,stroke:#64748b,color:#f8fafc
-    style App fill:#172554,stroke:#3b82f6,color:#f8fafc
-    style Data fill:#1a2e05,stroke:#22c55e,color:#f8fafc
-    style FE fill:#1e3a5f,stroke:#60a5fa,color:#f8fafc
-    style ED fill:#1e3a5f,stroke:#60a5fa,color:#f8fafc
-    style API fill:#1e3a5f,stroke:#f59e0b,color:#f8fafc
-    style HP fill:#1e3a5f,stroke:#f59e0b,color:#f8fafc
-    style PG fill:#1c2a1c,stroke:#4ade80,color:#f8fafc
-    style RD fill:#2a1c1c,stroke:#f87171,color:#f8fafc
-    style MS fill:#2a2a1c,stroke:#facc15,color:#f8fafc
-    style S3 fill:#1c2a2a,stroke:#2dd4bf,color:#f8fafc
+    BE --> PG["🐘 PostgreSQL 16"]
+    BE --> RD["⚡ Redis 7"]
+    BE --> MS["🔍 Meilisearch"]
+    BE --> S3["📦 MinIO / S3"]
 ```
 
 ## Project Structure
