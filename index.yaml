@@ -1,0 +1,74 @@
+apiVersion: v1
+entries:
+  wikso:
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial Helm chart release
+        - kind: added
+          description: PostgreSQL (pgvector), Redis, MinIO subchart dependencies
+        - kind: added
+          description: Ingress, HPA, PDB, NetworkPolicy support
+        - kind: added
+          description: Automated backup CronJob with PVC and S3 targets
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/images: |
+        - name: wikso-backend
+          image: veloxico/wikso-be:latest
+        - name: wikso-frontend
+          image: veloxico/wikso-fe:latest
+        - name: meilisearch
+          image: getmeili/meilisearch:v1.6
+        - name: pgvector
+          image: pgvector/pgvector:pg16
+        - name: wikso-backup
+          image: veloxico/wikso-backup:latest
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/links: |
+        - name: Project Home
+          url: https://github.com/veloxico/wikso
+        - name: Source
+          url: https://github.com/veloxico/wikso
+        - name: Documentation
+          url: https://github.com/veloxico/wikso/tree/main/docs
+        - name: Helm Chart
+          url: https://github.com/veloxico/wikso/tree/main/charts/wikso
+      artifacthub.io/operator: "false"
+      artifacthub.io/prerelease: "true"
+    apiVersion: v2
+    appVersion: latest
+    created: "2026-03-27T08:08:30.9980234Z"
+    dependencies:
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: ~18.5.0
+    - condition: redis.enabled
+      name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: ~25.3.0
+    - condition: minio.enabled
+      name: minio
+      repository: https://charts.bitnami.com/bitnami
+      version: ~17.0.0
+    description: A Helm chart for Wikso — the open-source, self-hosted knowledge base
+    digest: 729d267310cba5f4cfb56800112d0c0d280c9b0fad1f12829fdcb081df671308
+    home: https://github.com/veloxico/wikso
+    icon: https://raw.githubusercontent.com/veloxico/wikso/main/apps/frontend/public/logo.svg
+    keywords:
+    - wiki
+    - knowledge-base
+    - confluence-alternative
+    - self-hosted
+    - collaboration
+    maintainers:
+    - name: Veloxico
+      url: https://github.com/veloxico
+    name: wikso
+    sources:
+    - https://github.com/veloxico/wikso
+    type: application
+    urls:
+    - https://veloxico.github.io/wikso/wikso-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-03-27T08:08:30.975626395Z"
