@@ -15,6 +15,8 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { AdminModule } from './admin/admin.module';
 import { HocuspocusModule } from './hocuspocus/hocuspocus.module';
 import { MailModule } from './mail/mail.module';
+import { AiModule } from './ai/ai.module';
+import { AdminAiModule } from './admin/ai/admin-ai.module';
 import { SetupModule } from './setup/setup.module';
 import { RedisModule } from './redis/redis.module';
 import { SettingsModule } from './settings/settings.module';
@@ -47,6 +49,8 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     AdminModule,
     HocuspocusModule,
     MailModule,
+    AiModule,
+    AdminAiModule,
     SetupModule,
     SettingsModule,
     RecentPagesModule,

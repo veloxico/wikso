@@ -150,7 +150,7 @@ export class AttachmentsService implements OnModuleInit, OnModuleDestroy {
    * Returns the S3 response body (readable stream), content type, and filename.
    * This is used for permanent URLs that don't expire (unlike signed URLs).
    */
-  async getFileStream(id: string) {
+  async getFileStream(id: string): Promise<{ stream: any; mimeType: string; filename: string; size: number }> {
     const attachment = await this.prisma.attachment.findUnique({ where: { id } });
     if (!attachment) throw new NotFoundException('Attachment not found');
 
