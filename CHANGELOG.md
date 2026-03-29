@@ -2,6 +2,13 @@
 
 All notable changes to Wikso are documented in this file.
 
+## [2.6.1] — 2026-03-29
+
+### 🐛 Fixed
+- **🗄️ Database migration** — added missing Prisma migration for `AiConfig` table that prevented AI provider setup on fresh deployments
+
+---
+
 ## [2.6.0] — 2026-03-29
 
 ### ✨ Added
