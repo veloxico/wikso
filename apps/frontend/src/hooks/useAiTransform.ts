@@ -2,8 +2,6 @@ import { useState, useCallback, useRef } from 'react';
 
 type AiOperation = 'expand' | 'summarize' | 'fix-grammar' | 'change-tone' | 'custom-prompt';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
 export function useAiTransform() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState('');
@@ -30,7 +28,7 @@ export function useAiTransform() {
       const token = localStorage.getItem('accessToken');
 
       try {
-        const res = await fetch(`${API_BASE}/api/v1/ai/transform`, {
+        const res = await fetch('/api/v1/ai/transform', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
