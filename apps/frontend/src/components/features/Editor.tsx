@@ -25,6 +25,7 @@ import { MermaidExtension } from './editor/MermaidExtension';
 import { ExcalidrawExtension } from './editor/ExcalidrawExtension';
 import { createMentionExtension } from './editor/MentionExtension';
 import { EmojiPickerButton } from './editor/EmojiPickerButton';
+import { AiMenu } from './editor/AiMenu';
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough,
   List, ListOrdered, ListChecks,
@@ -34,11 +35,14 @@ import {
   Table as TableIcon, ImagePlus, Link as LinkIcon,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Highlighter, Superscript as SuperscriptIcon, Subscript as SubscriptIcon,
-  Trash2, Plus, Columns, Rows, Palette, PenTool, GitBranch,
+  Trash2, Plus, Columns, Rows, Palette, PenTool, GitBranch, Sparkles, Loader2, Send,
 } from 'lucide-react';
 import { useState, useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useAiStatus } from '@/hooks/useAiStatus';
+import { useAiTransform } from '@/hooks/useAiTransform';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface EditorProps {
@@ -46,6 +50,7 @@ interface EditorProps {
   onChange?: (json: Record<string, unknown>) => void;
   editable?: boolean;
   spaceSlug?: string;
+  pageId?: string;
 }
 
 const TEXT_COLORS = [
@@ -59,11 +64,15 @@ const HIGHLIGHT_COLORS = [
   '#66d9e8', '#91a7ff', '#e599f7', '#ffa8a8',
 ];
 
-export function Editor({ content, onChange, editable = true, spaceSlug }: EditorProps) {
+export function Editor({ content, onChange, editable = true, spaceSlug, pageId }: EditorProps) {
   const { t } = useTranslation();
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [showColorPicker, setShowColorPicker] = useState<'text' | 'highlight' | null>(null);
+  const [showAiPrompt, setShowAiPrompt] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const { data: aiStatus } = useAiStatus();
+  const { transform: aiTransform, isLoading: aiGenerating } = useAiTransform();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
@@ -313,6 +322,19 @@ export function Editor({ content, onChange, editable = true, spaceSlug }: Editor
             <GitBranch className="h-4 w-4" />
           </ToolbarButton>
 
+          {aiStatus?.aiEnabled && (
+            <>
+              <ToolbarDivider />
+              <ToolbarButton
+                onClick={() => setShowAiPrompt(!showAiPrompt)}
+                isActive={showAiPrompt}
+                title={t('editor.ai.generate') || 'AI Generate'}
+              >
+                <Sparkles className="h-4 w-4" />
+              </ToolbarButton>
+            </>
+          )}
+
           <ToolbarDivider />
 
           <ToolbarButton onClick={() => editor.chain().focus().undo().run()} title={tip(t('editor.undo'), 'Ctrl+Z')}>
@@ -325,6 +347,56 @@ export function Editor({ content, onChange, editable = true, spaceSlug }: Editor
           <ToolbarDivider />
 
           <EmojiPickerButton editor={editor} title={t('editor.emoji') || 'Emoji'} />
+        </div>
+      )}
+
+      {/* AI Prompt Bar */}
+      {editable && showAiPrompt && aiStatus?.aiEnabled && (
+        <div className="flex items-center gap-2 border-b border-border bg-primary/5 px-3 py-2">
+          <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+          <Input
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            placeholder={t('editor.ai.promptPlaceholder') || 'Write an article about...'}
+            className="h-8 text-sm"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && aiPrompt.trim() && !aiGenerating && pageId) {
+                e.preventDefault();
+                aiTransform(pageId, aiPrompt, 'expand' as any).then((result) => {
+                  if (result && editor) {
+                    editor.chain().focus().insertContent(result).run();
+                    setAiPrompt('');
+                    setShowAiPrompt(false);
+                  }
+                }).catch(() => {});
+              }
+              if (e.key === 'Escape') {
+                setShowAiPrompt(false);
+              }
+            }}
+          />
+          <Button
+            size="sm"
+            disabled={aiGenerating || !aiPrompt.trim() || !pageId}
+            onClick={() => {
+              if (!pageId) return;
+              aiTransform(pageId, aiPrompt, 'expand' as any).then((result) => {
+                if (result && editor) {
+                  editor.chain().focus().insertContent(result).run();
+                  setAiPrompt('');
+                  setShowAiPrompt(false);
+                }
+              }).catch(() => {});
+            }}
+            className="h-8 gap-1.5"
+          >
+            {aiGenerating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Send className="h-3.5 w-3.5" />
+            )}
+            {t('editor.ai.generateBtn') || 'Generate'}
+          </Button>
         </div>
       )}
 
@@ -369,6 +441,9 @@ export function Editor({ content, onChange, editable = true, spaceSlug }: Editor
 
       <div className="relative">
         <EditorContent editor={editor} />
+        {editor && pageId && editable && (
+          <AiMenu editor={editor} pageId={pageId} />
+        )}
       </div>
     </div>
   );

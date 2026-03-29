@@ -10,16 +10,21 @@ import {
 import { AnthropicProvider } from './providers/anthropic.provider';
 import { OpenAiProvider } from './providers/openai.provider';
 import { OllamaProvider } from './providers/ollama.provider';
+import { ClaudeCliProvider } from './providers/claude-cli.provider';
+import { GeminiProvider } from './providers/gemini.provider';
+import { GeminiCliProvider } from './providers/gemini-cli.provider';
+import { OpenAiCodexProvider } from './providers/openai-codex.provider';
 
 const CACHE_KEY = 'cache:ai-config:active';
 const CACHE_TTL = 60; // 60 seconds
 
-const ENCRYPTED_FIELDS = ['apiKey', 'endpoint', 'deployment'] as const;
+const ENCRYPTED_FIELDS = ['apiKey', 'deployment'] as const;
 
 @Injectable()
 export class AiProviderRegistry {
   private readonly logger = new Logger(AiProviderRegistry.name);
   private memoryCache: any | null = null;
+  private memoryCacheSetAt = 0;
 
   constructor(
     private prisma: PrismaService,
@@ -68,16 +73,15 @@ export class AiProviderRegistry {
 
     return configs.map((c) => ({
       ...c,
-      apiKey: c.apiKey ? maskSecret(this.safeDecrypt(c.apiKey)) : null,
-      endpoint: c.endpoint ? maskSecret(this.safeDecrypt(c.endpoint)) : null,
-      deployment: c.deployment
-        ? maskSecret(this.safeDecrypt(c.deployment))
-        : null,
+      apiKey: c.apiKey ? maskSecret(c.apiKey) : null,
+      endpoint: c.endpoint || null,
+      deployment: c.deployment ? maskSecret(c.deployment) : null,
     }));
   }
 
   async invalidateCache(): Promise<void> {
     this.memoryCache = null;
+    this.memoryCacheSetAt = 0;
     try {
       await this.redis.del(CACHE_KEY);
     } catch {
@@ -104,14 +108,21 @@ export class AiProviderRegistry {
       if (cached) {
         const parsed = JSON.parse(cached);
         this.memoryCache = parsed;
+        this.memoryCacheSetAt = Date.now();
         return parsed;
       }
     } catch {
       // Redis unavailable
     }
 
-    // 2. Try in-memory fallback
-    if (this.memoryCache) return this.memoryCache;
+    // 2. Try in-memory fallback (with TTL)
+    if (
+      this.memoryCache &&
+      Date.now() - this.memoryCacheSetAt < CACHE_TTL * 1000
+    ) {
+      return this.memoryCache;
+    }
+    this.memoryCache = null;
 
     // 3. Try DB
     const dbConfig = await this.prisma.aiConfig.findFirst({
@@ -120,6 +131,7 @@ export class AiProviderRegistry {
 
     if (dbConfig) {
       this.memoryCache = dbConfig;
+      this.memoryCacheSetAt = Date.now();
       try {
         await this.redis.set(CACHE_KEY, JSON.stringify(dbConfig), CACHE_TTL);
       } catch {
@@ -141,6 +153,7 @@ export class AiProviderRegistry {
         _envFallback: true, // marker so we skip decryption
       };
       this.memoryCache = fallback;
+      this.memoryCacheSetAt = Date.now();
       return fallback;
     }
 
@@ -148,12 +161,14 @@ export class AiProviderRegistry {
   }
 
   safeDecrypt(value: string): string {
-    // Env var fallback values are plaintext
-    if (!value.includes(':')) return value;
+    // Encrypted values use format iv:authTag:ciphertext (3 colon-separated parts)
+    const parts = value.split(':');
+    if (parts.length !== 3) return value; // plaintext (env fallback or unencrypted)
     try {
       return decrypt(value);
-    } catch {
-      return value;
+    } catch (err) {
+      this.logger.error('Failed to decrypt AI config field', err);
+      throw new Error('Failed to decrypt AI configuration — encryption key may have changed');
     }
   }
 
@@ -163,11 +178,26 @@ export class AiProviderRegistry {
   ): AiProvider {
     switch (type) {
       case 'anthropic':
-        return new AnthropicProvider(config);
       case 'openai':
-        return new OpenAiProvider(config);
+        if (!config.apiKey) {
+          throw new Error(`API key is required for ${type} provider`);
+        }
+        return type === 'anthropic'
+          ? new AnthropicProvider(config)
+          : new OpenAiProvider(config);
       case 'ollama':
         return new OllamaProvider(config);
+      case 'claude-cli':
+        return new ClaudeCliProvider(config);
+      case 'gemini':
+        if (!config.apiKey) {
+          throw new Error('API key is required for Gemini provider');
+        }
+        return new GeminiProvider(config);
+      case 'gemini-cli':
+        return new GeminiCliProvider(config);
+      case 'openai-codex':
+        return new OpenAiCodexProvider(config);
       default:
         throw new Error(`Unknown AI provider: ${type}`);
     }

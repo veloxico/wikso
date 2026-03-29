@@ -16,6 +16,7 @@ import {
   Activity,
   Upload,
   ArrowLeft,
+  Bot,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -38,6 +39,7 @@ export function AdminSidebar() {
     { href: '/admin/email', labelKey: 'admin.nav.email', icon: Mail },
     { href: '/admin/webhooks', labelKey: 'admin.nav.webhooks', icon: Webhook },
     { href: '/admin/health', labelKey: 'admin.nav.systemHealth', icon: Activity },
+    { href: '/admin/ai', labelKey: 'admin.nav.ai', icon: Bot },
     { href: '/admin/import', labelKey: 'admin.nav.import', icon: Upload, badge: 'Beta' },
   ];
 

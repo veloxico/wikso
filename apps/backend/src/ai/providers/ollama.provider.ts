@@ -5,6 +5,7 @@ import {
 } from './ai-provider.interface';
 
 const DEFAULT_ENDPOINT = 'http://localhost:11434';
+const STREAM_TIMEOUT_MS = 120_000; // 2 minutes max for streaming
 
 export class OllamaProvider implements AiProvider {
   readonly name = 'ollama';
@@ -19,14 +20,16 @@ export class OllamaProvider implements AiProvider {
   async *streamTransform(
     systemPrompt: string,
     userMessage: string,
-    _maxTokens: number,
+    maxTokens: number,
   ): AsyncGenerator<string> {
     const res = await fetch(`${this.endpoint}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(STREAM_TIMEOUT_MS),
       body: JSON.stringify({
         model: this.model,
         stream: true,
+        options: { num_predict: maxTokens },
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage },
@@ -45,36 +48,40 @@ export class OllamaProvider implements AiProvider {
     const decoder = new TextDecoder();
     let buffer = '';
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-      for (const line of lines) {
-        if (!line.trim()) continue;
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const parsed = JSON.parse(line);
+            if (parsed.message?.content) {
+              yield parsed.message.content;
+            }
+          } catch {
+            // skip malformed NDJSON lines
+          }
+        }
+      }
+
+      if (buffer.trim()) {
         try {
-          const parsed = JSON.parse(line);
+          const parsed = JSON.parse(buffer);
           if (parsed.message?.content) {
             yield parsed.message.content;
           }
         } catch {
-          // skip malformed NDJSON lines
+          // skip
         }
       }
-    }
-
-    if (buffer.trim()) {
-      try {
-        const parsed = JSON.parse(buffer);
-        if (parsed.message?.content) {
-          yield parsed.message.content;
-        }
-      } catch {
-        // skip
-      }
+    } finally {
+      reader.releaseLock();
     }
   }
 
@@ -103,7 +110,20 @@ export class OllamaProvider implements AiProvider {
         };
       }
 
-      return { ok: true, message: `Available models: ${models.join(', ')}` };
+      // Check if the configured model is available
+      const modelNames = models.map((m: string) => m.split(':')[0]);
+      const configuredBase = this.model.split(':')[0];
+      if (
+        !models.includes(this.model) &&
+        !modelNames.includes(configuredBase)
+      ) {
+        return {
+          ok: false,
+          message: `Configured model "${this.model}" is not available. Installed: ${models.join(', ')}`,
+        };
+      }
+
+      return { ok: true, message: `Connected. Available models: ${models.join(', ')}` };
     } catch (err: any) {
       if (err?.code === 'ECONNREFUSED' || err?.code === 'ENOTFOUND') {
         return {

@@ -56,11 +56,14 @@ export class AiController {
     });
 
     if (!page) {
-      throw new ForbiddenException('Page not found');
+      throw new NotFoundException('Page not found');
     }
 
     if (user.role !== 'ADMIN') {
       const space = page.space;
+      if (!space) {
+        throw new ForbiddenException('No access to this page');
+      }
       if (space.ownerId !== user.id) {
         const perm = await this.prisma.spacePermission.findFirst({
           where: {
@@ -93,20 +96,19 @@ export class AiController {
         dto.selection,
         dto.operation,
         dto.context,
+        dto.customPrompt,
       )) {
         res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
       }
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     } catch (err: any) {
       this.logger.error('AI transform failed', err);
-      if (err?.message !== 'NO_PROVIDER_CONFIGURED') {
-        res.write(
-          `data: ${JSON.stringify({ error: 'AI provider temporarily unavailable. Please try again.' })}\n\n`,
-        );
-      } else {
-        res.write(
-          `data: ${JSON.stringify({ error: 'AI is not configured.' })}\n\n`,
-        );
+      if (!res.writableEnded) {
+        const message =
+          err?.message === 'NO_PROVIDER_CONFIGURED'
+            ? 'AI is not configured.'
+            : 'AI provider temporarily unavailable. Please try again.';
+        res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
       }
     } finally {
       res.end();

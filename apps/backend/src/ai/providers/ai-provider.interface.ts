@@ -21,4 +21,4 @@ export interface AiProvider {
   testConnection(): Promise<AiTestResult>;
 }
 
-export type AiProviderType = 'anthropic' | 'openai' | 'ollama';
+export type AiProviderType = 'anthropic' | 'openai' | 'ollama' | 'claude-cli' | 'gemini' | 'gemini-cli' | 'openai-codex';

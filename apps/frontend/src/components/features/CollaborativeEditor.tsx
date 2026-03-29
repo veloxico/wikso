@@ -28,6 +28,7 @@ import { MermaidExtension } from './editor/MermaidExtension';
 import { ExcalidrawExtension } from './editor/ExcalidrawExtension';
 import { createMentionExtension } from './editor/MentionExtension';
 import { EmojiPickerButton } from './editor/EmojiPickerButton';
+import { AiMenu } from './editor/AiMenu';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import * as Y from 'yjs';
 import {
@@ -41,8 +42,11 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Highlighter, Superscript as SuperscriptIcon, Subscript as SubscriptIcon,
   Plus, Trash2, Columns, Rows,
-  Palette, PenTool, GitBranch, CheckCircle2,
+  Palette, PenTool, GitBranch, CheckCircle2, Sparkles, Send,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { useAiStatus } from '@/hooks/useAiStatus';
+import { useAiTransform } from '@/hooks/useAiTransform';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
@@ -142,6 +146,10 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [showColorPicker, setShowColorPicker] = useState<'text' | 'highlight' | null>(null);
+  const [showAiPrompt, setShowAiPrompt] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const { data: aiStatus } = useAiStatus();
+  const { transform: aiTransform, isLoading: aiGenerating } = useAiTransform();
   const [saveStatus, setSaveStatus] = useState<'idle' | 'editing' | 'saving' | 'saved'>('idle');
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -803,6 +811,19 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
             <GitBranch className="h-4 w-4" />
           </ToolbarButton>
 
+          {aiStatus?.aiEnabled && (
+            <>
+              <ToolbarDivider />
+              <ToolbarButton
+                onClick={() => setShowAiPrompt(!showAiPrompt)}
+                isActive={showAiPrompt}
+                title={t('editor.ai.generate') || 'AI Generate'}
+              >
+                <Sparkles className="h-4 w-4" />
+              </ToolbarButton>
+            </>
+          )}
+
           <ToolbarDivider />
 
           <ToolbarButton onClick={() => editor.chain().focus().undo().run()} title={tip(t('editor.undo'), 'Ctrl+Z')}>
@@ -854,6 +875,55 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
         </div>
       )}
 
+      {/* AI Prompt Bar */}
+      {editable && showAiPrompt && aiStatus?.aiEnabled && (
+        <div className="flex items-center gap-2 border-b border-border bg-primary/5 px-3 py-2">
+          <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+          <Input
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            placeholder={t('editor.ai.promptPlaceholder') || 'Write an article about...'}
+            className="h-8 text-sm"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && aiPrompt.trim() && !aiGenerating) {
+                e.preventDefault();
+                aiTransform(pageId, aiPrompt, 'expand' as any).then((result) => {
+                  if (result && editor) {
+                    editor.chain().focus().insertContent(result).run();
+                    setAiPrompt('');
+                    setShowAiPrompt(false);
+                  }
+                }).catch(() => {});
+              }
+              if (e.key === 'Escape') {
+                setShowAiPrompt(false);
+              }
+            }}
+          />
+          <Button
+            size="sm"
+            disabled={aiGenerating || !aiPrompt.trim()}
+            onClick={() => {
+              aiTransform(pageId, aiPrompt, 'expand' as any).then((result) => {
+                if (result && editor) {
+                  editor.chain().focus().insertContent(result).run();
+                  setAiPrompt('');
+                  setShowAiPrompt(false);
+                }
+              }).catch(() => {});
+            }}
+            className="h-8 gap-1.5"
+          >
+            {aiGenerating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Send className="h-3.5 w-3.5" />
+            )}
+            {t('editor.ai.generateBtn') || 'Generate'}
+          </Button>
+        </div>
+      )}
+
       {/* Table context toolbar */}
       {editable && editor.isActive('table') && (
         <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-blue-50 dark:bg-blue-950/30 px-2 py-1">
@@ -896,6 +966,9 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       {/* Editor content — centered */}
       <div className="relative flex-1 mx-auto w-full max-w-[912px] px-3 md:px-6">
         <EditorContent editor={editor} />
+        {editor && pageId && editable && (
+          <AiMenu editor={editor} pageId={pageId} />
+        )}
       </div>
     </div>
   );
