@@ -429,6 +429,10 @@ const ptBR = {
       totalPages: 'páginas excluídas',
       restore: 'Restaurar',
       deletePermanently: 'Excluir permanentemente',
+      selected: 'selecionados',
+      restoreSelected: 'Restaurar selecionados',
+      deleteSelected: 'Excluir selecionados',
+      confirmBulkDelete: 'Excluir permanentemente {count} página(s)? Esta ação não pode ser desfeita.',
     },
     general: {
       title: 'Configurações gerais',

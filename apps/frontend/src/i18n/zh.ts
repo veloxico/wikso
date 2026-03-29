@@ -429,6 +429,10 @@ const zh = {
       totalPages: '已删除的页面',
       restore: '恢复',
       deletePermanently: '永久删除',
+      selected: '已选择',
+      restoreSelected: '恢复所选',
+      deleteSelected: '删除所选',
+      confirmBulkDelete: '永久删除 {count} 个页面？此操作不可撤销。',
     },
     general: {
       title: '常规设置',

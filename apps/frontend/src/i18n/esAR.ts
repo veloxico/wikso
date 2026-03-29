@@ -429,6 +429,10 @@ const esAR = {
       totalPages: 'páginas eliminadas',
       restore: 'Restaurar',
       deletePermanently: 'Eliminar permanentemente',
+      selected: 'seleccionados',
+      restoreSelected: 'Restaurar seleccionados',
+      deleteSelected: 'Eliminar seleccionados',
+      confirmBulkDelete: '¿Eliminar permanentemente {count} página(s)? Esta acción no se puede deshacer.',
     },
     general: {
       title: 'Configuración general',

@@ -431,6 +431,10 @@ const tr: TranslationDict = {
       totalPages: 'silinmiş sayfa',
       restore: 'Geri Yükle',
       deletePermanently: 'Kalıcı olarak sil',
+      selected: 'seçildi',
+      restoreSelected: 'Seçilenleri Geri Yükle',
+      deleteSelected: 'Seçilenleri Sil',
+      confirmBulkDelete: '{count} sayfa kalıcı olarak silinsin mi? Bu işlem geri alınamaz.',
     },
     general: {
       title: 'Genel Ayarlar',

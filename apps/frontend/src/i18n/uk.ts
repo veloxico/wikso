@@ -429,6 +429,10 @@ const uk = {
       totalPages: 'видалених сторінок',
       restore: 'Відновити',
       deletePermanently: 'Видалити назавжди',
+      selected: 'вибрано',
+      restoreSelected: 'Відновити вибрані',
+      deleteSelected: 'Видалити вибрані',
+      confirmBulkDelete: 'Видалити назавжди {count} сторінок? Цю дію не можна скасувати.',
     },
     general: {
       title: 'Загальні налаштування',

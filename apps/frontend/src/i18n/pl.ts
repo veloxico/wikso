@@ -429,6 +429,10 @@ const pl = {
       totalPages: 'usuniętych stron',
       restore: 'Przywróć',
       deletePermanently: 'Usuń na stałe',
+      selected: 'zaznaczono',
+      restoreSelected: 'Przywróć zaznaczone',
+      deleteSelected: 'Usuń zaznaczone',
+      confirmBulkDelete: 'Trwale usunąć {count} stron(ę)? Tej operacji nie można cofnąć.',
     },
     general: {
       title: 'Ustawienia ogólne',

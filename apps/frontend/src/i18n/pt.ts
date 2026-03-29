@@ -429,6 +429,10 @@ const pt = {
       totalPages: 'páginas eliminadas',
       restore: 'Restaurar',
       deletePermanently: 'Eliminar permanentemente',
+      selected: 'selecionados',
+      restoreSelected: 'Restaurar selecionados',
+      deleteSelected: 'Excluir selecionados',
+      confirmBulkDelete: 'Excluir permanentemente {count} página(s)? Esta ação não pode ser desfeita.',
     },
     general: {
       title: 'Definições gerais',

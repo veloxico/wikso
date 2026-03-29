@@ -429,6 +429,10 @@ const en = {
       totalPages: 'deleted pages',
       restore: 'Restore',
       deletePermanently: 'Delete permanently',
+      selected: 'selected',
+      restoreSelected: 'Restore Selected',
+      deleteSelected: 'Delete Selected',
+      confirmBulkDelete: 'Permanently delete {count} page(s)? This cannot be undone.',
     },
     general: {
       title: 'General Settings',

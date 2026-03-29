@@ -429,6 +429,10 @@ const ru = {
       totalPages: 'удалённых страниц',
       restore: 'Восстановить',
       deletePermanently: 'Удалить навсегда',
+      selected: 'выбрано',
+      restoreSelected: 'Восстановить выбранные',
+      deleteSelected: 'Удалить выбранные',
+      confirmBulkDelete: 'Удалить навсегда {count} страниц(у)? Это действие необратимо.',
     },
     general: {
       title: 'Общие настройки',

@@ -429,6 +429,10 @@ const be = {
       totalPages: 'выдаленых старонак',
       restore: 'Аднавіць',
       deletePermanently: 'Выдаліць назаўсёды',
+      selected: 'абрана',
+      restoreSelected: 'Аднавіць абраныя',
+      deleteSelected: 'Выдаліць абраныя',
+      confirmBulkDelete: 'Выдаліць назаўсёды {count} старонак? Гэта дзеянне незваротнае.',
     },
     general: {
       title: 'Агульныя налады',
