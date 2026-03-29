@@ -9,7 +9,7 @@ import {
   ChevronDown, ChevronRight, FileText, Settings,
   Loader2, FolderOpen, ArrowLeft,
   Users, UsersRound, Trash2, ScrollText, Key, Mail,
-  Webhook, Activity, Upload,
+  Webhook, Activity, Upload, Bot,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -125,6 +125,7 @@ function MobileAdminContent() {
     { href: '/admin/email', labelKey: 'admin.nav.email', icon: Mail },
     { href: '/admin/webhooks', labelKey: 'admin.nav.webhooks', icon: Webhook },
     { href: '/admin/health', labelKey: 'admin.nav.systemHealth', icon: Activity },
+    { href: '/admin/ai', labelKey: 'admin.nav.ai', icon: Bot },
     { href: '/admin/import', labelKey: 'admin.nav.import', icon: Upload, badge: 'Beta' },
   ];
 

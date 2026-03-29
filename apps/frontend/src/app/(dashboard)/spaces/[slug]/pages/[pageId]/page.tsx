@@ -281,15 +281,9 @@ export default function PageEditorPage() {
                 <Save className="h-3.5 w-3.5" />
                 {updatePage.isPending ? t('common.saving') : t('pages.save')}
               </Button>
-              <Button onClick={() => {
-                if (hasUnsavedChanges) {
-                  if (!window.confirm(t('pages.unsavedChangesWarning'))) return;
-                }
-                setMode('view');
-                setHasUnsavedChanges(false);
-              }} size="sm" variant="ghost" className="gap-1.5 h-7 text-xs">
+              <Button onClick={() => setMode('preview')} size="sm" variant="ghost" className="gap-1.5 h-7 text-xs">
                 <Eye className="h-3.5 w-3.5" />
-                {t('pages.view') || 'View'}
+                {t('pages.preview') || 'Preview'}
               </Button>
             </>
           )}

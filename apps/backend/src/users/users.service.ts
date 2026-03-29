@@ -183,7 +183,7 @@ export class UsersService {
   }
 
   /** Stream avatar image from S3 for a given user. */
-  async getAvatarStream(userId: string) {
+  async getAvatarStream(userId: string): Promise<{ stream: any; mimeType: string } | null> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user?.avatarStorageKey) return null;
 

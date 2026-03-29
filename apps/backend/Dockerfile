@@ -29,6 +29,19 @@ RUN pnpm --filter @wikso/backend exec prisma generate
 # Production stage
 FROM node:20-alpine
 
+# Install CLI tools for subscription-based AI features
+RUN npm install -g @anthropic-ai/claude-code@2.1.56 2>/dev/null || true
+RUN npm install -g @openai/codex@latest 2>/dev/null || true
+RUN apk add --no-cache python3 make g++ && \
+    npm install -g @google/gemini-cli 2>/dev/null || true && \
+    apk del make g++ 2>/dev/null || true
+# Fix BusyBox env not supporting -S flag for gemini CLI — use shell wrapper
+RUN if [ -f /usr/local/bin/gemini ]; then \
+      mv /usr/local/bin/gemini /usr/local/bin/gemini-real && \
+      printf '#!/bin/sh\nexec /usr/local/bin/node --no-warnings=DEP0040 /usr/local/bin/gemini-real "$@"\n' > /usr/local/bin/gemini && \
+      chmod +x /usr/local/bin/gemini; \
+    fi
+
 WORKDIR /app
 
 COPY --from=builder /app/node_modules ./node_modules
@@ -41,6 +54,9 @@ COPY --from=builder /app/apps/backend/prisma ./apps/backend/prisma
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 
 WORKDIR /app/apps/backend
+
+# Create config dirs for CLI tools
+RUN mkdir -p /root/.gemini /root/.claude
 
 EXPOSE 3000 1234
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]

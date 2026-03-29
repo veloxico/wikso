@@ -1,6 +1,6 @@
 {
   "name": "@wikso/backend",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "description": "",
   "author": "",
   "private": true,
@@ -24,6 +24,7 @@
     "seed:admin": "ts-node src/seed-admin.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@aws-sdk/client-s3": "^3.997.0",
     "@aws-sdk/client-ses": "^3.1006.0",
     "@aws-sdk/s3-request-presigner": "^3.997.0",
@@ -52,6 +53,7 @@
     "ioredis": "^5.9.3",
     "meilisearch": "^0.55.0",
     "nodemailer": "^8.0.1",
+    "openai": "^6.33.0",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
     "passport-google-oauth20": "^2.0.0",
