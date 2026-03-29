@@ -6,7 +6,7 @@
 
 <p align="center">
   Open-source, self-hosted alternative to Confluence.<br/>
-  Real-time collaborative editing, page trees, spaces, full-text search, version history, and more.
+  Real-time collaborative editing, page trees, spaces, full-text search, version history, AI assistant, and more.
 </p>
 
 <p align="center">
@@ -31,6 +31,7 @@
 | **Search** | Meilisearch |
 | **File Storage** | S3 / MinIO |
 | **Cache & Queues** | Redis |
+| **AI** | Anthropic Claude, OpenAI, Google Gemini, Ollama — API key or subscription OAuth |
 | **Auth** | JWT + Refresh tokens, Google OAuth, GitHub OAuth, SAML SSO |
 | **Monorepo** | pnpm workspaces + Turborepo |
 | **Containerization** | Docker Compose |
@@ -51,6 +52,14 @@
 - **File Attachments** — upload and attach files to pages (S3 / MinIO), configurable size limit (up to 100 MB)
 - **Confluence Import** — migrate from Confluence Cloud with a single ZIP upload (Beta)
 
+### AI Assistant
+- **AI Text Transformations** — select text in the editor and apply AI operations: expand, summarize, fix grammar, change tone
+- **Custom Prompts** — write your own instruction to transform selected text with AI
+- **Streaming Responses** — real-time SSE streaming shows AI output as it generates
+- **7 AI Providers** — Claude (Subscription), OpenAI (Subscription), Gemini (Subscription), Anthropic (API Key), OpenAI (API Key), Google Gemini (API Key), Ollama (Self-hosted)
+- **Subscription-based Auth** — connect your Claude, ChatGPT, or Google account via OAuth — no API key needed
+- **Admin AI Configuration** — enable/disable AI, switch providers, test connections, disconnect accounts
+
 ### Admin Panel
 - **Dashboard** — system stats with 30-day activity charts (pages, views, users)
 - **User Management** — create, invite, suspend, delete users; bulk operations; last login & IP tracking
@@ -63,6 +72,7 @@
 - **Email Configuration** — SMTP setup with provider presets and test email
 - **Webhooks** — full CRUD: create, edit, delete, enable/disable webhook integrations
 - **System Health** — live service status, uptime, memory usage, Node.js version
+- **AI Provider Settings** — configure AI providers (API keys, OAuth connections, models), test connections, set active provider
 - **Confluence Import** — upload Confluence Cloud XML export ZIP with real-time progress tracking (Beta)
 
 ### Platform
@@ -221,6 +231,7 @@ docker push veloxico/wikso-fe:latest
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID | — |
 | `GITHUB_CLIENT_ID` | GitHub OAuth client ID | — |
 | `SAML_ENTRY_POINT` | SAML IdP entry point | — |
+| `ENCRYPTION_KEY` | Key for encrypting stored credentials (32+ chars) | falls back to `JWT_SECRET` |
 
 ### Frontend (`apps/frontend/.env.local`)
 
@@ -242,6 +253,7 @@ graph LR
     BE --> RD["⚡ Redis 7"]
     BE --> MS["🔍 Meilisearch"]
     BE --> S3["📦 MinIO / S3"]
+    BE --> AI["🤖 AI Providers<br/>Claude · OpenAI · Gemini · Ollama"]
 ```
 
 ## Project Structure
@@ -252,6 +264,8 @@ wikso/
     backend/           # NestJS API + Hocuspocus WS server
       src/
         auth/          # JWT, OAuth, SAML authentication
+        ai/            # AI providers, text transformations, SSE streaming
+        admin/         # Admin panel APIs (users, spaces, AI settings, trash, audit)
         pages/         # Pages CRUD, versions, tree
         spaces/        # Spaces management
         comments/      # Threaded comments
@@ -267,6 +281,7 @@ wikso/
         components/    # UI & feature components
           ui/          # shadcn/ui primitives
           features/    # Business logic components
+            editor/    # AI menu, editor extensions
         hooks/         # Custom React hooks
         store/         # Zustand stores (auth, sidebar, language)
         i18n/          # Translations (en, ru, be, es, esAR, pt, ptBR, pl, uk, zh, tr)
