@@ -60,6 +60,8 @@
 - **Subscription-based Auth** — connect your Claude, ChatGPT, or Google account via OAuth — no API key needed
 - **Admin AI Configuration** — enable/disable AI, switch providers, test connections, disconnect accounts
 
+> **Note:** Subscription-based providers (Claude, OpenAI, Gemini) use unofficial OAuth flows and may be subject to rate limits or changes by the vendor. For production use, API key-based providers are recommended.
+
 ### Admin Panel
 - **Dashboard** — system stats with 30-day activity charts (pages, views, users)
 - **User Management** — create, invite, suspend, delete users; bulk operations; last login & IP tracking

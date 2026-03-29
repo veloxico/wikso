@@ -1,6 +1,6 @@
 {
   "name": "wikso",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "private": true,
   "scripts": {
     "dev": "turbo dev",
