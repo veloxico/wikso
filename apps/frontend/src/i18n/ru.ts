@@ -1064,6 +1064,13 @@ const ru = {
     slugFormat: 'Только строчные латинские буквы, цифры и дефисы',
     currentPasswordRequired: 'Текущий пароль обязателен для заполнения',
   },
+  mermaid: {
+    insert: 'Вставить диаграмму Mermaid',
+    editPlaceholder: 'Введите исходный код Mermaid...',
+    previewTitle: 'Диаграмма Mermaid',
+    renderError: 'Ошибка отрисовки диаграммы',
+    defaultExample: 'flowchart LR\n  A[Начало] --> B[Конец]',
+  },
 };
 
 export default ru;

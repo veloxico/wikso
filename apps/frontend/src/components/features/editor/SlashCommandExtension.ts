@@ -210,7 +210,7 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
     category: 'Insert',
     aliases: ['mermaid', 'diagram', 'flowchart', 'chart', 'sequence', 'gantt'],
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).insertContent({ type: 'mermaidDiagram' }).run();
+      editor.chain().focus().deleteRange(range).setMermaidBlock().run();
     },
   },
   {

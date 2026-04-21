@@ -1064,6 +1064,13 @@ const be = {
     slugFormat: 'Толькі малыя літары, лічбы і дэфісы',
     currentPasswordRequired: 'Бягучы пароль абавязковы',
   },
+  mermaid: {
+    insert: 'Уставіць дыяграму Mermaid',
+    editPlaceholder: 'Увядзіце зыходны код Mermaid...',
+    previewTitle: 'Дыяграма Mermaid',
+    renderError: 'Памылка адлюстравання дыяграмы',
+    defaultExample: 'flowchart LR\n  A[Пачатак] --> B[Канец]',
+  },
 };
 
 export default be;

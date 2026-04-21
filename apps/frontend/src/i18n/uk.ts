@@ -1064,6 +1064,13 @@ const uk = {
     slugFormat: 'Тільки малі літери, цифри та дефіси',
     currentPasswordRequired: "Поточний пароль обов'язковий",
   },
+  mermaid: {
+    insert: 'Вставити діаграму Mermaid',
+    editPlaceholder: 'Введіть вихідний код Mermaid...',
+    previewTitle: 'Діаграма Mermaid',
+    renderError: 'Помилка відтворення діаграми',
+    defaultExample: 'flowchart LR\n  A[Початок] --> B[Кінець]',
+  },
 };
 
 export default uk;

@@ -1064,6 +1064,13 @@ const pl = {
     slugFormat: 'Tylko małe litery, cyfry i myślniki',
     currentPasswordRequired: 'Obecne hasło jest wymagane',
   },
+  mermaid: {
+    insert: 'Wstaw diagram Mermaid',
+    editPlaceholder: 'Wpisz źródło diagramu Mermaid...',
+    previewTitle: 'Diagram Mermaid',
+    renderError: 'Błąd renderowania diagramu',
+    defaultExample: 'flowchart LR\n  A[Start] --> B[Koniec]',
+  },
 };
 
 export default pl;

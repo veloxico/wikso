@@ -1064,6 +1064,13 @@ const zh = {
     slugFormat: '仅允许小写字母、数字和连字符',
     currentPasswordRequired: '当前密码为必填项',
   },
+  mermaid: {
+    insert: '插入 Mermaid 图表',
+    editPlaceholder: '在此输入 Mermaid 源代码……',
+    previewTitle: 'Mermaid 图表',
+    renderError: '图表渲染错误',
+    defaultExample: 'flowchart LR\n  A[开始] --> B[结束]',
+  },
 };
 
 export default zh;

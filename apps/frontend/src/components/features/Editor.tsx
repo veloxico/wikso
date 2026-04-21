@@ -22,6 +22,7 @@ import { slashCommandSuggestion } from './editor/slashCommandSuggestion';
 import { CalloutExtension } from './editor/CalloutExtension';
 import { CodeBlockExtension } from './editor/CodeBlockExtension';
 import { MermaidExtension } from './editor/MermaidExtension';
+import { MermaidBlock } from './editor/extensions/MermaidBlock';
 import { ExcalidrawExtension } from './editor/ExcalidrawExtension';
 import { createMentionExtension } from './editor/MentionExtension';
 import { EmojiPickerButton } from './editor/EmojiPickerButton';
@@ -102,6 +103,7 @@ export function Editor({ content, onChange, editable = true, spaceSlug, pageId }
       CalloutExtension,
       CodeBlockExtension,
       MermaidExtension,
+      MermaidBlock,
       ExcalidrawExtension,
       SlashCommandExtension.configure({
         suggestion: {
@@ -318,7 +320,7 @@ export function Editor({ content, onChange, editable = true, spaceSlug, pageId }
           <ToolbarButton onClick={() => editor.chain().focus().setExcalidrawBlock().run()} title={t('editor.drawing')}>
             <PenTool className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().setMermaidDiagram().run()} title={t('editor.mermaidDiagram')}>
+          <ToolbarButton onClick={() => editor.chain().focus().setMermaidBlock().run()} title={t('mermaid.insert')}>
             <GitBranch className="h-4 w-4" />
           </ToolbarButton>
 

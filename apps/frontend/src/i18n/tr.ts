@@ -1066,6 +1066,13 @@ const tr: TranslationDict = {
     slugFormat: 'Yalnızca küçük harfler, sayılar ve tireler',
     currentPasswordRequired: 'Mevcut şifre gereklidir',
   },
+  mermaid: {
+    insert: 'Mermaid diyagramı ekle',
+    editPlaceholder: 'Mermaid kaynağını buraya girin...',
+    previewTitle: 'Mermaid diyagramı',
+    renderError: 'Diyagram oluşturma hatası',
+    defaultExample: 'flowchart LR\n  A[Başla] --> B[Bitiş]',
+  },
 };
 
 export default tr;
