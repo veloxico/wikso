@@ -8,7 +8,11 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // rawBody: true exposes req.rawBody so webhook-style handlers (e.g. Slack
+  // Events API) can verify HMAC signatures against the unparsed payload.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true,
+  });
 
   // Hard cap: 100 MB. Actual per-file limit is configurable via admin settings (maxAttachmentSizeMb).
   app.useBodyParser('json', { limit: '100mb' });

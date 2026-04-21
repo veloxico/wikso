@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppConfigModule } from './config/app-config.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -36,12 +37,14 @@ import { PageLinksModule } from './page-links/page-links.module';
 import { PageAnalyticsModule } from './page-analytics/page-analytics.module';
 import { PageWatchModule } from './page-watch/page-watch.module';
 import { AiChatModule } from './ai-chat/ai-chat.module';
+import { SlackModule } from './integrations/slack/slack.module';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     AppConfigModule,
+    EventEmitterModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
     PrismaModule,
     RedisModule,
@@ -75,6 +78,7 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     PageAnalyticsModule,
     PageWatchModule,
     AiChatModule,
+    SlackModule,
   ],
   providers: [
     // Global: gate all non-setup routes behind setup completion

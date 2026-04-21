@@ -1,22 +1,16 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AiModule } from '../ai/ai.module';
 import { AiChatController } from './ai-chat.controller';
 import { AiChatService } from './ai-chat.service';
-import { AiProviderRegistry } from './providers/ai-provider.registry';
-import { AnthropicProvider } from './providers/anthropic.provider';
-import { OpenAiProvider } from './providers/openai.provider';
-import { OllamaProvider } from './providers/ollama.provider';
 
 @Module({
-  imports: [PrismaModule],
+  // AiModule exports AiProviderRegistry so the ask-your-wiki chat reuses the
+  // admin-configured provider (with key decryption, Redis cache, OAuth token
+  // rotation) instead of maintaining its own fork of the provider layer.
+  imports: [PrismaModule, AiModule],
   controllers: [AiChatController],
-  providers: [
-    AiChatService,
-    AiProviderRegistry,
-    AnthropicProvider,
-    OpenAiProvider,
-    OllamaProvider,
-  ],
-  exports: [AiChatService, AiProviderRegistry],
+  providers: [AiChatService],
+  exports: [AiChatService],
 })
 export class AiChatModule {}

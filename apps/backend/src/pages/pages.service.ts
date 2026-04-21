@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { SearchService } from '../search/search.service';
@@ -32,6 +33,7 @@ export class PagesService {
     private webhooksService: WebhooksService,
     private pageLinks: PageLinksService,
     private pageWatch: PageWatchService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   /** Invalidate tree cache for a space slug */
@@ -104,6 +106,15 @@ export class PagesService {
       pageId: page.id,
       title: page.title,
       spaceSlug,
+      authorId,
+    });
+
+    // Emit internal event (Slack integration & other listeners)
+    this.eventEmitter.emit('page.created', {
+      pageId: page.id,
+      spaceId: space.id,
+      spaceSlug,
+      title: page.title,
       authorId,
     });
 
@@ -252,6 +263,15 @@ export class PagesService {
       updatedBy: userId,
     });
 
+    // Emit internal event (Slack integration & other listeners)
+    this.eventEmitter.emit('page.updated', {
+      pageId: page.id,
+      spaceId: page.spaceId,
+      spaceSlug: page.space?.slug,
+      title: page.title,
+      authorId: userId,
+    });
+
     return page;
   }
 
@@ -293,6 +313,15 @@ export class PagesService {
     await this.webhooksService.fireEvent('page.deleted', {
       pageId,
       title: page.title,
+    });
+
+    // Emit internal event (Slack integration & other listeners)
+    this.eventEmitter.emit('page.deleted', {
+      pageId,
+      spaceId: page.spaceId,
+      spaceSlug: page.space?.slug,
+      title: page.title,
+      authorId: userId,
     });
 
     return { message: 'Page moved to trash' };

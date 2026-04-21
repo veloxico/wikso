@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PagesService } from './pages.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
@@ -122,6 +123,10 @@ describe('PagesService', () => {
     getWatcherIds: jest.fn().mockResolvedValue([]),
   };
 
+  const mockEventEmitter = {
+    emit: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -133,6 +138,7 @@ describe('PagesService', () => {
         { provide: WebhooksService, useValue: mockWebhooksService },
         { provide: PageLinksService, useValue: mockPageLinksService },
         { provide: PageWatchService, useValue: mockPageWatchService },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
 

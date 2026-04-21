@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   Bot,
   LayoutTemplate,
+  MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -39,6 +40,7 @@ export function AdminSidebar() {
     { href: '/admin/auth', labelKey: 'admin.nav.authProviders', icon: Key },
     { href: '/admin/email', labelKey: 'admin.nav.email', icon: Mail },
     { href: '/admin/webhooks', labelKey: 'admin.nav.webhooks', icon: Webhook },
+    { href: '/admin/integrations/slack', labelKey: 'admin.nav.integrationsSlack', icon: MessageCircle },
     { href: '/admin/health', labelKey: 'admin.nav.systemHealth', icon: Activity },
     { href: '/admin/ai', labelKey: 'admin.nav.ai', icon: Bot },
     { href: '/admin/templates', labelKey: 'admin.nav.templates', icon: LayoutTemplate },

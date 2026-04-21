@@ -8,8 +8,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { MeiliSearch } from 'meilisearch';
 import { PrismaService } from '../prisma/prisma.service';
-import { AiProviderRegistry } from './providers/ai-provider.registry';
-import type { AiChatMessage } from './providers/ai-provider.interface';
+import { AiProviderRegistry } from '../ai/ai-provider.registry';
 
 export interface RetrievedSource {
   pageId: string;
@@ -22,6 +21,7 @@ export interface RetrievedSource {
 
 const MAX_HISTORY_MESSAGES = 10;
 const MAX_SOURCES = 5;
+const MAX_TOKENS = 2048;
 const CROP_LENGTH = 300;
 
 /**
@@ -194,6 +194,13 @@ export class AiChatService {
    * Persists the user question, retrieves context, builds the prompt and
    * streams back the assistant's answer. The assistant response is persisted
    * once streaming completes.
+   *
+   * The underlying AiProvider.streamTransform exposes a two-arg API
+   * (systemPrompt, userMessage) rather than a full message array, so we fold
+   * conversation history into the user message using role tags. This keeps
+   * the RAG chat decoupled from provider internals and reuses the same
+   * admin-configured provider (with encryption, caching, OAuth rotation) that
+   * powers the editor's AI transforms.
    */
   async streamAnswer(
     conversationId: string,
@@ -207,25 +214,20 @@ export class AiChatService {
     if (!convo) throw new NotFoundException('Conversation not found');
     if (convo.userId !== userId) throw new ForbiddenException('Not your conversation');
 
-    const provider = this.providers.getActive();
+    const provider = await this.providers.getActiveProvider();
     if (!provider) {
       throw new ServiceUnavailableException(
-        'No AI provider is configured. Set ANTHROPIC_API_KEY, OPENAI_API_KEY or OLLAMA_HOST.',
+        'No AI provider is configured. Ask an admin to configure one at /admin/ai.',
       );
     }
 
     // Persist user message synchronously so it shows in history even if the
-    // stream is aborted.
+    // stream is aborted mid-flight.
     await this.prisma.aiMessage.create({
       data: { conversationId, role: 'user', content: message },
     });
 
     const sources = await this.retrieveContext(userId, message);
-
-    const history = convo.messages.slice(-MAX_HISTORY_MESSAGES).map<AiChatMessage>((m) => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content,
-    }));
 
     const contextBlock = sources.length
       ? sources
@@ -236,96 +238,86 @@ export class AiChatService {
           .join('\n\n')
       : '(no matching wiki pages were found)';
 
-    const prompt: AiChatMessage[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      {
-        role: 'system',
-        content: `Wiki excerpts:\n\n${contextBlock}`,
-      },
-      ...history,
-      { role: 'user', content: message },
-    ];
+    const systemWithContext = `${SYSTEM_PROMPT}\n\nWiki excerpts:\n\n${contextBlock}`;
 
-    // Fire-and-consume: tee the provider stream — one branch goes to the
-    // client, the other collects the full text so we can persist it.
-    let upstream: ReadableStream<Uint8Array>;
-    try {
-      upstream = await provider.chat({ messages: prompt, stream: true });
-    } catch (err: any) {
-      this.logger.error(`Provider chat failed: ${err?.message || err}`);
-      throw new ServiceUnavailableException('AI provider request failed');
-    }
+    const historyText = convo.messages
+      .slice(-MAX_HISTORY_MESSAGES)
+      .map((m) => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`)
+      .join('\n\n');
+    const userPrompt = historyText
+      ? `${historyText}\n\nUser: ${message}\nAssistant:`
+      : message;
 
-    const [forClient, forPersist] = upstream.tee();
-
-    // Persist assistant message once streaming finishes.
-    this.collectAndPersist(conversationId, forPersist, sources).catch((err) => {
-      this.logger.warn(`Failed to persist assistant message: ${err?.message || err}`);
-    });
-
-    // Update conversation title from the first user message if still default.
+    // Bump conversation title from the first user message if still default.
     if (convo.title === 'New conversation' && message.trim().length > 0) {
       const newTitle = message.trim().slice(0, 80);
-      await this.prisma.aiConversation
+      this.prisma.aiConversation
         .update({ where: { id: conversationId }, data: { title: newTitle } })
         .catch(() => {});
     }
 
-    return forClient;
-  }
-
-  /**
-   * Drains a SSE stream, reconstructs the assistant text, and persists it.
-   */
-  private async collectAndPersist(
-    conversationId: string,
-    stream: ReadableStream<Uint8Array>,
-    sources: RetrievedSource[],
-  ): Promise<void> {
-    const reader = stream.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+    const encoder = new TextEncoder();
+    const logger = this.logger;
+    const prisma = this.prisma;
     let assembled = '';
 
-    try {
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split('\n\n');
-        buffer = events.pop() || '';
-        for (const ev of events) {
-          for (const line of ev.split('\n')) {
-            if (!line.startsWith('data:')) continue;
-            const data = line.slice(5).trim();
-            if (!data || data === '[DONE]') continue;
-            try {
-              const parsed = JSON.parse(data);
-              if (typeof parsed?.delta === 'string') assembled += parsed.delta;
-            } catch {
-              // Ignore
-            }
+    return new ReadableStream<Uint8Array>({
+      async start(controller) {
+        try {
+          const generator = provider.streamTransform(
+            systemWithContext,
+            userPrompt,
+            MAX_TOKENS,
+          );
+          for await (const delta of generator) {
+            if (!delta) continue;
+            assembled += delta;
+            const sse = `data: ${JSON.stringify({ delta })}\n\n`;
+            controller.enqueue(encoder.encode(sse));
+          }
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        } catch (err: any) {
+          const msg = err?.message || 'Provider stream error';
+          logger.error(`AI chat stream failed: ${msg}`);
+          const sse = `data: ${JSON.stringify({ error: msg })}\n\n`;
+          try {
+            controller.enqueue(encoder.encode(sse));
+          } catch {
+            // Controller may already be closed on client abort
+          }
+        } finally {
+          try {
+            controller.close();
+          } catch {
+            // Ignore double-close
+          }
+
+          // Persist assistant message with whatever we managed to collect.
+          // Happens AFTER the client sees [DONE] — acceptable tradeoff since
+          // we don't want persistence latency to delay the final SSE event.
+          if (assembled.trim()) {
+            prisma.aiMessage
+              .create({
+                data: {
+                  conversationId,
+                  role: 'assistant',
+                  content: assembled,
+                  sources: sources as unknown as Prisma.InputJsonValue,
+                },
+              })
+              .catch((err) =>
+                logger.warn(`Failed to persist assistant message: ${err?.message || err}`),
+              );
+
+            prisma.aiConversation
+              .update({
+                where: { id: conversationId },
+                data: { updatedAt: new Date() },
+              })
+              .catch(() => {});
           }
         }
-      }
-    } finally {
-      reader.releaseLock();
-    }
-
-    if (!assembled.trim()) return;
-
-    await this.prisma.aiMessage.create({
-      data: {
-        conversationId,
-        role: 'assistant',
-        content: assembled,
-        sources: sources as unknown as Prisma.InputJsonValue,
       },
     });
-
-    // Bump conversation updatedAt so the list orders correctly.
-    await this.prisma.aiConversation
-      .update({ where: { id: conversationId }, data: { updatedAt: new Date() } })
-      .catch(() => {});
   }
 }

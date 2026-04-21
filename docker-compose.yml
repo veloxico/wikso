@@ -48,6 +48,11 @@ services:
       SAML_ISSUER: 'wikso'
       SAML_CERT: ''
       SAML_CALLBACK_URL: 'http://localhost:3000/api/v1/auth/saml/callback'
+      # Slack integration (leave empty to disable)
+      SLACK_CLIENT_ID: ''
+      SLACK_CLIENT_SECRET: ''
+      SLACK_SIGNING_SECRET: ''
+      SLACK_REDIRECT_URL: 'http://localhost:3000/api/v1/integrations/slack/oauth/callback'
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/v1/health || exit 1"]
       interval: 10s
