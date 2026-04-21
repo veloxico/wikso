@@ -18,6 +18,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
 import { AiProviderRegistry } from '../../ai/ai-provider.registry';
 import { AiProviderType } from '../../ai/providers/ai-provider.interface';
 import { AnthropicProvider } from '../../ai/providers/anthropic.provider';
@@ -41,7 +42,18 @@ export class AdminAiController {
   constructor(
     private registry: AiProviderRegistry,
     private prisma: PrismaService,
+    private redis: RedisService,
   ) {}
+
+  // PKCE entries are persisted in Redis (not an in-memory Map) so the OAuth
+  // flow survives a worker restart and works across multiple backend replicas
+  // — otherwise the callback hits a different process than `start` did and
+  // every flow fails with "Invalid or expired state". 10 min TTL = matches
+  // the old in-memory cleanup window.
+  private static readonly PKCE_TTL_SECONDS = 600;
+  private pkceKey(provider: 'gemini-cli' | 'openai-codex', state: string) {
+    return `oauth:pkce:${provider}:${state}`;
+  }
 
   @Get()
   @ApiOperation({ summary: 'List all AI provider configs (keys masked)' })
@@ -133,14 +145,16 @@ export class AdminAiController {
     // Remove credentials and config
     await this.prisma.aiConfig.delete({ where: { provider } });
 
-    // Clean up CLI credential files if applicable
+    // Clean up CLI credential files if applicable.
+    // NOTE: openai-codex now writes credentials to a per-call temp directory
+    // (CODEX_HOME), so there is nothing under ~/.codex for us to remove —
+    // and touching that path would clobber the host operator's own Codex
+    // login if they happen to have one. Only gemini-cli still writes to its
+    // shared FileKeychain location.
     try {
       const { unlinkSync } = await import('fs');
       const { join } = await import('path');
       const { homedir } = await import('os');
-      if (provider === 'openai-codex') {
-        unlinkSync(join(homedir(), '.codex', 'auth.json'));
-      }
       if (provider === 'gemini-cli') {
         unlinkSync(join(homedir(), '.gemini', 'gemini-credentials.json'));
       }
@@ -339,13 +353,24 @@ export class AdminAiController {
 
   // ─── Gemini OAuth Flow ────────────────────────────────
 
-  private geminiPkceStore = new Map<string, { verifier: string; createdAt: number }>();
+  // SECURITY: state and verifier MUST be independent random values.
+  // The verifier is the PKCE secret and must never leave the backend
+  // (RFC 7636 §7.1) — only its SHA-256 hash (the challenge) goes into
+  // the redirect URL. The state is the public CSRF nonce we hand to the
+  // browser. Reusing one value for both leaks the verifier through the
+  // URL bar / clipboard / browser history.
+  // Each entry is also bound to the initiating admin's userId so a
+  // different admin cannot complete a flow they observed.
+  // Storage: Redis with 10-min TTL — survives restarts and works across
+  // multiple backend replicas (old in-memory Map silently broke OAuth
+  // whenever the callback hit a different process than the start).
 
   @Post('gemini-cli/oauth/start')
   @ApiOperation({ summary: 'Start Gemini OAuth flow — returns auth URL' })
-  async geminiOAuthStart() {
+  async geminiOAuthStart(@CurrentUser() user: any) {
     const { randomBytes, createHash } = await import('crypto');
     const verifier = randomBytes(32).toString('hex');
+    const state = randomBytes(32).toString('hex');
     const challenge = createHash('sha256').update(verifier).digest('base64url');
 
     const clientId = process.env.GEMINI_CLI_OAUTH_CLIENT_ID || '';
@@ -363,23 +388,22 @@ export class AdminAiController {
       scope: scopes.join(' '),
       code_challenge: challenge,
       code_challenge_method: 'S256',
-      state: verifier,
+      state,
       access_type: 'offline',
       prompt: 'consent',
     });
 
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
-    // Store verifier for callback exchange (expires in 10 min)
-    this.geminiPkceStore.set(verifier, { verifier, createdAt: Date.now() });
-    // Cleanup old entries
-    for (const [key, val] of this.geminiPkceStore.entries()) {
-      if (Date.now() - val.createdAt > 10 * 60 * 1000) {
-        this.geminiPkceStore.delete(key);
-      }
-    }
+    // Store keyed by the public state; verifier stays server-side.
+    // Redis SETEX handles expiry — no manual cleanup loop needed.
+    await this.redis.set(
+      this.pkceKey('gemini-cli', state),
+      JSON.stringify({ verifier, userId: user.id }),
+      AdminAiController.PKCE_TTL_SECONDS,
+    );
 
-    return { authUrl, state: verifier };
+    return { authUrl, state };
   }
 
   @Post('gemini-cli/oauth/callback')
@@ -392,11 +416,21 @@ export class AdminAiController {
       throw new BadRequestException('callbackUrl and state are required');
     }
 
-    const stored = this.geminiPkceStore.get(dto.state);
-    if (!stored) {
+    const key = this.pkceKey('gemini-cli', dto.state);
+    const raw = await this.redis.get(key);
+    let stored: { verifier: string; userId: string } | null = null;
+    if (raw) {
+      try {
+        stored = JSON.parse(raw);
+      } catch {
+        stored = null;
+      }
+    }
+    if (!stored || stored.userId !== user.id) {
       throw new BadRequestException('Invalid or expired state. Start the OAuth flow again.');
     }
-    this.geminiPkceStore.delete(dto.state);
+    // One-shot: delete before exchange so a leaked code+state can't be replayed.
+    await this.redis.del(key);
 
     // Parse code from callback URL
     let code: string;
@@ -532,13 +566,17 @@ export class AdminAiController {
 
   // ─── OpenAI Codex OAuth Flow ──────────────────────────
 
-  private codexPkceStore = new Map<string, { verifier: string; createdAt: number }>();
+  // See gemini PKCE store comment above — same RFC 7636 §7.1 reasoning:
+  // verifier is server-side only, state is the public CSRF nonce, entries
+  // are bound to the initiating admin's userId. Stored in Redis with TTL
+  // so the flow works across replicas / restarts.
 
   @Post('openai-codex/oauth/start')
   @ApiOperation({ summary: 'Start OpenAI Codex OAuth flow' })
-  async codexOAuthStart() {
+  async codexOAuthStart(@CurrentUser() user: any) {
     const { randomBytes, createHash } = await import('crypto');
     const verifier = randomBytes(32).toString('hex');
+    const state = randomBytes(32).toString('hex');
     const challenge = createHash('sha256').update(verifier).digest('base64url');
 
     const clientId = 'app_EMoamEEZ73f0CkXaXp7hrann';
@@ -552,7 +590,7 @@ export class AdminAiController {
       scope: scopes,
       code_challenge: challenge,
       code_challenge_method: 'S256',
-      state: verifier,
+      state,
       id_token_add_organizations: 'true',
       codex_cli_simplified_flow: 'true',
       originator: 'pi',
@@ -560,15 +598,13 @@ export class AdminAiController {
 
     const authUrl = `https://auth.openai.com/oauth/authorize?${params.toString()}`;
 
-    this.codexPkceStore.set(verifier, { verifier, createdAt: Date.now() });
-    // Cleanup old entries
-    for (const [key, val] of this.codexPkceStore.entries()) {
-      if (Date.now() - val.createdAt > 10 * 60 * 1000) {
-        this.codexPkceStore.delete(key);
-      }
-    }
+    await this.redis.set(
+      this.pkceKey('openai-codex', state),
+      JSON.stringify({ verifier, userId: user.id }),
+      AdminAiController.PKCE_TTL_SECONDS,
+    );
 
-    return { authUrl, state: verifier };
+    return { authUrl, state };
   }
 
   @Post('openai-codex/oauth/callback')
@@ -581,11 +617,20 @@ export class AdminAiController {
       throw new BadRequestException('callbackUrl and state are required');
     }
 
-    const stored = this.codexPkceStore.get(dto.state);
-    if (!stored) {
+    const key = this.pkceKey('openai-codex', dto.state);
+    const raw = await this.redis.get(key);
+    let stored: { verifier: string; userId: string } | null = null;
+    if (raw) {
+      try {
+        stored = JSON.parse(raw);
+      } catch {
+        stored = null;
+      }
+    }
+    if (!stored || stored.userId !== user.id) {
       throw new BadRequestException('Invalid or expired state. Start the OAuth flow again.');
     }
-    this.codexPkceStore.delete(dto.state);
+    await this.redis.del(key);
 
     let code: string;
     try {

@@ -362,7 +362,11 @@ export function Editor({ content, onChange, editable = true, spaceSlug, pageId }
             onKeyDown={(e) => {
               if (e.key === 'Enter' && aiPrompt.trim() && !aiGenerating && pageId) {
                 e.preventDefault();
-                aiTransform(pageId, aiPrompt, 'expand' as any).then((result) => {
+                // The prompt bar is a free-form instruction ("Write an article about X").
+                // It must be routed through the `custom-prompt` operation with the
+                // text in the customPrompt slot — passing it as `selection` with
+                // `expand` causes the backend to expand the instruction prose itself.
+                aiTransform(pageId, '', 'custom-prompt', undefined, aiPrompt.trim()).then((result) => {
                   if (result && editor) {
                     editor.chain().focus().insertContent(result).run();
                     setAiPrompt('');
@@ -380,7 +384,7 @@ export function Editor({ content, onChange, editable = true, spaceSlug, pageId }
             disabled={aiGenerating || !aiPrompt.trim() || !pageId}
             onClick={() => {
               if (!pageId) return;
-              aiTransform(pageId, aiPrompt, 'expand' as any).then((result) => {
+              aiTransform(pageId, '', 'custom-prompt', undefined, aiPrompt.trim()).then((result) => {
                 if (result && editor) {
                   editor.chain().focus().insertContent(result).run();
                   setAiPrompt('');

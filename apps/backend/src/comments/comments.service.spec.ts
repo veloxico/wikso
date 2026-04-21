@@ -4,6 +4,8 @@ import { CommentsService } from './comments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
+import { MailService } from '../mail/mail.service';
+import { PageWatchService } from '../page-watch/page-watch.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 
@@ -48,12 +50,24 @@ describe('CommentsService', () => {
       fireEvent: jest.fn(),
     };
 
+    const mailService = {
+      isConfigured: jest.fn(() => false),
+      sendCommentNotification: jest.fn(),
+      sendMentionNotification: jest.fn(),
+    };
+
+    const pageWatch = {
+      ensureWatching: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CommentsService,
         { provide: PrismaService, useValue: prisma },
         { provide: NotificationsService, useValue: notificationsService },
         { provide: WebhooksService, useValue: webhooksService },
+        { provide: MailService, useValue: mailService },
+        { provide: PageWatchService, useValue: pageWatch },
       ],
     }).compile();
 
@@ -348,12 +362,27 @@ describe('CommentsService', () => {
       expect(result.total).toBe(2);
       expect(result.skip).toBe(0);
       expect(result.take).toBe(50);
+      // Reactions are included so clients can render emoji reactions without
+      // a second round-trip. The shape matches the reactionInclude constant
+      // defined inside findByPage — keep them in sync when the shape changes.
+      const reactionInclude = {
+        select: {
+          id: true,
+          emoji: true,
+          userId: true,
+          user: { select: { id: true, name: true } },
+        },
+      };
       expect(prisma.comment.findMany).toHaveBeenCalledWith({
         where: { pageId, parentId: null },
         include: {
           author: { select: { id: true, name: true, avatarUrl: true } },
+          reactions: reactionInclude,
           children: {
-            include: { author: { select: { id: true, name: true, avatarUrl: true } } },
+            include: {
+              author: { select: { id: true, name: true, avatarUrl: true } },
+              reactions: reactionInclude,
+            },
             orderBy: { createdAt: 'asc' },
           },
         },

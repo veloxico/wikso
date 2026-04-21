@@ -5,12 +5,16 @@ import { RedisService } from '../redis/redis.service';
 
 describe('HealthController', () => {
   let controller: HealthController;
-  let prisma: { $queryRaw: jest.Mock };
+  let prisma: { $queryRaw: jest.Mock; isReady: boolean };
   let redis: { getClient: jest.Mock };
 
   beforeEach(async () => {
+    // `isReady` is set to true by default — the controller returns
+    // `setup_required` when Prisma hasn't bootstrapped yet (first install,
+    // auto-migration in flight). Tests that exercise that state flip it off.
     prisma = {
       $queryRaw: jest.fn(),
+      isReady: true,
     };
 
     redis = {
@@ -58,6 +62,17 @@ describe('HealthController', () => {
       const result = await controller.check();
 
       expect(result.status).toBe('degraded');
+    });
+
+    it('should return setup_required when Prisma is not ready (first boot / auto-migration)', async () => {
+      prisma.isReady = false;
+
+      const result = await controller.check();
+
+      expect(result.status).toBe('setup_required');
+      // Must NOT query the DB when we already know the client isn't ready —
+      // otherwise startup logs get spammed with connection errors.
+      expect(prisma.$queryRaw).not.toHaveBeenCalled();
     });
   });
 

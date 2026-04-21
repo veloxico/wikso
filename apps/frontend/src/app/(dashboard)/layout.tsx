@@ -21,6 +21,14 @@ export default function DashboardLayout({
   // Everywhere else the unified sidebar handles all contexts.
   const isAdminContext = pathname.startsWith('/admin');
 
+  // On a single-page view (`/spaces/<slug>/pages/<id>`) the global top bar with
+  // search + "New page" competes with the document's own header (breadcrumbs,
+  // title, actions) and steals vertical space from the editor. Search stays
+  // available globally via the Cmd/Ctrl+K command palette, and child-page
+  // creation is in the page's "more" menu, so the bar is redundant here.
+  const isPageView = /^\/spaces\/[^/]+\/pages\/[^/]+/.test(pathname);
+  const showTopBar = !isAdminContext && !isPageView;
+
   return (
     <div className="flex h-screen">
       {/* Desktop sidebar — unified for all non-admin pages */}
@@ -34,9 +42,9 @@ export default function DashboardLayout({
       <MobileSidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top bar: search + new page */}
-        {!isAdminContext && (
-          <div className="flex items-center border-b border-border bg-background px-3 md:px-6 py-2 shrink-0">
+        {/* Top bar: search + new page (hidden on per-page editor view) */}
+        {showTopBar && (
+          <div className="flex items-center border-b border-border/60 bg-background px-3 md:px-6 py-2 shrink-0">
             <div className="pl-10 md:pl-0 flex-1 min-w-0">
               <TopSearchBar />
             </div>

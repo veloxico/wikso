@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Save, Clock, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal, Copy, FilePlus, MoveHorizontal, ScanEye } from 'lucide-react';
+import { Save, Clock, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal, Copy, FilePlus, MoveHorizontal, ScanEye, Share2, BarChart3 } from 'lucide-react';
 import { usePage, useUpdatePage, useDuplicatePage, useCreatePage, usePageAncestors } from '@/hooks/usePages';
 import { useSpace } from '@/hooks/useSpaces';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -22,6 +22,10 @@ import {
 import { DeletePageDialog } from '@/components/features/DeletePageDialog';
 import { MovePageDialog } from '@/components/features/MovePageDialog';
 import { VersionHistoryDialog } from '@/components/features/VersionHistoryDialog';
+import { ShareDialog } from '@/components/features/ShareDialog';
+import { PageStatsDialog } from '@/components/features/PageStatsDialog';
+import { WatchButton } from '@/components/features/WatchButton';
+import { BacklinksPanel } from '@/components/features/BacklinksPanel';
 import { Comments } from '@/components/features/Comments';
 import { Breadcrumbs } from '@/components/features/Breadcrumbs';
 import { PageExport } from '@/components/features/PageExport';
@@ -64,6 +68,8 @@ export default function PageEditorPage() {
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showStatsDialog, setShowStatsDialog] = useState(false);
 
   // Favorites
   const { data: favoriteStatus } = useCheckFavorite(pageId);
@@ -269,6 +275,32 @@ export default function PageEditorPage() {
             {t('pages.versionHistory')}
           </Button>
 
+          <WatchButton slug={slug} pageId={pageId} />
+
+          {canEdit && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 h-7 text-xs"
+              onClick={() => setShowShareDialog(true)}
+              title={t('shares.share') || 'Share'}
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{t('shares.share') || 'Share'}</span>
+            </Button>
+          )}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 h-7 text-xs hidden sm:inline-flex"
+            onClick={() => setShowStatsDialog(true)}
+            title={t('analytics.title') || 'Analytics'}
+          >
+            <BarChart3 className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">{t('analytics.short') || 'Stats'}</span>
+          </Button>
+
           {mode === 'view' && canEdit && (
             <Button onClick={() => setMode('edit')} size="sm" className="gap-1.5 h-7 text-xs">
               <Pencil className="h-3.5 w-3.5" />
@@ -369,8 +401,10 @@ export default function PageEditorPage() {
         onContentChange={() => setHasUnsavedChanges(true)}
       />
 
-      {/* Comments — centered */}
+      {/* Backlinks + Comments — centered */}
       <div className="mx-auto w-full max-w-[912px] px-3 md:px-6">
+        <BacklinksPanel slug={slug} pageId={pageId} className="mt-6" />
+
         <div className="mt-4 border-t border-border pt-4">
           <button
             onClick={() => setShowComments(!showComments)}
@@ -415,6 +449,24 @@ export default function PageEditorPage() {
         slug={slug}
         pageId={pageId}
         currentContent={page?.contentJson as Record<string, unknown>}
+      />
+
+      {/* Share Dialog */}
+      <ShareDialog
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        slug={slug}
+        pageId={pageId}
+        pageTitle={title || page?.title || ''}
+      />
+
+      {/* Page Stats Dialog */}
+      <PageStatsDialog
+        open={showStatsDialog}
+        onOpenChange={setShowStatsDialog}
+        slug={slug}
+        pageId={pageId}
+        pageTitle={title || page?.title || ''}
       />
     </div>
   );

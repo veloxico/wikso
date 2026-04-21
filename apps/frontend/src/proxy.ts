@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const publicPaths = ['/login', '/register', '/forgot-password', '/auth', '/auth/accept-invite', '/setup'];
+const publicPaths = ['/login', '/register', '/forgot-password', '/auth', '/auth/accept-invite', '/setup', '/s/'];
 
 // Runtime API URL for server-side proxying (resolved at request time, not build time)
 const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';

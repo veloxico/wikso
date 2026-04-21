@@ -4,6 +4,8 @@ import { RedisService } from '../redis/redis.service';
 import { SearchService } from '../search/search.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
+import { PageLinksService } from '../page-links/page-links.service';
+import { PageWatchService } from '../page-watch/page-watch.service';
 import { Prisma } from '@prisma/client';
 import { CreatePageDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
@@ -28,6 +30,8 @@ export class PagesService {
     private searchService: SearchService,
     private notificationsService: NotificationsService,
     private webhooksService: WebhooksService,
+    private pageLinks: PageLinksService,
+    private pageWatch: PageWatchService,
   ) {}
 
   /** Invalidate tree cache for a space slug */
@@ -70,6 +74,16 @@ export class PagesService {
     await this.prisma.pageVersion.create({
       data: { pageId: page.id, contentJson: page.contentJson || {}, authorId },
     });
+
+    // Author auto-subscribes to their own page so they receive future
+    // edit notifications without having to click "Watch" themselves.
+    void this.pageWatch.ensureWatching(page.id, authorId);
+
+    // Templates can ship with internal links — index them right away so
+    // backlinks show up without waiting for the first edit.
+    if (dto.contentJson) {
+      void this.pageLinks.syncLinksFromContent(page.id, dto.contentJson);
+    }
 
     // Index in search
     await this.searchService.indexPage(page, { slug: spaceSlug, name: space.name });
@@ -205,6 +219,11 @@ export class PagesService {
       await this.prisma.pageVersion.create({
         data: { pageId, contentJson: dto.contentJson as Prisma.InputJsonValue, authorId: userId },
       });
+
+      // Reconcile backlinks asynchronously — fire-and-forget so a failure in
+      // the derived index can't block the user's save. The service swallows
+      // and logs its own errors; we void the promise just to satisfy lint.
+      void this.pageLinks.syncLinksFromContent(pageId, dto.contentJson);
     }
 
     await this.searchService.indexPage(page, page.space ? { slug: page.space.slug, name: page.space.name } : undefined);
@@ -214,9 +233,11 @@ export class PagesService {
       await this.invalidateTreeCache(page.space.slug);
     }
 
-    // Notify space members about the update
+    // Notify watchers about the update (excluding the actor). Updates can
+    // be high-frequency, so we deliberately avoid blasting every space
+    // member — they can opt in by clicking "Watch" on the page.
     if (page.space) {
-      await this.notifySpaceMembers(page.spaceId, userId, 'page.updated', {
+      await this.notifyWatchers(page.id, userId, 'page.updated', {
         pageId: page.id,
         pageTitle: page.title,
         spaceSlug: page.space.slug,
@@ -435,6 +456,10 @@ export class PagesService {
       data: { pageId, contentJson: version.contentJson || {}, authorId: userId },
     });
 
+    // The restored snapshot may have a different set of internal links than
+    // what was current — reconcile the backlink graph.
+    void this.pageLinks.syncLinksFromContent(pageId, version.contentJson);
+
     await this.searchService.indexPage(page, page.space ? { slug: page.space.slug, name: page.space.name } : undefined);
 
     return page;
@@ -472,6 +497,11 @@ export class PagesService {
     await this.prisma.pageVersion.create({
       data: { pageId: copy.id, contentJson: page.contentJson || {}, authorId: userId },
     });
+
+    // Mirror the source page's outbound links into the copy. Links pointing
+    // to the original itself are intentionally kept — that's a feature of
+    // duplicating reference material.
+    void this.pageLinks.syncLinksFromContent(copy.id, page.contentJson);
 
     // Index in search
     if (page.space) {
@@ -522,7 +552,13 @@ export class PagesService {
     return popular;
   }
 
-  /** Notify all members of a space except the actor */
+  /**
+   * Notify all members of a space except the actor.
+   *
+   * Used for low-frequency, discoverability-flavored events such as
+   * `page.created`. For per-page edits, prefer `notifyWatchers` so users
+   * can self-curate their inbox.
+   */
   private async notifySpaceMembers(
     spaceId: string,
     actorId: string,
@@ -542,6 +578,29 @@ export class PagesService {
       await Promise.all(promises);
     } catch {
       // Non-critical — don't break the main flow
+    }
+  }
+
+  /**
+   * Notify everybody who has explicitly subscribed to a page (via
+   * `PageWatch`) excluding the actor. Authors are auto-subscribed on
+   * page create + via the migration backfill, so this preserves the
+   * "the author always hears about edits to their page" behaviour even
+   * though we no longer blast every space member.
+   */
+  private async notifyWatchers(
+    pageId: string,
+    actorId: string,
+    type: string,
+    payload: Record<string, unknown>,
+  ) {
+    try {
+      const userIds = await this.pageWatch.getWatcherIds(pageId, actorId);
+      await Promise.all(
+        userIds.map((uid) => this.notificationsService.create(uid, type, payload)),
+      );
+    } catch {
+      // Non-critical — never let a notification glitch fail a save.
     }
   }
 }

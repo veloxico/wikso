@@ -45,7 +45,33 @@ export class AiProviderRegistry {
         ? this.safeDecrypt(config.deployment)
         : undefined,
       apiVersion: config.apiVersion || undefined,
+      // Only OAuth-style providers persist back; for env-fallback configs
+      // (no DB row) there's nothing to update, so skip the callback.
+      onTokenRefresh: config._envFallback
+        ? undefined
+        : (newApiKeyJson) =>
+            this.persistRotatedToken(config.provider, newApiKeyJson),
     });
+  }
+
+  /**
+   * Persist a rotated OAuth token back to AiConfig.apiKey. Encrypts the
+   * payload with the same key used for initial save and invalidates the
+   * cache so the next read sees the fresh token. Best-effort — caller
+   * already has the new token in memory and can fall through if persistence
+   * fails (e.g. transient DB outage).
+   */
+  private async persistRotatedToken(
+    provider: string,
+    newApiKeyJson: string,
+  ): Promise<void> {
+    const encrypted = this.encryptFields({ apiKey: newApiKeyJson });
+    await this.prisma.aiConfig.update({
+      where: { provider },
+      data: { apiKey: encrypted.apiKey },
+    });
+    await this.invalidateCache();
+    this.logger.log(`Persisted rotated OAuth token for provider: ${provider}`);
   }
 
   async isEnabled(): Promise<boolean> {
@@ -73,10 +99,32 @@ export class AiProviderRegistry {
 
     return configs.map((c) => ({
       ...c,
-      apiKey: c.apiKey ? maskSecret(c.apiKey) : null,
+      // Decrypt before masking so the admin UI shows a useful preview
+      // (e.g. `sk-a...mPq3`) instead of the encryption IV prefix. Falls
+      // back to a fixed placeholder if decryption fails (key rotated /
+      // legacy plaintext / corrupted ciphertext) — never leak raw ciphertext.
+      apiKey: c.apiKey ? this.maskStoredSecret(c.apiKey) : null,
       endpoint: c.endpoint || null,
-      deployment: c.deployment ? maskSecret(c.deployment) : null,
+      deployment: c.deployment ? this.maskStoredSecret(c.deployment) : null,
     }));
+  }
+
+  /**
+   * Decrypt a stored secret if it's ciphertext, then mask it for display.
+   * Stored values can be either encrypted (`iv:authTag:cipher` hex) or
+   * legacy plaintext; safeDecrypt handles both. If decryption fails for
+   * any reason we MUST return a fixed placeholder rather than the raw
+   * ciphertext — leaking ciphertext to the admin UI is both useless to
+   * the user AND surfaces internal IV bytes that should never travel.
+   */
+  private maskStoredSecret(stored: string): string {
+    let plaintext: string;
+    try {
+      plaintext = this.safeDecrypt(stored);
+    } catch {
+      return '••••••••';
+    }
+    return maskSecret(plaintext);
   }
 
   async invalidateCache(): Promise<void> {

@@ -6,6 +6,8 @@ import { RedisService } from '../redis/redis.service';
 import { SearchService } from '../search/search.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
+import { PageLinksService } from '../page-links/page-links.service';
+import { PageWatchService } from '../page-watch/page-watch.service';
 
 describe('PagesService', () => {
   let service: PagesService;
@@ -111,6 +113,15 @@ describe('PagesService', () => {
     del: jest.fn().mockResolvedValue(undefined),
   };
 
+  const mockPageLinksService = {
+    syncLinksFromContent: jest.fn().mockResolvedValue(undefined),
+  };
+
+  const mockPageWatchService = {
+    ensureWatching: jest.fn().mockResolvedValue(undefined),
+    getWatcherIds: jest.fn().mockResolvedValue([]),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -120,6 +131,8 @@ describe('PagesService', () => {
         { provide: SearchService, useValue: mockSearchService },
         { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: WebhooksService, useValue: mockWebhooksService },
+        { provide: PageLinksService, useValue: mockPageLinksService },
+        { provide: PageWatchService, useValue: mockPageWatchService },
       ],
     }).compile();
 
@@ -382,7 +395,9 @@ describe('PagesService', () => {
       });
       mockPrisma.pageVersion.create.mockResolvedValue(mockVersion);
       mockSearchService.indexPage.mockResolvedValue(undefined);
-      mockPrisma.spacePermission.findMany.mockResolvedValue(mockSpaceMembers);
+      // Updates now notify page *watchers* (opt-in) instead of every space
+      // member — the service asks PageWatchService for watcher user IDs.
+      mockPageWatchService.getWatcherIds.mockResolvedValue(['user-2', 'user-3']);
       mockNotificationsService.create.mockResolvedValue(undefined);
       mockWebhooksService.fireEvent.mockResolvedValue(undefined);
 
@@ -553,8 +568,10 @@ describe('PagesService', () => {
       const parentPage = { id: 'new-parent', spaceId: 'space-1', deletedAt: null, parentId: null };
       mockPrisma.page.findUnique
         .mockResolvedValueOnce(mockPageWithSpace) // existing page lookup
-        .mockResolvedValueOnce(parentPage)        // parent validation
-        .mockResolvedValueOnce({ parentId: null }); // circular ref check (parent's parent = null → stop)
+        .mockResolvedValueOnce(parentPage);       // parent validation
+      // Circular-reference check uses a recursive CTE via $queryRaw — empty
+      // array means the new parent is not a descendant of this page.
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
       mockPrisma.page.update.mockResolvedValue({
         ...mockPage,
         parentId: dto.parentId,
@@ -573,8 +590,8 @@ describe('PagesService', () => {
       const parentPage = { id: 'new-parent', spaceId: 'space-1', deletedAt: null, parentId: null };
       mockPrisma.page.findUnique
         .mockResolvedValueOnce(mockPageWithSpace)
-        .mockResolvedValueOnce(parentPage)
-        .mockResolvedValueOnce({ parentId: null });
+        .mockResolvedValueOnce(parentPage);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
       mockPrisma.page.update.mockResolvedValue({
         ...mockPage,
         parentId: 'new-parent',

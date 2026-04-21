@@ -1,3 +1,5 @@
+name: confluence
+
 services:
   backend:
     build:
@@ -10,7 +12,10 @@ services:
     environment:
       PORT: 3000
       NODE_ENV: production
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/wikso
+      # DATABASE_URL is deliberately NOT set — configured via setup wizard
+      # and persisted to /app/data/wikso.config.json on the wikso_data volume.
+      # Docker Compose default (postgresql://postgres:password@postgres:5432/wikso)
+      # is suggested as a placeholder in the wizard UI.
       JWT_SECRET: super-secret-key-change-me-in-production
       JWT_REFRESH_SECRET: refresh-secret-change-me-in-production
       JWT_EXPIRES_IN: 15m
@@ -58,6 +63,8 @@ services:
         condition: service_healthy
       meilisearch:
         condition: service_healthy
+    volumes:
+      - wikso_data:/app/data
     networks:
       - wiki-net
     restart: unless-stopped
@@ -158,6 +165,7 @@ volumes:
   redisdata:
   miniodata:
   meilidata:
+  wikso_data:
 
 networks:
   wiki-net:

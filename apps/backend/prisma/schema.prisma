@@ -41,6 +41,8 @@ model User {
   commentReactions CommentReaction[]
   webhooks      Webhook[]
   attachments   Attachment[]
+  pageShares    PageShare[]
+  pageWatches   PageWatch[]
 }
 
 model OAuthAccount {
@@ -113,8 +115,26 @@ model Page {
   favorites   Favorite[]
   recentPages RecentPage[]
   pageViews   PageView[]
+  shares      PageShare[]
+  linksOut    PageLink[]    @relation("PageLinksFrom")
+  linksIn     PageLink[]    @relation("PageLinksTo")
+  watchers    PageWatch[]
 
   @@index([spaceId, deletedAt])
+}
+
+model PageWatch {
+  id        String   @id @default(uuid())
+  userId    String
+  pageId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pageId])
+  @@index([pageId])
+  @@index([userId])
 }
 
 model PageVersion {
@@ -309,6 +329,45 @@ model PageView {
   page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@index([pageId, createdAt])
+}
+
+/// Guest share link — lets anonymous visitors view a page without a Wikso account.
+/// Token is a url-safe opaque secret; we never expose the page id publicly.
+model PageShare {
+  id             String    @id @default(uuid())
+  pageId         String
+  token          String    @unique
+  createdById    String
+  expiresAt      DateTime?
+  passwordHash   String?
+  allowComments  Boolean   @default(false)
+  viewCount      Int       @default(0)
+  lastViewedAt   DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  page      Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@index([createdById])
+}
+
+/// Extracted reference from one page to another — populated on page save by
+/// walking the ProseMirror doc. Enables "Mentioned in" backlink panels.
+model PageLink {
+  id         String   @id @default(uuid())
+  fromPageId String
+  toPageId   String
+  createdAt  DateTime @default(now())
+
+  from Page @relation("PageLinksFrom", fields: [fromPageId], references: [id], onDelete: Cascade)
+  to   Page @relation("PageLinksTo",   fields: [toPageId],   references: [id], onDelete: Cascade)
+
+  @@unique([fromPageId, toPageId])
+  @@index([toPageId])
+  @@index([fromPageId])
 }
 
 model Group {

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { MailService } from '../mail/mail.service';
+import { PageWatchService } from '../page-watch/page-watch.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 
@@ -26,6 +27,7 @@ export class CommentsService {
     private notificationsService: NotificationsService,
     private webhooksService: WebhooksService,
     private mailService: MailService,
+    private pageWatch: PageWatchService,
   ) {}
 
   async create(pageId: string, dto: CreateCommentDto, authorId: string) {
@@ -50,6 +52,11 @@ export class CommentsService {
       data: { ...dto, pageId, authorId },
       include: { author: { select: { id: true, name: true, avatarUrl: true } } },
     });
+
+    // Once a user joins the conversation, auto-subscribe them so they
+    // hear about replies and follow-up edits without having to click
+    // "Watch". They can opt out from the page header any time.
+    void this.pageWatch.ensureWatching(pageId, authorId);
 
     // Get the page to find its author and space info
     try {

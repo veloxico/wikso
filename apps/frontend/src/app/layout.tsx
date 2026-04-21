@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Plus_Jakarta_Sans, Geist_Mono } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import { Providers } from '@/lib/providers';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const jakarta = Plus_Jakarta_Sans({
+  variable: '--font-jakarta',
   subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600', '700', '800'],
 });
 
 const geistMono = Geist_Mono({
@@ -26,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${jakarta.variable} ${geistMono.variable} antialiased`}>
         {/* Suppress Hocuspocus WebSocket unhandled promise rejections in dev.
             Must run before Next.js devtools registers its onUnhandledRejection
             handler so stopImmediatePropagation prevents the dev overlay from

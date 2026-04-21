@@ -887,7 +887,11 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
             onKeyDown={(e) => {
               if (e.key === 'Enter' && aiPrompt.trim() && !aiGenerating) {
                 e.preventDefault();
-                aiTransform(pageId, aiPrompt, 'expand' as any).then((result) => {
+                // The prompt bar is a free-form instruction ("Write an article about X").
+                // It must be routed through the `custom-prompt` operation with the
+                // text in the customPrompt slot — passing it as `selection` with
+                // `expand` causes the backend to expand the instruction prose itself.
+                aiTransform(pageId, '', 'custom-prompt', undefined, aiPrompt.trim()).then((result) => {
                   if (result && editor) {
                     editor.chain().focus().insertContent(result).run();
                     setAiPrompt('');
@@ -904,7 +908,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
             size="sm"
             disabled={aiGenerating || !aiPrompt.trim()}
             onClick={() => {
-              aiTransform(pageId, aiPrompt, 'expand' as any).then((result) => {
+              aiTransform(pageId, '', 'custom-prompt', undefined, aiPrompt.trim()).then((result) => {
                 if (result && editor) {
                   editor.chain().focus().insertContent(result).run();
                   setAiPrompt('');

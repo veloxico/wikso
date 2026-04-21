@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from 'child_process';
-import { writeFileSync, mkdirSync, unlinkSync } from 'fs';
+import { writeFileSync, mkdtempSync, rmSync } from 'fs';
 import { join } from 'path';
-import { homedir } from 'os';
+import { tmpdir } from 'os';
 import {
   AiProvider,
   AiProviderConfig,
@@ -48,12 +48,14 @@ export class OpenAiCodexProvider implements AiProvider {
   }
 
   /**
-   * Write Codex CLI auth.json so `codex exec` can authenticate.
+   * Write Codex CLI auth.json into a per-call temporary directory and return
+   * its path. Each invocation uses an isolated CODEX_HOME so concurrent
+   * requests cannot race each other on a shared `~/.codex/auth.json` (and
+   * never clobber the host operator's real Codex credentials).
    */
-  private writeAuthFile(): void {
-    if (!this.tokenPayload) return;
-    const codexDir = join(homedir(), '.codex');
-    mkdirSync(codexDir, { recursive: true });
+  private writeAuthFile(): string | null {
+    if (!this.tokenPayload) return null;
+    const codexHome = mkdtempSync(join(tmpdir(), 'wikso-codex-'));
 
     const authData: Record<string, any> = {
       OPENAI_API_KEY: null,
@@ -70,20 +72,23 @@ export class OpenAiCodexProvider implements AiProvider {
     }
 
     writeFileSync(
-      join(codexDir, 'auth.json'),
+      join(codexHome, 'auth.json'),
       JSON.stringify(authData, null, 2),
       { mode: 0o600 },
     );
+    return codexHome;
   }
 
   /**
-   * Remove auth.json after CLI process completes to minimize credential exposure.
+   * Tear down the per-call temp directory after the CLI process completes
+   * so credentials and any rotated tokens are removed from disk.
    */
-  private cleanupAuthFile(): void {
+  private cleanupAuthFile(codexHome: string | null): void {
+    if (!codexHome) return;
     try {
-      unlinkSync(join(homedir(), '.codex', 'auth.json'));
+      rmSync(codexHome, { recursive: true, force: true });
     } catch {
-      // File may already be removed — ignore
+      // Best-effort — temp directory may be reaped by the OS regardless.
     }
   }
 
@@ -92,19 +97,32 @@ export class OpenAiCodexProvider implements AiProvider {
     userMessage: string,
     _maxTokens: number,
   ): AsyncGenerator<string> {
-    this.writeAuthFile();
+    const codexHome = this.writeAuthFile();
 
     const prompt = `${systemPrompt}\n\n${userMessage}`;
+    // SECURITY: Text transforms must NEVER be allowed to execute shell or write
+    // files — `selection`/`context`/`customPrompt` are user-controlled, so any
+    // unsandboxed exec is a prompt-injection RCE primitive against the backend
+    // (env vars include JWT_SECRET, ENCRYPTION_KEY, S3 credentials, etc.).
+    // We pin `--ask-for-approval never` + `--sandbox read-only` so the agent
+    // can stream a text response but cannot mutate the filesystem or execute
+    // arbitrary tool calls. DO NOT add `--dangerously-bypass-approvals-and-sandbox`.
     const args = [
       'exec',
       '--json',
       '--skip-git-repo-check',
-      '--dangerously-bypass-approvals-and-sandbox',
+      '--ask-for-approval',
+      'never',
+      '--sandbox',
+      'read-only',
       prompt,
     ];
 
     const child: ChildProcess = spawn('codex', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
+      env: codexHome
+        ? { ...process.env, CODEX_HOME: codexHome }
+        : process.env,
     });
 
     const timeout = setTimeout(() => child.kill('SIGTERM'), STREAM_TIMEOUT_MS);
@@ -142,7 +160,7 @@ export class OpenAiCodexProvider implements AiProvider {
     } finally {
       clearTimeout(timeout);
       if (!child.killed) child.kill('SIGTERM');
-      this.cleanupAuthFile();
+      this.cleanupAuthFile(codexHome);
     }
 
     const exitCode = await new Promise<number | null>((resolve) => {
@@ -179,8 +197,8 @@ export class OpenAiCodexProvider implements AiProvider {
       };
     }
 
-    // Write auth file, test, then cleanup
-    this.writeAuthFile();
+    // Write auth file in per-call temp dir, test, then cleanup
+    const codexHome = this.writeAuthFile();
 
     try {
       const result = await this.runCommand(
@@ -188,10 +206,14 @@ export class OpenAiCodexProvider implements AiProvider {
         [
           'exec',
           '--skip-git-repo-check',
-          '--dangerously-bypass-approvals-and-sandbox',
+          '--ask-for-approval',
+          'never',
+          '--sandbox',
+          'read-only',
           'Say "ok"',
         ],
         30000,
+        codexHome ? { ...process.env, CODEX_HOME: codexHome } : undefined,
       );
       if (result.length > 0) {
         return {
@@ -206,7 +228,7 @@ export class OpenAiCodexProvider implements AiProvider {
     } catch (err: any) {
       return { ok: false, message: err?.message || 'Test failed' };
     } finally {
-      this.cleanupAuthFile();
+      this.cleanupAuthFile(codexHome);
     }
   }
 
@@ -214,10 +236,12 @@ export class OpenAiCodexProvider implements AiProvider {
     cmd: string,
     args: string[],
     timeoutMs: number,
+    env?: NodeJS.ProcessEnv,
   ): Promise<string> {
     return new Promise((resolve, reject) => {
       const child = spawn(cmd, args, {
         stdio: ['ignore', 'pipe', 'pipe'],
+        env: env || process.env,
       });
       let stdout = '';
       let stderr = '';

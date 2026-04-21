@@ -43,10 +43,17 @@ export class GeminiCliProvider implements AiProvider {
   readonly name = 'gemini-cli';
   private model: string;
   private tokenPayload: GeminiTokenPayload | null;
+  private onTokenRefresh?: (newApiKeyJson: string) => Promise<void>;
+  // Coalesce concurrent refreshes — without this, two parallel transforms
+  // both observe `isExpired === true`, both POST to Google, and both race
+  // to overwrite the row. Last-write-wins is harmless for the access_token
+  // itself but burns refresh-token quota and risks rate-limiting.
+  private refreshInFlight: Promise<void> | null = null;
 
   constructor(config: AiProviderConfig) {
     this.model = config.model || 'gemini-2.5-flash';
     this.tokenPayload = parseToken(config.apiKey);
+    this.onTokenRefresh = config.onTokenRefresh;
   }
 
   private async getAccessToken(): Promise<string | undefined> {
@@ -57,32 +64,59 @@ export class GeminiCliProvider implements AiProvider {
     const isExpired = expiresAt > 0 && Date.now() > expiresAt - 5 * 60 * 1000;
 
     if (isExpired && this.tokenPayload.refresh_token) {
+      // Reuse any in-flight refresh from a sibling request so we don't double-POST.
+      if (!this.refreshInFlight) {
+        this.refreshInFlight = this.doRefresh().finally(() => {
+          this.refreshInFlight = null;
+        });
+      }
       try {
-        const body = new URLSearchParams({
-          client_id: GEMINI_CLIENT_ID,
-          client_secret: GEMINI_CLIENT_SECRET,
-          grant_type: 'refresh_token',
-          refresh_token: this.tokenPayload.refresh_token,
-        });
-
-        const res = await fetch(GOOGLE_TOKEN_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body,
-        });
-
-        if (res.ok) {
-          const data: any = await res.json();
-          this.tokenPayload.access_token = data.access_token;
-          this.tokenPayload.expires_at =
-            Date.now() + (data.expires_in || 3600) * 1000;
-        }
+        await this.refreshInFlight;
       } catch {
-        // refresh failed, try with old token
+        // refresh failed, fall through and try with the (possibly expired) token
       }
     }
 
     return this.tokenPayload.access_token;
+  }
+
+  private async doRefresh(): Promise<void> {
+    if (!this.tokenPayload?.refresh_token) return;
+    const body = new URLSearchParams({
+      client_id: GEMINI_CLIENT_ID,
+      client_secret: GEMINI_CLIENT_SECRET,
+      grant_type: 'refresh_token',
+      refresh_token: this.tokenPayload.refresh_token,
+    });
+
+    const res = await fetch(GOOGLE_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+
+    if (!res.ok) return;
+    const data: any = await res.json();
+    if (!data?.access_token) return;
+
+    this.tokenPayload.access_token = data.access_token;
+    this.tokenPayload.expires_at =
+      Date.now() + (data.expires_in || 3600) * 1000;
+    // Google may rotate the refresh_token; keep the new one if returned.
+    if (data.refresh_token) {
+      this.tokenPayload.refresh_token = data.refresh_token;
+    }
+
+    // Persist the rotated payload back to the DB via the callback so the
+    // next request — even on a different replica or after a restart —
+    // picks up the new access_token instead of refreshing again.
+    if (this.onTokenRefresh) {
+      try {
+        await this.onTokenRefresh(JSON.stringify(this.tokenPayload));
+      } catch {
+        // Persistence is best-effort — in-memory token still works for this process.
+      }
+    }
   }
 
   async *streamTransform(

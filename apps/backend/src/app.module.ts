@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { AppConfigModule } from './config/app-config.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -18,6 +19,7 @@ import { MailModule } from './mail/mail.module';
 import { AiModule } from './ai/ai.module';
 import { AdminAiModule } from './admin/ai/admin-ai.module';
 import { SetupModule } from './setup/setup.module';
+import { SetupGuard } from './setup/setup.guard';
 import { RedisModule } from './redis/redis.module';
 import { SettingsModule } from './settings/settings.module';
 import { RecentPagesModule } from './recent-pages/recent-pages.module';
@@ -29,11 +31,16 @@ import { JobsModule } from './jobs/jobs.module';
 import { ImportModule } from './import/import.module';
 import { DataMigrationsModule } from './data-migrations/data-migrations.module';
 import { GroupsModule } from './groups/groups.module';
+import { SharesModule } from './shares/shares.module';
+import { PageLinksModule } from './page-links/page-links.module';
+import { PageAnalyticsModule } from './page-analytics/page-analytics.module';
+import { PageWatchModule } from './page-watch/page-watch.module';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    AppConfigModule,
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
     PrismaModule,
     RedisModule,
@@ -62,8 +69,17 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     ImportModule,
     DataMigrationsModule,
     GroupsModule,
+    SharesModule,
+    PageLinksModule,
+    PageAnalyticsModule,
+    PageWatchModule,
   ],
   providers: [
+    // Global: gate all non-setup routes behind setup completion
+    {
+      provide: APP_GUARD,
+      useClass: SetupGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
