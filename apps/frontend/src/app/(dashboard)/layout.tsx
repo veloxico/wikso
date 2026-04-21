@@ -8,6 +8,7 @@ import { CommandPalette, useCommandPalette } from '@/components/features/Command
 import { ErrorBoundary } from '@/components/features/ErrorBoundary';
 import { PageTransition } from '@/components/features/PageTransition';
 import { NewPageButton } from '@/components/features/NewPageButton';
+import { AskAiButton } from '@/components/features/AskAiButton';
 
 export default function DashboardLayout({
   children,
@@ -63,6 +64,7 @@ export default function DashboardLayout({
         </main>
       </div>
       <CommandPalette open={open} onOpenChange={setOpen} />
+      <AskAiButton />
     </div>
   );
 }

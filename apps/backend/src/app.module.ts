@@ -35,6 +35,7 @@ import { SharesModule } from './shares/shares.module';
 import { PageLinksModule } from './page-links/page-links.module';
 import { PageAnalyticsModule } from './page-analytics/page-analytics.module';
 import { PageWatchModule } from './page-watch/page-watch.module';
+import { AiChatModule } from './ai-chat/ai-chat.module';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 
 @Module({
@@ -73,6 +74,7 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     PageLinksModule,
     PageAnalyticsModule,
     PageWatchModule,
+    AiChatModule,
   ],
   providers: [
     // Global: gate all non-setup routes behind setup completion
