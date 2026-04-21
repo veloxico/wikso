@@ -1,0 +1,32 @@
+{
+  "name": "@wikso/mcp",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server for Wikso — lets Claude Desktop, Claude Code, and Cursor search and edit wiki pages via natural language.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "wikso-mcp": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsc -p tsconfig.json --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.23.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
