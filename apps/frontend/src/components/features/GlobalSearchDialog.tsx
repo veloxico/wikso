@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Search, FileText, Globe, X, Loader2, ArrowRight } from 'lucide-react';
 import { useGlobalSearch } from '@/hooks/useSearch';
 import { useTranslation } from '@/hooks/useTranslation';
+import { HighlightText } from '@/components/ui/HighlightText';
 
 /* ─── Standalone modal (used from sidebar icon) ─── */
 
@@ -257,7 +258,9 @@ function SearchResults({ data, isLoading, query, selectedIndex, navigate, t }: S
               }`}
             >
               <Globe className="h-4 w-4 shrink-0 text-emerald-500" />
-              <span className="truncate font-medium">{space.name}</span>
+              <span className="truncate font-medium">
+                <HighlightText text={space.name} query={query} />
+              </span>
               <span className="ml-auto text-[11px] text-muted-foreground capitalize">{space.type?.toLowerCase()}</span>
             </button>
           ))}
@@ -282,7 +285,9 @@ function SearchResults({ data, isLoading, query, selectedIndex, navigate, t }: S
               >
                 <FileText className="h-4 w-4 shrink-0 text-blue-500" />
                 <div className="flex flex-col items-start truncate">
-                  <span className="truncate font-medium">{page.title}</span>
+                  <span className="truncate font-medium">
+                    <HighlightText text={page.title} query={query} />
+                  </span>
                   {page.spaceName && (
                     <span className="text-[11px] text-muted-foreground">{page.spaceName}</span>
                   )}

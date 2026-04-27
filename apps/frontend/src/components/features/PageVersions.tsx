@@ -125,60 +125,113 @@ export function PageVersions({ slug, pageId, currentContent, onPreview }: PageVe
         </div>
       )}
 
-      {displayVersions.map((version, index) => (
-        <div
-          key={version.id}
-          className="flex items-center justify-between rounded-md border border-border p-3 text-sm"
-        >
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-muted-foreground">v{versions.length - index}</span>
-              <span className="text-xs text-muted-foreground">
-                {new Date(version.createdAt).toLocaleString(locale)}
-              </span>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {displayVersions.map((version, index) => {
+          const isLatest = index === 0;
+          return (
+            <div
+              key={version.id}
+              className="flex items-center justify-between gap-3 px-1 py-3 text-sm group/version"
+              style={{
+                borderTop: index === 0 ? 0 : '1px dashed var(--rule)',
+              }}
+            >
+              {/* Version mark + author */}
+              <div className="min-w-0 flex-1 flex items-center gap-3">
+                <div
+                  className="shrink-0 grid place-items-center rounded-md text-[11px] font-bold"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    fontFamily: 'var(--ui-font)',
+                    background: isLatest ? 'var(--accent)' : 'var(--bg-sunken)',
+                    color: isLatest ? 'var(--bg)' : 'var(--ink-3)',
+                    border: isLatest ? 0 : '1px solid var(--rule)',
+                  }}
+                >
+                  {versions.length - index}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2">
+                    <span
+                      className="text-[13px]"
+                      style={{
+                        color: 'var(--ink)',
+                        fontFamily: 'var(--body-font)',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {version.author?.name || t('pages.unknown')}
+                    </span>
+                    {isLatest && (
+                      <span
+                        className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-px rounded"
+                        style={{
+                          color: 'var(--accent)',
+                          border: '1px solid var(--accent)',
+                          letterSpacing: '0.06em',
+                        }}
+                      >
+                        {t('pages.current') || 'Latest'}
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className="text-[11.5px] mt-0.5"
+                    style={{
+                      color: 'var(--ink-4)',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
+                    {new Date(version.createdAt).toLocaleString(locale)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Inline actions — only visible on hover for less clutter */}
+              <div className="flex items-center gap-1 opacity-60 group-hover/version:opacity-100 transition-opacity">
+                {(index > 0 || currentContent) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    style={{ color: 'var(--ink-3)' }}
+                    onClick={() => handleCompare(version, index)}
+                    title={t('pages.compareNewer') || 'Compare with newer'}
+                  >
+                    <GitCompareArrows className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {onPreview && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    style={{ color: 'var(--ink-3)' }}
+                    onClick={() => onPreview(version.contentJson)}
+                    title={t('pages.preview')}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {index > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    style={{ color: 'var(--accent)' }}
+                    onClick={() => restoreVersion.mutate(version.id)}
+                    disabled={restoreVersion.isPending}
+                    title={t('pages.restoreVersion') || 'Restore this version'}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">{t('pages.byAuthor', { name: version.author?.name || t('pages.unknown') })}</p>
-          </div>
-          <div className="flex items-center gap-1">
-            {/* Compare button — show when there's something to compare with */}
-            {(index > 0 || currentContent) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => handleCompare(version, index)}
-                title="Compare with newer version"
-              >
-                <GitCompareArrows className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            {onPreview && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => onPreview(version.contentJson)}
-              >
-                <Eye className="h-3.5 w-3.5" />
-                {t('pages.preview')}
-              </Button>
-            )}
-            {/* Restore button — don't show for the latest version */}
-            {index > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-primary hover:text-primary"
-                onClick={() => restoreVersion.mutate(version.id)}
-                disabled={restoreVersion.isPending}
-                title={t('pages.restoreVersion') || 'Restore this version'}
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
-        </div>
-      ))}
+          );
+        })}
+      </div>
 
       {versions.length > 5 && (
         <Button

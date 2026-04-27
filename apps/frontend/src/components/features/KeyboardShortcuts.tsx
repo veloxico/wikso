@@ -78,6 +78,12 @@ export function KeyboardShortcutsDialog() {
         <DialogHeader>
           <DialogTitle>{t('shortcuts.title')}</DialogTitle>
         </DialogHeader>
+        {/* Each shortcut row uses the new `.wp-kbd` paper-stamp primitive
+            instead of raw Tailwind. The keycap now carries a two-layer
+            shadow + gradient that reads as "pressed into paper" — matches
+            the rest of the warm-paper design language. Joiner "+" uses
+            `.wp-kbd-joiner` so it sits on the UI font (not mono) and
+            softens the visual weight between caps. */}
         <div className="space-y-6 py-2">
           {shortcutGroups.map((group, groupIndex) => (
             <div key={groupIndex}>
@@ -86,12 +92,12 @@ export function KeyboardShortcutsDialog() {
                 {group.shortcuts.map((shortcut, shortcutIndex) => (
                   <div key={shortcutIndex} className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-muted/50 transition-colors">
                     <span className="text-sm">{shortcut.description}</span>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center">
                       {shortcut.keys.map((key, keyIndex) => (
-                        <div key={keyIndex} className="flex items-center gap-1">
-                          <kbd className="inline-flex items-center justify-center px-2 py-1 min-w-[28px] rounded border border-border bg-muted text-xs font-medium shadow-sm">{key}</kbd>
-                          {keyIndex < shortcut.keys.length - 1 && <span className="text-muted-foreground text-xs mx-0.5">+</span>}
-                        </div>
+                        <span key={keyIndex} className="inline-flex items-center">
+                          <kbd className="wp-kbd">{key}</kbd>
+                          {keyIndex < shortcut.keys.length - 1 && <span className="wp-kbd-joiner">+</span>}
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -101,9 +107,10 @@ export function KeyboardShortcutsDialog() {
           ))}
         </div>
         <div className="border-t border-border pt-3 text-xs text-muted-foreground">
-          <kbd className="inline-flex items-center justify-center px-1.5 py-0.5 rounded border border-border bg-muted text-xs font-medium">Ctrl</kbd>
-          {' + '}
-          <kbd className="inline-flex items-center justify-center px-1.5 py-0.5 rounded border border-border bg-muted text-xs font-medium">/</kbd>
+          {t('shortcuts.openHint') || 'Open this dialog any time with'}{' '}
+          <kbd className="wp-kbd">Ctrl</kbd>
+          <span className="wp-kbd-joiner">+</span>
+          <kbd className="wp-kbd">/</kbd>
         </div>
       </DialogContent>
     </Dialog>

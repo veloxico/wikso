@@ -1,4 +1,4 @@
-// dotenv is only needed for local dev — Docker provides env vars via docker-compose
+// dotenv is only needed for local dev — Docker provides env vars via docker-compose.
 try { require('dotenv/config'); } catch {}
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';

@@ -28,6 +28,7 @@ import { useRecentPages } from '@/hooks/useRecentPages';
 import { PageTree } from '@/components/features/PageTree';
 import { GlobalSearchDialog } from '@/components/features/GlobalSearchDialog';
 import { PageTemplatesDialog } from '@/components/features/PageTemplates';
+import { paletteFor, initialsFor } from '@/lib/avatarColor';
 import { NotificationBell } from '@/components/features/NotificationBell';
 import { UserMenu } from '@/components/features/UserMenu';
 import { WiksoLogo } from '@/components/ui/WiksoLogo';
@@ -105,11 +106,22 @@ function MobileSpaceNode({ space, isExpanded, onToggle, isCurrentSpace }: {
           <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[var(--sidebar-item-active-border)]" />
         )}
         <ChevronRight className={cn('h-3.5 w-3.5 shrink-0 text-sidebar-foreground/40 transition-transform duration-150', isExpanded && 'rotate-90')} />
-        <div className={cn(
-          'flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md text-[10px] font-bold transition-colors',
-          isCurrentSpace ? 'bg-primary text-primary-foreground' : 'bg-sidebar-foreground/8 text-sidebar-foreground/60',
-        )}>
-          {space.name.charAt(0).toUpperCase()}
+        <div
+          className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md text-[10px] font-bold transition-colors"
+          style={
+            isCurrentSpace
+              ? { background: 'var(--accent)', color: 'var(--bg)' }
+              : (() => {
+                  const p = paletteFor(space.name);
+                  return {
+                    background: p.bg,
+                    color: p.fg,
+                    boxShadow: `inset 0 0 0 1px ${p.ring}`,
+                  };
+                })()
+          }
+        >
+          {initialsFor(space.name).charAt(0)}
         </div>
         <Link href={`/spaces/${space.slug}`} className="flex-1 truncate" onClick={(e) => e.stopPropagation()}>
           {space.name}

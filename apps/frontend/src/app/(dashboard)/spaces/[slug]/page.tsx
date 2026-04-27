@@ -8,6 +8,7 @@ import { usePages } from '@/hooks/usePages';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { bcp47Locale } from '@/lib/locale';
 
 const spaceTypeIcon: Record<string, React.ElementType> = {
   PUBLIC: Globe,
@@ -89,7 +90,7 @@ export default function SpacePage() {
             </div>
             <div>
               <p className="text-sm font-medium">
-                {space?.updatedAt ? new Date(space.updatedAt).toLocaleDateString(locale) : '\u2014'}
+                {space?.updatedAt ? new Date(space.updatedAt).toLocaleDateString(bcp47Locale(locale)) : '\u2014'}
               </p>
               <p className="text-xs text-muted-foreground">{t('spaces.lastUpdated') || 'Last updated'}</p>
             </div>
@@ -139,7 +140,7 @@ export default function SpacePage() {
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium truncate block">{page.title}</span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(page.updatedAt).toLocaleDateString(locale, {
+                          {new Date(page.updatedAt).toLocaleDateString(bcp47Locale(locale), {
                             month: 'short',
                             day: 'numeric',
                             hour: '2-digit',

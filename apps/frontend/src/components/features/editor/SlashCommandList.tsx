@@ -76,8 +76,15 @@ export const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandList
 
     if (items.length === 0) {
       return (
-        <div className="slash-command-popup rounded-lg border border-border bg-popover p-3 shadow-lg">
-          <p className="text-sm text-muted-foreground">No results found</p>
+        <div
+          className="slash-command-popup rounded-lg p-3"
+          style={{
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--rule)',
+            boxShadow: 'var(--pop-shadow)',
+          }}
+        >
+          <p className="text-sm text-[color:var(--ink-3)]">No results found</p>
         </div>
       );
     }
@@ -96,11 +103,23 @@ export const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandList
     return (
       <div
         ref={scrollRef}
-        className="slash-command-popup z-50 max-h-80 w-72 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg"
+        className="slash-command-popup z-50 max-h-80 w-80 overflow-y-auto rounded-lg p-1"
+        style={{
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--rule)',
+          boxShadow: 'var(--pop-shadow)',
+        }}
       >
         {Object.entries(grouped).map(([category, categoryItems]) => (
           <div key={category}>
-            <div className="sticky top-0 bg-popover/95 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/50">
+            <div
+              className="sticky top-0 px-3 py-2 text-[10.5px] font-semibold uppercase"
+              style={{
+                background: 'var(--bg-elevated)',
+                color: 'var(--ink-3)',
+                letterSpacing: '0.08em',
+              }}
+            >
               {category}
             </div>
             {categoryItems.map((item) => {
@@ -114,22 +133,18 @@ export const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandList
                     itemRefs.current[currentIndex] = el;
                   }}
                   className={cn(
-                    'flex w-full items-center gap-3 px-3 py-2 text-left transition-colors',
-                    currentIndex === selectedIndex
-                      ? 'bg-accent text-accent-foreground'
-                      : 'hover:bg-accent/50',
+                    'wp-slash-item',
+                    currentIndex === selectedIndex && 'is-selected',
                   )}
                   onClick={() => selectItem(currentIndex)}
                   onMouseEnter={() => setSelectedIndex(currentIndex)}
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-background">
+                  <div className="wp-slash-item-icon">
                     <Icon className="h-4 w-4" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{item.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {item.description}
-                    </p>
+                  <div className="min-w-0 flex-1 text-left">
+                    <div className="wp-slash-item-title truncate">{item.title}</div>
+                    <div className="wp-slash-item-desc truncate">{item.description}</div>
                   </div>
                 </button>
               );

@@ -8,6 +8,7 @@ import {
   useCallback,
 } from 'react';
 import { type SuggestionKeyDownProps } from '@tiptap/suggestion';
+import { avatarStyle, initialsFor } from '@/lib/avatarColor';
 import type { MentionUser } from './MentionExtension';
 
 export interface MentionListRef {
@@ -79,11 +80,14 @@ export const MentionList = forwardRef<MentionListRef, MentionListProps>(
             onMouseEnter={() => setSelectedIndex(index)}
             type="button"
           >
-            <div className="mention-avatar">
+            <div
+              className="mention-avatar"
+              style={item.avatarUrl ? undefined : avatarStyle(item.name)}
+            >
               {item.avatarUrl ? (
                 <img src={item.avatarUrl} alt={item.name} />
               ) : (
-                <span>{item.name.charAt(0).toUpperCase()}</span>
+                <span>{initialsFor(item.name)}</span>
               )}
             </div>
             <div className="mention-info">

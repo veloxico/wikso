@@ -4,8 +4,21 @@ interface WiksoLogoProps {
 }
 
 /**
- * Wikso logo: a minimalist open book / origami unfold.
- * Clean geometry, balanced proportions, recognizable at any size.
+ * Wikso logo — minimalist open book / origami unfold paired with an
+ * editorial wordmark in Source Serif 4 (the warm-paper body font).
+ *
+ * Wordmark choices:
+ *  • `font-family` lists 'Source Serif 4' first then falls back to
+ *    Georgia/Times so the SVG still reads correctly before the webfont
+ *    loads (Inter would feel too plain next to the book glyph).
+ *  • `font-weight: 600` keeps it expressive but not heavy — the icon
+ *    carries most of the visual weight.
+ *  • `font-feature-settings: 'ss01'` enables Source Serif's stylistic
+ *    set 1 (a softer 'k' and balanced 'a') which matches the .wikso-title
+ *    treatment elsewhere — same letterforms across logo + page titles.
+ *  • A custom hand-drawn underline curve under the word is rendered as
+ *    a separate path so it inherits accent color via `fill: currentColor`
+ *    on the parent (or via `--logo-spark` which we already expose).
  */
 export function WiksoLogo({ className = '', showText = true }: WiksoLogoProps) {
   const icon = (
@@ -49,18 +62,31 @@ export function WiksoLogo({ className = '', showText = true }: WiksoLogoProps) {
   }
 
   return (
-    <svg viewBox="-2 0 380 86" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <svg viewBox="-2 0 380 92" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
       {icon}
       <text
-        x="106" y="62"
-        fontFamily="Arial, Helvetica, sans-serif"
-        fontSize="54"
-        fontWeight="700"
-        letterSpacing="-1"
+        x="106"
+        y="62"
+        fontFamily="'Source Serif 4', Georgia, 'Times New Roman', serif"
+        fontSize="56"
+        fontWeight="600"
+        letterSpacing="-1.5"
         fill="currentColor"
+        style={{ fontFeatureSettings: "'ss01'", fontVariationSettings: "'opsz' 60, 'SOFT' 30" }}
       >
         Wikso
       </text>
+      {/* Hand-drawn underline — slight wobble + tapered ends keeps it
+          from feeling like a generic CSS rule. Inherits accent via
+          --logo-spine which is already accent-soft. */}
+      <path
+        d="M108 76 C 168 71, 230 73, 290 76"
+        stroke="var(--logo-spine, #8AC4FF)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.55"
+      />
     </svg>
   );
 }

@@ -123,10 +123,37 @@ export class AppConfigService {
 
   /**
    * Mark setup as complete (called after admin user is created).
+   *
+   * Two valid entry-points produce a config:
+   *  1. Wizard flow → `saveDatabaseConfig()` already wrote the file.
+   *  2. Env-driven install (local dev, or `DATABASE_URL` injected at
+   *     runtime in container orchestrators) → no file yet, but the
+   *     env var IS the source of truth. Bootstrap a config from it so
+   *     subsequent restarts have a single canonical place to read from.
+   *
+   * Only refuses when neither source is available — that's the genuine
+   * "called too early" error the original guard was protecting against.
    */
   async markSetupComplete(): Promise<void> {
     if (!this.config) {
-      throw new Error('Cannot mark setup complete before database config is saved');
+      const envUrl = process.env.DATABASE_URL;
+      if (!envUrl) {
+        throw new Error(
+          'Cannot mark setup complete before database config is saved',
+        );
+      }
+      this.logger.log(
+        'Bootstrapping config from DATABASE_URL env var (no wizard config file present)',
+      );
+      this.config = {
+        configVersion: CURRENT_CONFIG_VERSION,
+        database: {
+          url: envUrl,
+          useTls: false,
+          rejectUnauthorized: true,
+        },
+        setupCompletedAt: null,
+      };
     }
     await this.save({
       ...this.config,

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Save, Clock, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal, Copy, FilePlus, MoveHorizontal, ScanEye, Share2, BarChart3 } from 'lucide-react';
+import { Save, History, MessageSquare, Star, Pencil, Eye, ChevronDown, ChevronRight, Trash2, MoreHorizontal, Copy, FilePlus, MoveHorizontal, ScanEye, Share2, BarChart3 } from 'lucide-react';
 import { usePage, useUpdatePage, useDuplicatePage, useCreatePage, usePageAncestors } from '@/hooks/usePages';
 import { useSpace } from '@/hooks/useSpaces';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -31,8 +31,14 @@ import { Breadcrumbs } from '@/components/features/Breadcrumbs';
 import { PageExport } from '@/components/features/PageExport';
 import { KeyboardShortcutsDialog } from '@/components/features/KeyboardShortcuts';
 import { TagManager } from '@/components/features/TagManager';
+import { ReadingProgress } from '@/components/features/ReadingProgress';
+import { PageOutline } from '@/components/features/PageOutline';
+import { HeadingAnchors } from '@/components/features/HeadingAnchors';
+import { ReadingMeta } from '@/components/features/ReadingMeta';
+import { ReadingModeToggle, disableReadingMode } from '@/components/features/ReadingModeToggle';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { bcp47Locale } from '@/lib/locale';
 
 // Dynamic imports for client-only components
 const CollaborativeEditor = dynamic(
@@ -62,6 +68,14 @@ export default function PageEditorPage() {
   const { canEdit } = usePagePermissions(slug, pageId);
   const isEditing = mode === 'edit' && canEdit;
   const isPreviewing = mode === 'preview';
+
+  // Reading mode and edit mode are mutually exclusive — entering edit
+  // while reading is on hides the toolbar (it's tagged `data-chrome`).
+  // Clear the reading flag whenever we slip into edit. Preview keeps
+  // reading mode because preview is a reading surface.
+  useEffect(() => {
+    if (isEditing) disableReadingMode();
+  }, [isEditing]);
 
   // Dialogs
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -180,22 +194,52 @@ export default function PageEditorPage() {
   // With placeholderData: keepPreviousData, the old page stays visible during navigation.
   if (isLoading && !page) {
     return (
-      <div className="p-4 md:p-8">
-        <div className="mb-4 h-10 w-64 animate-pulse rounded bg-muted" />
-        <div className="h-96 animate-pulse rounded-lg bg-muted" />
+      <div className="mx-auto flex w-full max-w-[912px] flex-col items-center justify-center gap-4 px-6 py-24">
+        {/* Ink-drop spinner — radial gradient bleed in the active accent
+            instead of a generic muted-gray pulse. The label uses the
+            same Caveat hand as the rest of the warm-paper system so
+            even the loading state stays in the design language. */}
+        <div className="wp-inkbleed" role="status" aria-busy="true" />
+        <span className="wp-inkbleed-label">{t('pages.loading') || 'Settling the ink…'}</span>
       </div>
     );
   }
 
   return (
     <div className="relative">
+      {/* Reading progress bar — thin indicator pinned to the top of the
+          viewport, reflects dashboard scroll state. Hidden on view-mode only? no —
+          we keep it in edit mode too: the bar is unobtrusive and helpful for
+          long docs either way. */}
+      <ReadingProgress />
+
+      {/* Right-rail scroll-spy outline. Auto-hidden below xl, auto-hidden when
+          there's fewer than 2 headings (short pages don't need a TOC). */}
+      <PageOutline
+        className="absolute top-24 right-4 2xl:right-10 z-10"
+        label={t('pageOutline.label') || 'On this page'}
+      />
+
+      {/* Inject clickable copy-link buttons into every h1..h3. Renders
+          nothing — runs a DOM side-effect scoped to the reading
+          surface. MutationObserver keeps buttons in sync as the
+          editor content changes. */}
+      <HeadingAnchors />
+
       {/* Keyboard Shortcuts Dialog (global, triggered by Ctrl+/) */}
       <KeyboardShortcutsDialog />
 
-      {/* Main content area — compact header like Confluence */}
-      <div className="mx-auto w-full max-w-[912px] px-3 md:px-6 pt-2 pb-0">
-        {/* Row 1: Breadcrumbs */}
-        <div className="flex items-center gap-2 mb-1">
+      {/* Main content area — warm-paper editorial header. Breadcrumbs
+          are kept as a thin line; title steps up into the doc-ribbon
+          serif treatment so the reader lands on a recognisable
+          "document page" the moment they open it. */}
+      <div
+        className="mx-auto w-full max-w-[912px] px-3 md:px-6 pt-2 pb-0"
+      >
+        {/* Row 1: Breadcrumbs — tagged as chrome so print + reading
+            mode hide it cleanly. The title and ReadingMeta below are
+            content, so they remain unmarked and stay visible. */}
+        <div className="flex items-center gap-2 mb-1" data-chrome="topbar">
           <Breadcrumbs
             className="min-w-0 shrink"
             items={[
@@ -209,8 +253,43 @@ export default function PageEditorPage() {
           />
         </div>
 
-        {/* Row 2: Title + star */}
-        <div className="flex items-center gap-1.5 mb-1 min-w-0">
+        {/* Row 1.5: Editorial dateline — small-caps "WEEKDAY · DATE ·
+            UPDATED N AGO" magazine-style. Renders only when we have a
+            page (avoids flicker during the placeholder shimmer). The
+            dateline lives outside topbar-secondary so it stays in print
+            output as part of the document, not chrome. */}
+        {page?.updatedAt && (
+          <p className="wp-dateline mt-3" aria-label={t('pages.dateline') || 'Document dateline'}>
+            <time dateTime={new Date(page.updatedAt).toISOString()}>
+              {new Date(page.updatedAt).toLocaleDateString(bcp47Locale(locale), {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+              })}
+            </time>
+            <span aria-hidden="true">·</span>
+            <span className={isEditing ? 'live' : ''}>
+              {isEditing
+                ? (t('pages.editing') || 'Editing now')
+                : `${t('pages.updated') || 'Updated'} ${(() => {
+                    const delta = (Date.now() - new Date(page.updatedAt).getTime()) / 1000;
+                    // bcp47Locale() — esAR/ptBR are not valid BCP-47 tags
+                    // and would crash the entire dateline with RangeError.
+                    const rtf = new Intl.RelativeTimeFormat(bcp47Locale(locale), { numeric: 'auto' });
+                    if (delta < 60) return rtf.format(-Math.round(delta), 'second');
+                    if (delta < 3600) return rtf.format(-Math.round(delta / 60), 'minute');
+                    if (delta < 86400) return rtf.format(-Math.round(delta / 3600), 'hour');
+                    if (delta < 2592000) return rtf.format(-Math.round(delta / 86400), 'day');
+                    return rtf.format(-Math.round(delta / 2592000), 'month');
+                  })()}`}
+            </span>
+          </p>
+        )}
+
+        {/* Row 2: Title + star — wp-doc-ribbon layout. We reuse the
+            ribbon's serif H1 sizing even in edit mode so switching
+            edit↔view doesn't shift the baseline. */}
+        <div className="flex items-end gap-3 mb-1 min-w-0 pt-3 pb-3">
           <div className="flex-1 min-w-0">
             {isEditing ? (
               <Input
@@ -220,11 +299,30 @@ export default function PageEditorPage() {
                   if (e.target.value !== page?.title) setHasUnsavedChanges(true);
                 }}
                 onBlur={handleSaveTitle}
-                className="border-none bg-transparent text-xl sm:text-2xl font-bold shadow-none focus-visible:ring-0 px-0 h-auto py-0"
+                className="h-auto border-none bg-transparent px-0 py-0 shadow-none focus-visible:ring-0"
+                style={{
+                  fontFamily: 'var(--body-font)',
+                  fontSize: 'clamp(26px, 3.2vw, 40px)',
+                  fontWeight: 600,
+                  letterSpacing: '-0.01em',
+                  lineHeight: 1.15,
+                  color: 'var(--ink)',
+                }}
                 placeholder={t('pages.untitled')}
               />
             ) : (
-              <h1 className="text-xl sm:text-2xl font-bold truncate px-0">
+              <h1
+                className="truncate px-0"
+                style={{
+                  fontFamily: 'var(--body-font)',
+                  fontSize: 'clamp(26px, 3.2vw, 40px)',
+                  fontWeight: 600,
+                  letterSpacing: '-0.01em',
+                  lineHeight: 1.15,
+                  color: 'var(--ink)',
+                  textWrap: 'balance' as React.CSSProperties['textWrap'],
+                }}
+              >
                 {title || page?.title || t('pages.untitled')}
               </h1>
             )}
@@ -255,14 +353,25 @@ export default function PageEditorPage() {
           )}
         </div>
 
-        {/* Row 3: Action buttons */}
-        <div className="flex items-center gap-1 mb-1 flex-wrap">
-          {page?.updatedAt && (
-            <span className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground mr-1">
-              <Clock className="h-3 w-3" />
-              {new Date(page.updatedAt).toLocaleDateString(locale)}
-            </span>
-          )}
+        {/* Row 2.5: Reading metadata — reading time, word count, and
+            a relative "updated X ago" timestamp. Sits below the title
+            as an editorial signal; reads the live editor surface so
+            the counts tick as the author types. */}
+        <div className="mb-2">
+          <ReadingMeta
+            updatedAt={page?.updatedAt}
+            locale={locale}
+            labels={{
+              minRead: t('pages.minRead'),
+              words: t('pages.words'),
+              updated: t('pages.updated'),
+            }}
+          />
+        </div>
+
+        {/* Row 3: Action buttons. Tagged `topbar-secondary` so they
+            collapse in reading mode and disappear from print output. */}
+        <div className="flex items-center gap-1 mb-1 flex-wrap" data-chrome="topbar-secondary">
           <PageExport editor={editorInstance} pageTitle={title || t('pages.untitled')} />
 
           <Button
@@ -309,6 +418,39 @@ export default function PageEditorPage() {
           )}
           {isEditing && !isPreviewing && (
             <>
+              {/* Autosave / save-state indicator. Uses `.wp-saved`
+                  primitive — the state dot is drawn via CSS `::before`
+                  (pulsing accent dot when `saving`, red `!` badge when
+                  `error`); in the `saved` state the text alone carries
+                  the signal, which keeps the strip quiet between
+                  transitions. Sits next to the Save button so the user
+                  always knows where their work stands without hunting
+                  for a modal or toast. */}
+              <span
+                className="wp-saved"
+                data-state={updatePage.isPending ? 'saving' : updatePage.isError ? 'error' : 'saved'}
+                aria-live="polite"
+              >
+                {updatePage.isPending
+                  ? (t('pages.saving') || 'Saving…')
+                  : updatePage.isError
+                    ? (t('pages.saveFailedShort') || 'Not saved')
+                    : hasUnsavedChanges
+                      ? (t('pages.unsavedChanges') || 'Unsaved changes')
+                      : page?.updatedAt
+                        ? (
+                          <>
+                            {t('pages.savedPrefix') || 'Saved'}{' '}
+                            <time dateTime={new Date(page.updatedAt).toISOString()}>
+                              {new Date(page.updatedAt).toLocaleTimeString(bcp47Locale(locale), {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </time>
+                          </>
+                        )
+                        : (t('pages.autoSave') || 'Autosave on')}
+              </span>
               <Button onClick={handleSave} disabled={updatePage.isPending} size="sm" className="gap-1.5 h-7 text-xs">
                 <Save className="h-3.5 w-3.5" />
                 {updatePage.isPending ? t('common.saving') : t('pages.save')}
@@ -380,6 +522,16 @@ export default function PageEditorPage() {
           )}
         </div>
 
+        {/* Reading-mode toggle — kept OUTSIDE topbar-secondary so it
+            stays reachable while every other action collapses. Floats
+            top-right when reading mode is active so it doesn't add
+            visual weight to the document chrome. */}
+        {mode === 'view' && (
+          <div className="reading-toggle-mount fixed right-4 top-3 z-30 sm:static sm:mb-2 sm:flex sm:justify-end">
+            <ReadingModeToggle />
+          </div>
+        )}
+
         {/* Preview banner */}
         {isPreviewing && (
           <div className="mb-1 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 dark:border-blue-800 dark:bg-blue-950/50">
@@ -402,7 +554,7 @@ export default function PageEditorPage() {
       />
 
       {/* Backlinks + Comments — centered */}
-      <div className="mx-auto w-full max-w-[912px] px-3 md:px-6">
+      <div className="mx-auto w-full max-w-[912px] px-3 md:px-6" data-chrome="comments">
         <BacklinksPanel slug={slug} pageId={pageId} className="mt-6" />
 
         <div className="mt-4 border-t border-border pt-4">

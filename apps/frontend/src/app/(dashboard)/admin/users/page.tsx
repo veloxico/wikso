@@ -50,6 +50,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useTranslation } from '@/hooks/useTranslation';
+import { bcp47Locale } from '@/lib/locale';
 
 const PAGE_SIZE = 10;
 
@@ -671,9 +672,9 @@ export default function AdminUsersPage() {
                             </div>
                           </td>
                           <td className="py-3 text-muted-foreground">
-                            {new Date(user.createdAt).toLocaleDateString(locale)}
+                            {new Date(user.createdAt).toLocaleDateString(bcp47Locale(locale))}
                           </td>
-                          <td className="py-3 text-muted-foreground" title={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString(locale) : undefined}>
+                          <td className="py-3 text-muted-foreground" title={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString(bcp47Locale(locale)) : undefined}>
                             {formatRelativeTime(user.lastLoginAt)}
                           </td>
                           <td className="py-3 text-muted-foreground font-mono text-xs">

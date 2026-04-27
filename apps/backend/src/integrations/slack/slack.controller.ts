@@ -30,6 +30,17 @@ export class SlackController {
 
   // ─── OAuth (admin-only start, public callback) ─────────
 
+  @Get('config-status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(GlobalRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Report whether Slack env vars are configured (lets the UI show setup guidance instead of failing on Connect)',
+  })
+  getConfigStatus() {
+    return this.slackService.getConfigStatus();
+  }
+
   @Post('oauth/start')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(GlobalRole.ADMIN)

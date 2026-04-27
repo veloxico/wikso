@@ -11,7 +11,7 @@ import { v4 as uuid } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { execSync } from 'child_process';
+import { safeExtractZip } from '../common/utils/safe-zip';
 import { parseConfluenceXml, ParsedConfluenceData } from './confluence-xml-parser';
 import {
   convertConfluenceToTipTap,
@@ -117,10 +117,13 @@ export class ImportService {
       tmpDir = path.join(os.tmpdir(), `wikso-import-${uuid()}`);
       fs.mkdirSync(tmpDir, { recursive: true });
 
-      execSync(`unzip -o -q "${zipPath}" -d "${tmpDir}"`, {
-        maxBuffer: 50 * 1024 * 1024,
-        timeout: 600_000, // 10 min
-      });
+      // safeExtractZip enforces zip-slip + zip-bomb guards (per-entry path
+      // validation, per-file and total uncompressed-size caps) instead of
+      // shelling out to `unzip`, which trusted the archive for both.
+      const extractStats = await safeExtractZip(zipPath, tmpDir);
+      this.logger.log(
+        `Extracted ${extractStats.entries} entries (${extractStats.bytes} bytes) from import archive`,
+      );
 
       progress.percent = 5;
       onProgress(progress);

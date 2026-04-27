@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { User, Settings, LogOut, Moon, Sun, Monitor, Globe } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLanguageStore, SUPPORTED_LOCALES, type Locale } from '@/store/languageStore';
+import { avatarStyle, initialsFor } from '@/lib/avatarColor';
 
 interface UserMenuProps {
   /** Avatar size class, e.g. "h-8 w-8" or "h-7 w-7" */
@@ -29,15 +31,44 @@ export function UserMenu({ avatarSize = 'h-8 w-8', showName = true }: UserMenuPr
   const { locale, setLocale } = useLanguageStore();
 
   const avatarUrl = (user as any)?.avatarUrl;
-  const initial = user?.name?.charAt(0)?.toUpperCase() || '?';
+  const initial = initialsFor(user?.name);
+  const palette = avatarStyle(user?.name);
 
   const themeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
   const ThemeIcon = themeIcon;
 
-  const nextTheme = () => {
-    if (theme === 'light') setTheme('dark');
-    else if (theme === 'dark') setTheme('system');
-    else setTheme('light');
+  /**
+   * Cycle light → dark → system. When the browser supports the View
+   * Transitions API and the user hasn't requested reduced motion, we
+   * wrap the theme swap in `document.startViewTransition()` and set a
+   * CSS custom-property origin so the new theme wipes in as a circular
+   * reveal from the menu-item click point. Everything degrades
+   * gracefully to a direct setTheme() otherwise.
+   */
+  const nextTheme = (e: React.MouseEvent<HTMLElement>) => {
+    const next: 'light' | 'dark' | 'system' =
+      theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    type DocWithVT = Document & {
+      startViewTransition?: (cb: () => void) => unknown;
+    };
+    const doc = document as DocWithVT;
+    if (prefersReducedMotion || typeof doc.startViewTransition !== 'function') {
+      setTheme(next);
+      return;
+    }
+
+    document.documentElement.style.setProperty('--wipe-x', `${x}px`);
+    document.documentElement.style.setProperty('--wipe-y', `${y}px`);
+    doc.startViewTransition(() => setTheme(next));
   };
 
   const themeLabel = theme === 'dark'
@@ -66,7 +97,10 @@ export function UserMenu({ avatarSize = 'h-8 w-8', showName = true }: UserMenuPr
               className={`${avatarSize} shrink-0 rounded-full object-cover`}
             />
           ) : (
-            <div className={`flex ${avatarSize} shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-medium`}>
+            <div
+              className={`flex ${avatarSize} shrink-0 items-center justify-center rounded-full text-[11px] font-semibold`}
+              style={palette}
+            >
               {initial}
             </div>
           )}
@@ -85,7 +119,10 @@ export function UserMenu({ avatarSize = 'h-8 w-8', showName = true }: UserMenuPr
               className="h-10 w-10 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+              style={palette}
+            >
               {initial}
             </div>
           )}
@@ -107,9 +144,24 @@ export function UserMenu({ avatarSize = 'h-8 w-8', showName = true }: UserMenuPr
 
         <DropdownMenuSeparator />
 
-        {/* Quick theme toggle */}
+        {/* Quick theme toggle — icon crossfades via Motion while the
+            page itself crossfades via the View Transitions API. */}
         <DropdownMenuItem onClick={nextTheme}>
-          <ThemeIcon className="h-4 w-4" />
+          <span className="relative inline-flex h-4 w-4 items-center justify-center">
+            <AnimatePresence initial={false} mode="wait">
+              <motion.span
+                key={theme ?? 'system'}
+                initial={{ rotate: -90, scale: 0, opacity: 0 }}
+                animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                exit={{ rotate: 90, scale: 0, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                className="inline-flex"
+                aria-hidden="true"
+              >
+                <ThemeIcon className="h-4 w-4" />
+              </motion.span>
+            </AnimatePresence>
+          </span>
           {t('profile.theme')}: {themeLabel}
         </DropdownMenuItem>
 

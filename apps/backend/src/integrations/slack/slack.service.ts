@@ -74,6 +74,21 @@ export class SlackService {
 
   // ─── OAuth flow ────────────────────────────────────────
 
+  /**
+   * Cheap GET endpoint the admin UI calls before showing the Connect
+   * button — lets us render a friendly setup card with the missing env
+   * var names instead of letting the user click and get a confusing
+   * 400 BadRequest after the fact.
+   */
+  getConfigStatus(): { configured: boolean; missing: string[] } {
+    const missing: string[] = [];
+    if (!process.env.SLACK_CLIENT_ID) missing.push('SLACK_CLIENT_ID');
+    if (!process.env.SLACK_CLIENT_SECRET) missing.push('SLACK_CLIENT_SECRET');
+    if (!process.env.SLACK_SIGNING_SECRET) missing.push('SLACK_SIGNING_SECRET');
+    if (!process.env.SLACK_REDIRECT_URL) missing.push('SLACK_REDIRECT_URL');
+    return { configured: missing.length === 0, missing };
+  }
+
   /** Generate the OAuth install URL with a Redis-backed CSRF state. */
   async startOAuth(userId: string): Promise<{ url: string }> {
     const clientId = this.getClientId();
@@ -421,10 +436,17 @@ export class SlackService {
         where: { id: pageId },
         include: {
           author: { select: { id: true, name: true } },
-          space: { select: { slug: true, name: true } },
+          space: { select: { id: true, slug: true, name: true, type: true } },
         },
       });
       if (!page || page.deletedAt) continue;
+
+      // ACL: only unfurl public-space pages. Posting a Slack preview for a
+      // PRIVATE-space page would leak the title and excerpt to anyone in the
+      // channel, including users who have no read permission on that space.
+      // Slack's link_shared event fires regardless of who pasted the link, so
+      // we must enforce the space-level ACL here.
+      if (page.space?.type !== 'PUBLIC') continue;
 
       const snippet = this.extractSnippet(page.contentJson);
       const blocks: any[] = [

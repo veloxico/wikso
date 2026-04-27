@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Check,
   Clock,
@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { WpDatePicker } from '@/components/ui/WpDatePicker';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -57,6 +58,11 @@ export function ShareDialog({ open, onOpenChange, slug, pageId, pageTitle }: Sha
   const [password, setPassword] = useState('');
   const [allowComments, setAllowComments] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  // Re-anchor the picker's "earliest selectable" each time the dialog
+  // opens — but never on every render (which would recompute on each
+  // keystroke and force <WpDatePicker> to re-derive its grid).
+  const minDate = useMemo(() => (open ? new Date() : null), [open]);
 
   const activeShares = (shares ?? []).filter((s) => !s.revokedAt);
 
@@ -107,66 +113,95 @@ export function ShareDialog({ open, onOpenChange, slug, pageId, pageTitle }: Sha
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent
+        className="max-w-lg"
+        style={{
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--rule)',
+          boxShadow: 'var(--pop-shadow)',
+        }}
+      >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Share2 className="h-4 w-4 text-primary" />
+          <DialogTitle
+            className="flex items-center gap-2"
+            style={{
+              fontFamily: 'var(--body-font)',
+              fontSize: '20px',
+              fontWeight: 600,
+              letterSpacing: '-0.01em',
+              color: 'var(--ink)',
+            }}
+          >
+            <Share2 className="h-4 w-4" style={{ color: 'var(--accent)' }} />
             {t('shares.title') || 'Share this page'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription style={{ color: 'var(--ink-3)' }}>
             {t('shares.description') || 'Anyone with the link can view this page without a Wikso account.'}
             {pageTitle ? (
-              <span className="mt-1 block truncate text-foreground/80">“{pageTitle}”</span>
+              <span className="mt-1 block truncate" style={{ color: 'var(--ink-2)' }}>“{pageTitle}”</span>
             ) : null}
           </DialogDescription>
         </DialogHeader>
 
         {/* Existing shares */}
-        <div className="space-y-2">
+        <div className="wp-dialog-section">
+          <div className="wp-dialog-label">
+            {t('shares.activeLinks') || 'Active links'}
+          </div>
           {isLoading ? (
-            <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 py-6 text-sm" style={{ color: 'var(--ink-3)' }}>
               <Loader2 className="h-4 w-4 animate-spin" />
               {t('common.loading') || 'Loading…'}
             </div>
           ) : activeShares.length === 0 ? (
             <EmptyShares />
           ) : (
-            <ul className="divide-y rounded-lg border bg-card/50">
-              {activeShares.map((s) => (
-                <ShareRow
+            <ul style={{ borderTop: '1px dashed var(--rule)', borderBottom: '1px dashed var(--rule)' }}>
+              {activeShares.map((s, idx) => (
+                <li
                   key={s.id}
-                  share={s}
-                  onRevoke={() => handleRevoke(s.id)}
-                  revoking={revokeShare.isPending}
-                />
+                  style={{
+                    borderTop: idx === 0 ? 0 : '1px dashed var(--rule)',
+                  }}
+                >
+                  <ShareRow
+                    share={s}
+                    onRevoke={() => handleRevoke(s.id)}
+                    revoking={revokeShare.isPending}
+                  />
+                </li>
               ))}
             </ul>
           )}
         </div>
 
         {/* Create new share */}
-        <div className="mt-2 space-y-3 rounded-lg border border-dashed bg-card/30 p-4">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Plus className="h-3.5 w-3.5 text-primary" />
+        <div className="wp-dialog-section">
+          <div className="wp-dialog-label flex items-center gap-2" style={{ marginBottom: 12 }}>
+            <Plus className="h-3 w-3" style={{ color: 'var(--accent)' }} />
             {t('shares.newLink') || 'New share link'}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="expires" className="text-xs text-muted-foreground">
+              <Label htmlFor="expires" className="text-xs" style={{ color: 'var(--ink-4)' }}>
                 {t('shares.expiresAt') || 'Expires (optional)'}
               </Label>
-              <Input
+              <WpDatePicker
                 id="expires"
-                type="datetime-local"
                 value={expiresAt}
-                onChange={(e) => setExpiresAt(e.target.value)}
-                className="h-9 text-sm"
+                onChange={setExpiresAt}
+                minDate={minDate ?? undefined}
+                placeholder={t('shares.never') || 'Never expires'}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="flex items-center justify-between text-xs text-muted-foreground">
+              <Label
+                htmlFor="password"
+                className="flex items-center justify-between text-xs"
+                style={{ color: 'var(--ink-4)' }}
+              >
                 <span>{t('shares.password') || 'Password (optional)'}</span>
                 <button
                   type="button"
@@ -176,8 +211,10 @@ export function ShareDialog({ open, onOpenChange, slug, pageId, pageTitle }: Sha
                   }}
                   className={cn(
                     'text-[10px] font-medium uppercase tracking-wider transition-colors',
-                    withPassword ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
                   )}
+                  style={{
+                    color: withPassword ? 'var(--accent)' : 'var(--ink-4)',
+                  }}
                 >
                   {withPassword ? (t('common.enabled') || 'ON') : (t('common.disabled') || 'OFF')}
                 </button>
@@ -195,18 +232,31 @@ export function ShareDialog({ open, onOpenChange, slug, pageId, pageTitle }: Sha
             </div>
           </div>
 
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+          <label
+            className="mt-3 flex cursor-pointer items-center gap-2 text-sm"
+            style={{ color: 'var(--ink-3)' }}
+          >
             <input
               type="checkbox"
               checked={allowComments}
               onChange={(e) => setAllowComments(e.target.checked)}
-              className="h-3.5 w-3.5 accent-primary"
+              className="h-3.5 w-3.5"
+              style={{ accentColor: 'var(--accent)' }}
             />
             <MessageSquare className="h-3.5 w-3.5" />
             {t('shares.allowComments') || 'Allow anonymous comments'}
           </label>
 
-          <Button onClick={handleCreate} disabled={creating} className="w-full">
+          <Button
+            onClick={handleCreate}
+            disabled={creating}
+            className="mt-3 w-full"
+            style={{
+              background: 'var(--accent)',
+              color: 'var(--bg)',
+              border: 0,
+            }}
+          >
             {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LinkIcon className="mr-2 h-4 w-4" />}
             {creating ? (t('shares.creating') || 'Creating…') : (t('shares.createLink') || 'Create share link')}
           </Button>
@@ -219,14 +269,24 @@ export function ShareDialog({ open, onOpenChange, slug, pageId, pageTitle }: Sha
 function EmptyShares() {
   const { t } = useTranslation();
   return (
-    <div className="rounded-lg border border-dashed py-8 text-center">
-      <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+    <div
+      className="py-8 text-center"
+      style={{
+        border: '1px dashed var(--rule)',
+        borderRadius: '10px',
+        background: 'var(--bg-sunken)',
+      }}
+    >
+      <div
+        className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full"
+        style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}
+      >
         <LinkIcon className="h-4 w-4" />
       </div>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm" style={{ color: 'var(--ink-2)' }}>
         {t('shares.emptyTitle') || 'No active share links'}
       </p>
-      <p className="mt-1 text-xs text-muted-foreground/80">
+      <p className="mt-1 text-xs" style={{ color: 'var(--ink-4)' }}>
         {t('shares.emptyHint') || 'Create one below to share this page publicly.'}
       </p>
     </div>
@@ -261,18 +321,36 @@ function ShareRow({
     share.expiresAt && new Date(share.expiresAt).getTime() - Date.now() < 1000 * 60 * 60 * 24;
 
   return (
-    <li className="flex flex-col gap-2 p-3 text-sm">
+    <div className="flex flex-col gap-2 p-3 text-sm">
       <div className="flex items-center gap-2">
-        <code className="min-w-0 flex-1 truncate rounded-md bg-muted px-2 py-1 font-mono text-[11px] text-muted-foreground">
+        <code
+          className="min-w-0 flex-1 truncate rounded-md px-2 py-1 font-mono text-[11px]"
+          style={{
+            background: 'var(--bg-sunken)',
+            color: 'var(--ink-3)',
+            border: '1px solid var(--rule)',
+          }}
+        >
           {url}
         </code>
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={copy} title={t('shares.copy') || 'Copy'}>
-          {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0"
+          onClick={copy}
+          title={t('shares.copy') || 'Copy'}
+        >
+          {copied ? (
+            <Check className="h-3.5 w-3.5" style={{ color: 'var(--accent)' }} />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+          className="h-7 w-7 shrink-0"
+          style={{ color: 'var(--ink-4)' }}
           onClick={onRevoke}
           disabled={revoking}
           title={t('shares.revoke') || 'Revoke'}
@@ -302,12 +380,15 @@ function ShareRow({
             {new Date(share.expiresAt).toLocaleDateString()}
           </Badge>
         ) : null}
-        <span className="ml-auto flex items-center gap-1 text-muted-foreground">
+        <span
+          className="ml-auto flex items-center gap-1"
+          style={{ color: 'var(--ink-4)', fontVariantNumeric: 'tabular-nums' }}
+        >
           <Eye className="h-3 w-3" />
           {share.viewCount}
         </span>
       </div>
-    </li>
+    </div>
   );
 }
 

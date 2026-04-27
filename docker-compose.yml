@@ -16,8 +16,21 @@ services:
       # and persisted to /app/data/wikso.config.json on the wikso_data volume.
       # Docker Compose default (postgresql://postgres:password@postgres:5432/wikso)
       # is suggested as a placeholder in the wizard UI.
-      JWT_SECRET: super-secret-key-change-me-in-production
-      JWT_REFRESH_SECRET: refresh-secret-change-me-in-production
+      # SECRETS — must be set in your .env (or environment) before `docker compose up`.
+      # Compose's `${VAR:?msg}` syntax aborts the start with a clear error if
+      # they're missing, so you can never accidentally boot with a guessable key.
+      # Generate strong values with:  openssl rand -hex 32
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET must be set (run: openssl rand -hex 32)}"
+      JWT_REFRESH_SECRET: "${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set (run: openssl rand -hex 32)}"
+      # ENCRYPTION_KEY is optional but strongly recommended. If unset the app
+      # falls back to JWT_SECRET (with a startup warning). Setting a separate
+      # key lets you rotate JWT_SECRET without invalidating encrypted data
+      # at rest (OAuth tokens, AI keys, Slack workspace tokens, SMTP config).
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY:-}"
+      # Comma-separated hostnames the SSRF guard should trust as internal
+      # services (e.g. when the admin AI endpoint points at another container
+      # in the same compose). Default empty = strict block.
+      SSRF_ALLOWED_HOSTS: "${SSRF_ALLOWED_HOSTS:-}"
       JWT_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 7d
       EMAIL_VERIFICATION_REQUIRED: 'false'

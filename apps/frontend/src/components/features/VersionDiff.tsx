@@ -59,30 +59,78 @@ export function VersionDiff({ oldContent, newContent, oldLabel = 'Previous', new
 
   return (
     <div className="version-diff">
-      {/* Header with stats */}
-      <div className="flex items-center gap-4 mb-3 text-xs text-muted-foreground">
-        <span className="font-medium">{oldLabel} → {newLabel}</span>
-        <div className="flex items-center gap-2">
+      {/* Header with stats — labels use ui-font, numbers tabular */}
+      <div
+        className="flex items-center gap-4 mb-3 text-[11.5px]"
+        style={{ color: 'var(--ink-4)', fontFamily: 'var(--ui-font)' }}
+      >
+        <span
+          className="font-semibold uppercase"
+          style={{ letterSpacing: '0.06em', color: 'var(--ink-3)' }}
+        >
+          {oldLabel} <span style={{ color: 'var(--ink-4)' }}>→</span> {newLabel}
+        </span>
+        <div className="flex items-center gap-3" style={{ fontVariantNumeric: 'tabular-nums' }}>
           {stats.added > 0 && (
-            <span className="text-green-600 dark:text-green-400">+{stats.added} chars</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                aria-hidden
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: 'var(--diff-add, oklch(60% 0.13 150))',
+                }}
+              />
+              +{stats.added}
+            </span>
           )}
           {stats.removed > 0 && (
-            <span className="text-red-600 dark:text-red-400">-{stats.removed} chars</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                aria-hidden
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: 'var(--diff-del, oklch(60% 0.16 30))',
+                }}
+              />
+              -{stats.removed}
+            </span>
           )}
           {stats.added === 0 && stats.removed === 0 && (
-            <span>No changes</span>
+            <span style={{ color: 'var(--ink-4)' }}>No changes</span>
           )}
         </div>
       </div>
 
-      {/* Diff output */}
-      <div className="rounded-lg border border-border bg-card p-4 font-mono text-sm leading-relaxed whitespace-pre-wrap">
+      {/* Diff output — warm paper card with mono body */}
+      <div
+        className="p-4 leading-relaxed whitespace-pre-wrap"
+        style={{
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--rule)',
+          borderRadius: 10,
+          fontFamily: 'ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace',
+          fontSize: '13px',
+          color: 'var(--ink-2)',
+          maxHeight: '50vh',
+          overflowY: 'auto',
+        }}
+      >
         {diff.map((part, index) => {
           if (part.added) {
             return (
               <span
                 key={index}
-                className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 rounded-sm px-0.5"
+                style={{
+                  background: 'oklch(94% 0.06 150 / 0.55)',
+                  color: 'oklch(38% 0.10 150)',
+                  padding: '0 3px',
+                  borderRadius: 3,
+                  borderBottom: '1px solid oklch(60% 0.13 150)',
+                }}
               >
                 {part.value}
               </span>
@@ -93,7 +141,15 @@ export function VersionDiff({ oldContent, newContent, oldLabel = 'Previous', new
             return (
               <span
                 key={index}
-                className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 rounded-sm px-0.5 line-through"
+                style={{
+                  background: 'oklch(95% 0.05 30 / 0.5)',
+                  color: 'oklch(38% 0.13 30)',
+                  padding: '0 3px',
+                  borderRadius: 3,
+                  textDecoration: 'line-through',
+                  textDecorationColor: 'oklch(60% 0.16 30 / 0.6)',
+                  textDecorationThickness: '1px',
+                }}
               >
                 {part.value}
               </span>

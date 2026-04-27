@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Bell, Plus, Shield, Star, Clock,
-  ChevronDown, ChevronRight, FileText, Settings,
-  Loader2, FolderOpen, PanelLeftClose, PanelLeftOpen,
+  ChevronRight, FileText, Settings,
+  Loader2, FolderOpen, PanelLeftClose, PanelLeftOpen, Pin, PinOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useSidebarStore, MIN_WIDTH, MAX_WIDTH } from '@/store/sidebarStore';
+import { useAppearanceStore } from '@/store/appearanceStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSpaces } from '@/hooks/useSpaces';
 import { usePages, useCreatePage } from '@/hooks/usePages';
@@ -21,8 +22,10 @@ import { PageTree } from '@/components/features/PageTree';
 import { PageTemplatesDialog } from '@/components/features/PageTemplates';
 import { NotificationBell } from '@/components/features/NotificationBell';
 import { UserMenu } from '@/components/features/UserMenu';
+import { AppearanceTrigger } from '@/components/features/AppearanceTrigger';
 import { WiksoLogo } from '@/components/ui/WiksoLogo';
 import { Button } from '@/components/ui/button';
+import { paletteFor, initialsFor } from '@/lib/avatarColor';
 import type { Space } from '@/types';
 
 /* ─── Resize handle ────────────────────────────────────────────────── */
@@ -132,12 +135,25 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
         <div
           className={cn(
             'flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md text-[10px] font-bold transition-colors',
-            isCurrentSpace
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-sidebar-foreground/8 text-sidebar-foreground/60',
           )}
+          style={
+            isCurrentSpace
+              ? {
+                  background: 'var(--accent)',
+                  color: 'var(--bg)',
+                  boxShadow: `inset 0 0 0 1px ${paletteFor(space.name).ring}`,
+                }
+              : (() => {
+                  const p = paletteFor(space.name);
+                  return {
+                    background: p.bg,
+                    color: p.fg,
+                    boxShadow: `inset 0 0 0 1px ${p.ring}`,
+                  };
+                })()
+          }
         >
-          {space.name.charAt(0).toUpperCase()}
+          {initialsFor(space.name).charAt(0)}
         </div>
         <Link
           href={`/spaces/${space.slug}`}
@@ -241,10 +257,17 @@ export function UnifiedSidebar() {
   const { user } = useAuthStore();
   const { t } = useTranslation();
   const { collapsed, toggle, hydrate, width, setWidth } = useSidebarStore();
+  const sidebarMode = useAppearanceStore((s) => s.sidebarMode);
+  const setSidebarMode = useAppearanceStore((s) => s.setSidebarMode);
+  const hydrateAppearance = useAppearanceStore((s) => s.hydrate);
   const { data: spaces, isLoading: spacesLoading } = useSpaces();
 
-  // Hydrate sidebar collapsed state from localStorage on mount
-  useEffect(() => { hydrate(); }, [hydrate]);
+  // Hover-to-expand state for rail mode
+  const [hoverExpanded, setHoverExpanded] = useState(false);
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Hydrate stores on mount
+  useEffect(() => { hydrate(); hydrateAppearance(); }, [hydrate, hydrateAppearance]);
   const { data: favorites } = useFavorites();
   const { data: recentPages } = useRecentPages();
 
@@ -280,10 +303,32 @@ export function UnifiedSidebar() {
     setWidth(x);
   }, [setWidth]);
 
+  // Hover handlers (with small delay so a fast cursor sweep doesn't flicker)
+  const handleEnter = useCallback(() => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    setHoverExpanded(true);
+  }, []);
+  const handleLeave = useCallback(() => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => setHoverExpanded(false), 180);
+  }, []);
+
+  // In hover-rail mode: collapsed visually unless hovered. The actual
+  // `collapsed` flag from sidebarStore is bypassed in this mode.
+  const isHoverRail = sidebarMode === 'hover';
+  const showCollapsed = isHoverRail ? !hoverExpanded : collapsed;
+
   /* ── Collapsed (icon-only) sidebar ── */
-  if (collapsed) {
-    return (
-      <aside className="flex h-screen w-14 flex-col bg-sidebar text-sidebar-foreground transition-all duration-200"
+  if (showCollapsed) {
+    const railContent = (
+      <aside
+        data-chrome="sidebar"
+        onMouseEnter={isHoverRail ? handleEnter : undefined}
+        onMouseLeave={isHoverRail ? handleLeave : undefined}
+        className={cn(
+          'flex h-screen w-14 flex-col bg-sidebar text-sidebar-foreground transition-all duration-200',
+          isHoverRail && 'fixed left-0 top-0 z-30',
+        )}
         style={{ boxShadow: 'var(--sidebar-shadow)' }}
       >
         {/* Logo */}
@@ -293,12 +338,14 @@ export function UnifiedSidebar() {
           </Link>
         </div>
 
-        {/* Expand button */}
-        <div className="flex justify-center py-1.5">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50" onClick={toggle} title={t('sidebar.expand') || 'Expand sidebar'}>
-            <PanelLeftOpen className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* Expand button — only in pinned mode (hover-rail uses cursor) */}
+        {!isHoverRail && (
+          <div className="flex justify-center py-1.5">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50" onClick={toggle} title={t('sidebar.expand') || 'Expand sidebar'}>
+              <PanelLeftOpen className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
 
         {/* Divider */}
         <div className="mx-2.5 h-px bg-sidebar-foreground/8" />
@@ -338,21 +385,35 @@ export function UnifiedSidebar() {
 
         {/* Space icons */}
         <div className="flex-1 overflow-y-auto flex flex-col items-center gap-1 py-2">
-          {spaces?.map((space) => (
-            <Link
-              key={space.id}
-              href={`/spaces/${space.slug}`}
-              title={space.name}
-              className={cn(
-                'relative flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-bold transition-all duration-150',
-                space.slug === currentSlug
-                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
-                  : 'bg-sidebar-foreground/8 text-sidebar-foreground/60 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
-              )}
-            >
-              {space.name.charAt(0).toUpperCase()}
-            </Link>
-          ))}
+          {spaces?.map((space) => {
+            const isActive = space.slug === currentSlug;
+            const p = paletteFor(space.name);
+            return (
+              <Link
+                key={space.id}
+                href={`/spaces/${space.slug}`}
+                title={space.name}
+                className={cn(
+                  'relative flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-bold transition-all duration-150 hover:scale-105',
+                )}
+                style={
+                  isActive
+                    ? {
+                        background: 'var(--accent)',
+                        color: 'var(--bg)',
+                        boxShadow: `0 1px 3px ${p.ring}, inset 0 0 0 1px ${p.ring}`,
+                      }
+                    : {
+                        background: p.bg,
+                        color: p.fg,
+                        boxShadow: `inset 0 0 0 1px ${p.ring}`,
+                      }
+                }
+              >
+                {initialsFor(space.name).charAt(0)}
+              </Link>
+            );
+          })}
           <Link href="/spaces/new" title={t('sidebar.newSpace')}>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/30 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/60 transition-all duration-150 border border-dashed border-sidebar-foreground/15">
               <Plus className="h-3.5 w-3.5" />
@@ -381,23 +442,42 @@ export function UnifiedSidebar() {
         {/* Divider */}
         <div className="mx-2.5 h-px bg-sidebar-foreground/8" />
 
-        {/* User avatar */}
-        <div className="flex justify-center py-3">
+        {/* User avatar — stacked with the appearance trigger so the
+            collapsed rail surfaces both controls without horizontal
+            crowding. Avatar is the primary action; sliders sits below. */}
+        <div className="flex flex-col items-center gap-2 py-3">
           <UserMenu avatarSize="h-7 w-7" showName={false} />
+          <AppearanceTrigger />
         </div>
       </aside>
     );
+
+    // In hover-rail mode, render a placeholder in the flow + the
+    // floating overlay aside that expands on hover. In pinned mode,
+    // just render the aside directly so the existing layout works.
+    return isHoverRail ? (
+      <>
+        <div className="w-14 shrink-0" aria-hidden />
+        {railContent}
+      </>
+    ) : railContent;
   }
 
   /* ── Expanded (full) sidebar ── */
-  return (
+  const expandedAside = (
     <aside
-      className="relative flex h-screen flex-col bg-sidebar text-sidebar-foreground shrink-0"
+      data-chrome="sidebar"
+      onMouseEnter={isHoverRail ? handleEnter : undefined}
+      onMouseLeave={isHoverRail ? handleLeave : undefined}
+      className={cn(
+        'flex h-screen flex-col bg-sidebar text-sidebar-foreground',
+        isHoverRail ? 'fixed left-0 top-0 z-30' : 'relative shrink-0',
+      )}
       style={{
         width: `${width}px`,
         minWidth: `${MIN_WIDTH}px`,
         maxWidth: `${MAX_WIDTH}px`,
-        boxShadow: 'var(--sidebar-shadow)',
+        boxShadow: isHoverRail ? 'var(--pop-shadow)' : 'var(--sidebar-shadow)',
       }}
     >
       {/* Resize handle */}
@@ -407,17 +487,50 @@ export function UnifiedSidebar() {
       <div className="flex items-center justify-between px-4 py-3.5">
         <Link href="/spaces" className="flex items-center gap-2.5">
           <WiksoLogo showText={false} className="h-7 w-7" />
-          <span className="text-[15px] font-semibold tracking-[-0.01em]">Wikso</span>
+          <span
+            className="text-[17px] font-semibold tracking-[-0.01em]"
+            style={{ fontFamily: 'var(--body-font)' }}
+          >
+            Wikso
+          </span>
         </Link>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-sidebar-foreground/30 hover:text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
-          onClick={toggle}
-          title={t('sidebar.collapse') || 'Collapse sidebar'}
-        >
-          <PanelLeftClose className="h-4 w-4" />
-        </Button>
+        {/* In hover-rail mode the sidebar floats and disappears on
+            mouse-leave; the only way the user can keep it open is to
+            promote it to pinned mode. So in that mode this button
+            *pins* (Pin icon → switches to pinned). In pinned mode it
+            collapses to the rail. Holding shift while clicking in
+            pinned mode unpins back to hover so power users can flip
+            modes without going to settings. */}
+        {isHoverRail ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            onClick={() => {
+              setSidebarMode('pinned');
+              setHoverExpanded(false); // tear down the hover overlay
+            }}
+            title={t('sidebar.pin') || 'Pin sidebar open'}
+          >
+            <Pin className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-sidebar-foreground/30 hover:text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
+            onClick={(e) => {
+              if (e.shiftKey) setSidebarMode('hover');
+              else toggle();
+            }}
+            title={
+              t('sidebar.collapse') ||
+              'Collapse sidebar (shift-click to switch to hover mode)'
+            }
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* ── Quick nav icons ── */}
@@ -606,10 +719,29 @@ export function UnifiedSidebar() {
       )}
 
       {/* ── User menu ── */}
+      {/* Two-up footer: avatar + name on the left, the appearance
+          trigger (sliders icon) pinned right. The trigger lived as a
+          floating bottom-right button before; pulling it in here keeps
+          related identity/skin controls together at the same edge of
+          the screen and frees the bottom-right corner for AskAI. */}
       <div className="px-3 pb-3 pt-1">
         <div className="mx-0 h-px bg-sidebar-foreground/8 mb-2.5" />
-        <UserMenu avatarSize="h-7 w-7" showName />
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <UserMenu avatarSize="h-7 w-7" showName />
+          </div>
+          <AppearanceTrigger />
+        </div>
       </div>
     </aside>
   );
+
+  // Hover-rail mode: render a 56px placeholder + the floating overlay
+  // so main content doesn't shift when the rail expands.
+  return isHoverRail ? (
+    <>
+      <div className="w-14 shrink-0" aria-hidden />
+      {expandedAside}
+    </>
+  ) : expandedAside;
 }

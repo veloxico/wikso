@@ -43,9 +43,15 @@ export const CalloutExtension = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
+    // Emit `wp-callout` so non-React surfaces (HTML export, search-index
+    // snippet rendering, plain-HTML preview iframes) match the editor's
+    // visual treatment. The legacy `callout callout-{type}` class is
+    // dropped because nothing reads it anymore — the React NodeView
+    // re-wraps with `wp-callout` at mount, and the parser keys off
+    // `div[data-callout]` rather than the class.
     return [
       'div',
-      mergeAttributes(HTMLAttributes, { 'data-callout': '', class: `callout callout-${HTMLAttributes['data-callout-type'] || 'info'}` }),
+      mergeAttributes(HTMLAttributes, { 'data-callout': '', class: 'wp-callout' }),
       0,
     ];
   },

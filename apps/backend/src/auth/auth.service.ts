@@ -8,6 +8,12 @@ import { SettingsService } from '../settings/settings.service';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuid } from 'uuid';
 import { RegisterDto } from './dto/register.dto';
+import { requireSecret } from '../common/utils/secrets';
+
+// Resolve once at module load — `requireSecret` throws at boot if the env var
+// is missing / placeholder / too short, so we get a fast-fail at startup
+// instead of a 500 the first time a user tries to refresh.
+const JWT_REFRESH_SECRET = requireSecret('JWT_REFRESH_SECRET');
 
 const RESET_TOKEN_PREFIX = 'auth:reset:';
 const VERIFY_TOKEN_PREFIX = 'auth:verify:';
@@ -118,7 +124,7 @@ export class AuthService {
     return {
       accessToken: this.jwtService.sign(payload),
       refreshToken: this.jwtService.sign(payload, {
-        secret: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
+        secret: JWT_REFRESH_SECRET,
         expiresIn: '7d',
       }),
       user: {
@@ -136,7 +142,7 @@ export class AuthService {
   async refresh(refreshToken: string) {
     try {
       const payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
+        secret: JWT_REFRESH_SECRET,
       });
       const user = await this.usersService.findById(payload.sub);
       return this.login(user);

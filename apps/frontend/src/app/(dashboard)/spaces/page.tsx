@@ -9,6 +9,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { bcp47Locale } from '@/lib/locale';
 
 const spaceTypeIcon: Record<string, React.ElementType> = {
   PUBLIC: Globe,
@@ -296,7 +297,7 @@ export default function SpacesPage() {
                       )}
                       <span className="flex items-center gap-1.5">
                         <Clock className="h-3 w-3" />
-                        {new Date(space.updatedAt).toLocaleDateString(locale)}
+                        {new Date(space.updatedAt).toLocaleDateString(bcp47Locale(locale))}
                       </span>
                     </div>
                   </div>
@@ -355,7 +356,7 @@ export default function SpacesPage() {
                       )}
                       <span className="flex items-center gap-1.5">
                         <Clock className="h-3 w-3" />
-                        {new Date(space.updatedAt).toLocaleDateString(locale)}
+                        {new Date(space.updatedAt).toLocaleDateString(bcp47Locale(locale))}
                       </span>
                     </div>
                   </div>

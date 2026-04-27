@@ -119,23 +119,19 @@ export function AiMenu({ editor, pageId }: AiMenuProps) {
         return true;
       }}
     >
-      <div className="flex items-center gap-0.5 rounded-lg border border-border bg-background px-1 py-0.5 shadow-lg">
+      <div className="wp-bubble relative" data-chrome="bubble">
         {isLoading ? (
           <>
-            <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+            <span className="inline-flex items-center gap-1.5 px-2 py-1 text-xs text-[color:var(--ink-3)]">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[color:var(--accent)]" />
               <span>{t('editor.ai.loading')}</span>
-            </div>
-            <button
-              type="button"
-              onClick={cancel}
-              className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
+            </span>
+            <button type="button" onClick={cancel} aria-label={t('common.cancel')}>
               <X className="h-3.5 w-3.5" />
             </button>
           </>
         ) : showPromptInput ? (
-          <div className="flex items-center gap-1">
+          <>
             <input
               ref={promptInputRef}
               type="text"
@@ -144,26 +140,27 @@ export function AiMenu({ editor, pageId }: AiMenuProps) {
               onKeyDown={handlePromptKeyDown}
               onMouseDown={(e) => e.stopPropagation()}
               placeholder={t('editor.ai.customPromptPlaceholder') || 'Enter instruction...'}
-              className="w-56 rounded border border-border bg-background px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-56"
             />
             <button
               type="button"
               onClick={handleCustomPromptSubmit}
               disabled={!customPrompt.trim()}
-              className="rounded p-1 text-primary hover:bg-primary/10 disabled:opacity-40 disabled:hover:bg-transparent"
+              className="wp-bubble-accent"
               onMouseDown={(e) => e.preventDefault()}
+              aria-label={t('common.save')}
             >
               <Send className="h-3.5 w-3.5" />
             </button>
             <button
               type="button"
               onClick={() => { setShowPromptInput(false); setCustomPrompt(''); }}
-              className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
               onMouseDown={(e) => e.preventDefault()}
+              aria-label={t('common.cancel')}
             >
               <X className="h-3.5 w-3.5" />
             </button>
-          </div>
+          </>
         ) : showOps ? (
           <>
             {OPERATIONS.map((op) => (
@@ -171,18 +168,18 @@ export function AiMenu({ editor, pageId }: AiMenuProps) {
                 key={op.key}
                 type="button"
                 onClick={() => handleOperation(op.key)}
-                className="flex items-center gap-1.5 rounded px-2 py-1 text-xs text-foreground hover:bg-accent transition-colors whitespace-nowrap"
+                className="wp-bubble-text"
                 onMouseDown={(e) => e.preventDefault()}
               >
                 <op.icon className="h-3.5 w-3.5" />
                 {t(op.labelKey)}
               </button>
             ))}
-            <div className="mx-0.5 h-4 w-px bg-border" />
+            <span className="sep" />
             <button
               type="button"
               onClick={() => { setShowOps(false); setShowPromptInput(true); }}
-              className="flex items-center gap-1.5 rounded px-2 py-1 text-xs text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
+              className="wp-bubble-text wp-bubble-accent"
               onMouseDown={(e) => e.preventDefault()}
             >
               <Pencil className="h-3.5 w-3.5" />
@@ -191,8 +188,8 @@ export function AiMenu({ editor, pageId }: AiMenuProps) {
             <button
               type="button"
               onClick={() => setShowOps(false)}
-              className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
               onMouseDown={(e) => e.preventDefault()}
+              aria-label={t('common.cancel')}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -201,7 +198,7 @@ export function AiMenu({ editor, pageId }: AiMenuProps) {
           <button
             type="button"
             onClick={() => setShowOps(true)}
-            className="flex items-center gap-1.5 rounded px-2 py-1 text-xs text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
+            className="wp-bubble-text wp-bubble-accent"
             onMouseDown={(e) => e.preventDefault()}
           >
             <Sparkles className="h-3.5 w-3.5" />

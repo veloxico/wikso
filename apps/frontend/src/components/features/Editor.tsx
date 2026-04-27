@@ -45,6 +45,7 @@ import { Input } from '@/components/ui/input';
 import { useAiStatus } from '@/hooks/useAiStatus';
 import { useAiTransform } from '@/hooks/useAiTransform';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAppearanceStore } from '@/store/appearanceStore';
 
 interface EditorProps {
   content?: Record<string, unknown>;
@@ -67,6 +68,7 @@ const HIGHLIGHT_COLORS = [
 
 export function Editor({ content, onChange, editable = true, spaceSlug, pageId }: EditorProps) {
   const { t } = useTranslation();
+  const toolbarVariant = useAppearanceStore((s) => s.toolbarVariant);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [showColorPicker, setShowColorPicker] = useState<'text' | 'highlight' | null>(null);
@@ -154,17 +156,29 @@ export function Editor({ content, onChange, editable = true, spaceSlug, pageId }
 
   if (!editor) return null;
 
+  // wp-tb-btn — warm-paper toolbar button. `data-active` drives the
+  // accent-soft pill background via globals.css. `onMouseDown`
+  // preventDefault keeps the editor selection alive when the user
+  // clicks a format button.
   const ToolbarButton = ({
     onClick, isActive, children, title, disabled,
   }: {
     onClick: () => void; isActive?: boolean; children: React.ReactNode; title: string; disabled?: boolean;
   }) => (
-    <Button variant="ghost" size="icon" className={cn('h-8 w-8', isActive && 'bg-accent text-accent-foreground')} onClick={onClick} onMouseDown={(e) => e.preventDefault()} title={title} type="button" disabled={disabled}>
+    <button
+      type="button"
+      className="wp-tb-btn"
+      data-active={isActive ? 'true' : undefined}
+      onClick={onClick}
+      onMouseDown={(e) => e.preventDefault()}
+      title={title}
+      disabled={disabled}
+    >
       {children}
-    </Button>
+    </button>
   );
 
-  const ToolbarDivider = () => <div className="mx-0.5 h-6 w-px bg-border" />;
+  const ToolbarDivider = () => <div className="wp-tb-sep" />;
 
   /** Build a tooltip string with optional keyboard shortcut */
   const tip = (label: string, shortcut?: string) => {
@@ -179,11 +193,11 @@ export function Editor({ content, onChange, editable = true, spaceSlug, pageId }
   };
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-[color:var(--rule)] bg-[color:var(--bg)]">
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
 
       {editable && (
-        <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/30 p-1">
+        <div className="wp-toolbar" data-variant={toolbarVariant} data-chrome="toolbar">
           <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title={tip(t('editor.bold'), 'Ctrl+B')}>
             <Bold className="h-4 w-4" />
           </ToolbarButton>

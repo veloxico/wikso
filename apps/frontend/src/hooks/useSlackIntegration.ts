@@ -41,7 +41,28 @@ export interface CreateSubscriptionInput {
   eventTypes: SlackPageEventType[];
 }
 
+export interface SlackConfigStatus {
+  configured: boolean;
+  missing: string[];
+}
+
 // ─── Queries ─────────────────────────────────────────────
+
+/**
+ * Pre-flight: are the SLACK_* env vars wired up server-side? Lets the
+ * admin UI render setup guidance instead of letting the user click
+ * Connect and get a confusing 400.
+ */
+export function useSlackConfigStatus() {
+  return useQuery<SlackConfigStatus>({
+    queryKey: ['slack', 'config-status'],
+    queryFn: async () => {
+      const { data } = await api.get('/integrations/slack/config-status');
+      return data;
+    },
+    staleTime: 60_000,
+  });
+}
 
 export function useSlackWorkspace() {
   return useQuery<SlackWorkspace | null>({
@@ -89,8 +110,15 @@ export function useStartSlackOAuth() {
         window.location.href = data.url;
       }
     },
-    onError: () => {
-      toast.error(t('admin.integrations.slack.connectFailed') || 'Failed to start Slack OAuth');
+    onError: (err: unknown) => {
+      // Surface the real backend message so config errors like
+      // "SLACK_CLIENT_ID is not configured" reach the admin instead of
+      // a generic toast that leaves them guessing.
+      const e = err as { response?: { data?: { message?: string } } };
+      const detail = e?.response?.data?.message;
+      const fallback =
+        t('admin.integrations.slack.connectFailed') || 'Failed to start Slack OAuth';
+      toast.error(detail ? `${fallback}: ${detail}` : fallback);
     },
   });
 }

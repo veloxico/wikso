@@ -28,6 +28,7 @@ import { ClaudeCliProvider } from '../../ai/providers/claude-cli.provider';
 import { GeminiProvider } from '../../ai/providers/gemini.provider';
 import { GeminiCliProvider } from '../../ai/providers/gemini-cli.provider';
 import { OpenAiCodexProvider } from '../../ai/providers/openai-codex.provider';
+import { assertSafeUrl } from '../../common/utils/ssrf';
 
 const VALID_PROVIDERS: AiProviderType[] = ['anthropic', 'openai', 'ollama', 'claude-cli', 'gemini', 'gemini-cli', 'openai-codex'];
 
@@ -224,6 +225,16 @@ export class AdminAiController {
     // If DTO has credentials, test with those (unsaved / pre-save test)
     if (dto?.apiKey || (provider === 'ollama' && dto?.endpoint)) {
       const { apiKey, endpoint, model, deployment, apiVersion } = dto;
+      // SSRF guard: any admin-supplied endpoint is fetched server-side, so it
+      // could otherwise be pointed at 169.254.169.254 (AWS metadata) or LAN
+      // hosts to pivot from a compromised admin account.
+      if (endpoint) {
+        try {
+          await assertSafeUrl(endpoint);
+        } catch (err: any) {
+          return { ok: false, message: `Endpoint rejected: ${err?.message || 'invalid URL'}` };
+        }
+      }
       const testProvider = this.createTestProvider(
         provider as AiProviderType,
         { apiKey, endpoint, model, deployment, apiVersion },
@@ -327,6 +338,18 @@ export class AdminAiController {
         /\/+$/,
         '',
       );
+      // SSRF guard before fetch — admin-controlled endpoint, must not be
+      // allowed to hit metadata services or LAN. The default ollama endpoint
+      // is itself loopback, so we deliberately bypass the guard for the
+      // unmodified default; once the admin overrides it we must validate.
+      if (saved?.endpoint && saved.endpoint !== 'http://localhost:11434') {
+        try {
+          await assertSafeUrl(endpoint);
+        } catch (err: any) {
+          this.logger.warn(`getModels(ollama) rejected endpoint: ${err?.message}`);
+          return { models: [], source: 'ollama' };
+        }
+      }
       try {
         const res = await fetch(`${endpoint}/api/tags`, {
           signal: AbortSignal.timeout(5000),

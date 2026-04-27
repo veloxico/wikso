@@ -20,29 +20,9 @@ import { promisify } from 'util';
 import * as path from 'path';
 import { promises as dnsPromises } from 'dns';
 import { isIP } from 'net';
+import { isBlockedHost } from '../common/utils/ssrf';
 
 const execAsync = promisify(exec);
-
-// Blocked IP ranges (RFC 1918, loopback, link-local, metadata)
-const BLOCKED_RANGES = [
-  /^127\./,
-  /^10\./,
-  /^172\.(1[6-9]|2\d|3[01])\./,
-  /^192\.168\./,
-  /^169\.254\./,
-  /^0\./,
-  /^::1$/,
-  /^fc00:/i,
-  /^fe80:/i,
-  /^fd/i,
-];
-
-function isBlockedHost(hostname: string): boolean {
-  const host = hostname.replace(/^\[/, '').replace(/\]$/, '');
-  if (host === 'localhost' || host === '0.0.0.0' || host === '::1') return true;
-  if (host === '169.254.169.254' || host === 'metadata.google.internal') return true;
-  return BLOCKED_RANGES.some((r) => r.test(host));
-}
 
 function sanitizeDbError(error: any): string {
   const code = error?.code;
