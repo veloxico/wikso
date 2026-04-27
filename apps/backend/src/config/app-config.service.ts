@@ -166,6 +166,59 @@ export class AppConfigService {
     return !!this.config?.setupCompletedAt;
   }
 
+  /**
+   * Best-effort upgrade migration: caller has determined the DB already
+   * contains users (so this is a legitimate existing install, not a fresh
+   * one), and wants to mark setup complete without going through the
+   * wizard. Tries to persist the config to disk; if the volume isn't
+   * writable (common upgrade case where `wikso_data:/app/data` mount
+   * is missing from the user's docker-compose.yml), falls back to an
+   * in-memory record so this process at least bypasses the wizard until
+   * the operator fixes the volume mount and restarts.
+   *
+   * The `completedAt` argument should be the timestamp of an existing
+   * record in the DB (e.g. the first admin user's `createdAt`) so the
+   * recorded value is meaningful for audit, not just "now". If the
+   * caller has no such anchor, the current time is used.
+   */
+  async tryMarkSetupCompleteFromExistingInstall(completedAt?: string): Promise<{
+    persisted: boolean;
+    inMemoryOnly: boolean;
+  }> {
+    const stamp = completedAt ?? new Date().toISOString();
+
+    // Build a config the in-memory state can fall back on. If we already
+    // have one (e.g. wizard partially populated DB section), preserve it
+    // and only fill in the missing setupCompletedAt.
+    const baseConfig: WiksoConfig = this.config ?? {
+      configVersion: CURRENT_CONFIG_VERSION,
+      database: {
+        url: process.env.DATABASE_URL ?? '',
+        useTls: false,
+        rejectUnauthorized: true,
+      },
+      setupCompletedAt: null,
+    };
+    const next: WiksoConfig = { ...baseConfig, setupCompletedAt: stamp };
+
+    try {
+      await this.save(next);
+      this.logger.log(
+        `Setup auto-completed for existing install (persisted to ${this.configPath}, completedAt=${stamp})`,
+      );
+      return { persisted: true, inMemoryOnly: false };
+    } catch (err: any) {
+      // Disk write failed — most often because /app/data isn't a mounted
+      // volume on upgrades from earlier versions. Don't crash; cache the
+      // state in memory so the running process behaves like setup is done.
+      this.config = next;
+      this.logger.warn(
+        `Setup auto-complete persist FAILED (${err.message}). Continuing with in-memory state only — add \`wikso_data:/app/data\` volume mount to docker-compose to make this persistent across restarts.`,
+      );
+      return { persisted: false, inMemoryOnly: true };
+    }
+  }
+
   /** Has a database URL been configured? */
   hasDatabaseConfig(): boolean {
     return !!this.config?.database?.url;

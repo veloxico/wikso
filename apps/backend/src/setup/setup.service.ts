@@ -4,6 +4,7 @@ import {
   Logger,
   BadRequestException,
   InternalServerErrorException,
+  OnApplicationBootstrap,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
@@ -38,7 +39,7 @@ function sanitizeDbError(error: any): string {
 }
 
 @Injectable()
-export class SetupService {
+export class SetupService implements OnApplicationBootstrap {
   private readonly logger = new Logger(SetupService.name);
 
   constructor(
@@ -46,6 +47,53 @@ export class SetupService {
     private authService: AuthService,
     private appConfig: AppConfigService,
   ) {}
+
+  /**
+   * Startup hook — auto-detect existing installations after Prisma connects.
+   *
+   * Why: v2.8.0 changed `isSetupComplete()` to read exclusively from the
+   * runtime config file (`/app/data/wikso.config.json`). Operators upgrading
+   * from earlier versions whose docker-compose.yml never had a `wikso_data`
+   * volume mount (the file was previously written to ephemeral container
+   * storage and lost on restart) suddenly see the setup wizard on what is
+   * a fully-populated production instance — including offering an attacker
+   * the ability to repoint the DB and seize global admin.
+   *
+   * The fix: at boot, if no `setupCompletedAt` is recorded but the DB
+   * already contains an admin user, treat the install as completed and
+   * stamp the config with that admin's `createdAt` so the recorded time
+   * reflects the real install date instead of "now".
+   *
+   * Best-effort only — if the disk write fails (volume not mounted), the
+   * in-memory state is updated anyway so this process behaves correctly,
+   * with a loud warning telling the operator to fix the mount.
+   */
+  async onApplicationBootstrap(): Promise<void> {
+    if (this.appConfig.isSetupComplete()) return;
+    if (!this.prisma.isReady) return;
+
+    let firstAdmin: { createdAt: Date } | null = null;
+    try {
+      firstAdmin = await this.prisma.user.findFirst({
+        where: { role: GlobalRole.ADMIN },
+        orderBy: { createdAt: 'asc' },
+        select: { createdAt: true },
+      });
+    } catch (err: any) {
+      // Schema not migrated yet, table missing, or DB unreachable. Either
+      // way this is the legitimate fresh-install path — don't auto-complete.
+      this.logger.debug(
+        `Setup auto-detect skipped: ${err.message ?? 'admin lookup failed'}`,
+      );
+      return;
+    }
+
+    if (!firstAdmin) return;
+
+    await this.appConfig.tryMarkSetupCompleteFromExistingInstall(
+      firstAdmin.createdAt.toISOString(),
+    );
+  }
 
   /**
    * Setup status — what stage is the wizard at?
