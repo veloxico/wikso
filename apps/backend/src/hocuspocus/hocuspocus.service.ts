@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import * as Y from 'yjs';
+import { PageLinksService } from '../page-links/page-links.service';
 
 /** Minimum interval between auto-created versions (in ms). */
 const VERSION_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
@@ -71,6 +72,7 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private pageLinks: PageLinksService,
   ) {}
 
   /**
@@ -173,6 +175,9 @@ export class HocuspocusService implements OnModuleInit, OnModuleDestroy {
               // Create a version snapshot if enough time has passed
               if (contentJson) {
                 await this.maybeCreateVersion(pageId, contentJson);
+                // Reconcile backlink graph in the background — Yjs autosaves
+                // fire often, so we never want to block a save on this.
+                void this.pageLinks.syncLinksFromContent(pageId, contentJson);
               }
             } catch (err) {
               this.logger.error(`Failed to store document ${pageId}: ${err.message}`);

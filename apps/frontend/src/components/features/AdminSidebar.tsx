@@ -17,6 +17,8 @@ import {
   Upload,
   ArrowLeft,
   Bot,
+  LayoutTemplate,
+  MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -38,41 +40,49 @@ export function AdminSidebar() {
     { href: '/admin/auth', labelKey: 'admin.nav.authProviders', icon: Key },
     { href: '/admin/email', labelKey: 'admin.nav.email', icon: Mail },
     { href: '/admin/webhooks', labelKey: 'admin.nav.webhooks', icon: Webhook },
+    { href: '/admin/integrations/slack', labelKey: 'admin.nav.integrationsSlack', icon: MessageCircle },
     { href: '/admin/health', labelKey: 'admin.nav.systemHealth', icon: Activity },
     { href: '/admin/ai', labelKey: 'admin.nav.ai', icon: Bot },
+    { href: '/admin/templates', labelKey: 'admin.nav.templates', icon: LayoutTemplate },
     { href: '/admin/import', labelKey: 'admin.nav.import', icon: Upload, badge: 'Beta' },
   ];
 
   return (
-    <aside className="flex h-screen w-60 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
+    <aside
+      className="flex h-screen w-60 flex-col bg-sidebar text-sidebar-foreground"
+      style={{ boxShadow: 'var(--sidebar-shadow)' }}
+    >
       {/* Logo */}
-      <div className="flex items-center gap-2 border-b border-border px-4 py-4">
-        <Link href="/spaces" className="flex items-center gap-2">
-          <WiksoLogo showText={false} className="h-8 w-8" />
-          <span className="text-lg font-semibold">Wikso</span>
+      <div className="flex items-center gap-2 px-4 py-3.5">
+        <Link href="/spaces" className="flex items-center gap-2.5">
+          <WiksoLogo showText={false} className="h-7 w-7" />
+          <span className="text-[15px] font-semibold tracking-[-0.01em]">Wikso</span>
         </Link>
       </div>
 
       {/* Back to spaces */}
-      <div className="px-3 py-2 border-b border-border">
+      <div className="px-3 pb-2">
         <Link
           href="/spaces"
-          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors"
+          className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm text-sidebar-foreground/50 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground transition-all duration-150"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           {t('admin.backToSpaces') || 'Back to Spaces'}
         </Link>
       </div>
 
+      {/* Divider */}
+      <div className="mx-3 h-px bg-sidebar-foreground/8" />
+
       {/* Admin title */}
-      <div className="px-6 pt-4 pb-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+      <div className="px-4 pt-3 pb-1.5">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/40">
           {t('admin.title')}
         </h2>
       </div>
 
       {/* Admin navigation */}
-      <nav className="flex-1 space-y-1 px-3 overflow-y-auto">
+      <nav className="flex-1 space-y-0.5 px-3 overflow-y-auto">
         {adminNav.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -81,13 +91,16 @@ export function AdminSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                'relative flex items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-sm font-medium transition-all duration-150',
                 isActive
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground',
+                  ? 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground',
               )}
             >
-              <Icon className="h-4 w-4" />
+              {isActive && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[var(--sidebar-item-active-border)]" />
+              )}
+              <Icon className="h-4 w-4 shrink-0" />
               {t(item.labelKey)}
               {(item as any).badge && (
                 <span className="ml-auto rounded-full bg-yellow-100 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
@@ -100,8 +113,9 @@ export function AdminSidebar() {
       </nav>
 
       {/* User menu */}
-      <div className="border-t border-border p-3">
-        <UserMenu avatarSize="h-8 w-8" showName />
+      <div className="px-3 pb-3 pt-1">
+        <div className="mx-0 h-px bg-sidebar-foreground/8 mb-2.5" />
+        <UserMenu avatarSize="h-7 w-7" showName />
       </div>
     </aside>
   );

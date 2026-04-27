@@ -5,8 +5,14 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* UI font is `--ui-font` (configurable in Tweaks: sans/serif/mono).
+   * Body documents use `--body-font` (Source Serif 4) inside `.wikso-editor`
+   * and `.wikso-reading`. Display is the body font for editorial titles. */
+  --font-sans: var(--ui-font);
+  --font-serif: var(--body-font);
+  --font-display: var(--body-font);
+  --font-mono: var(--mono-font);
+  --font-hand: var(--hand-font);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -45,89 +51,183 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* ===== Wikso Light Theme ===== */
+/* =============================================================
+ * Wikso — "Warm Paper" redesign tokens
+ *
+ * Two-layer system:
+ *   1. Design tokens (`--bg`, `--ink`, `--accent`, `--rule`, ...)
+ *      come straight from `design_handoff_wikso_redesign/styles.css`.
+ *   2. shadcn/ui tokens (`--background`, `--primary`, ...) are aliases
+ *      onto the design tokens so every existing Button / Card / Dialog
+ *      / Popover automatically picks up the new palette without being
+ *      rewritten.
+ *
+ * The accent hue is configurable at runtime via `data-accent` on
+ * `<html>` (set by the appearance store). Five presets: terracotta /
+ * ink / moss / plum / sky.
+ *
+ * Light mode = paper. Dark mode = graphite, in the same hue family.
+ * ============================================================= */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.29 0.05 260);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.29 0.05 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.29 0.05 260);
-  --primary: oklch(0.44 0.19 260);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.97 0.003 260);
-  --secondary-foreground: oklch(0.29 0.05 260);
-  --muted: oklch(0.97 0.003 260);
-  --muted-foreground: oklch(0.55 0.03 260);
-  --accent: oklch(0.94 0.03 260);
-  --accent-foreground: oklch(0.29 0.05 260);
-  --destructive: oklch(0.55 0.22 27);
-  --border: oklch(0.91 0.005 260);
-  --input: oklch(0.91 0.005 260);
-  --ring: oklch(0.44 0.19 260);
-  --chart-1: oklch(0.44 0.19 260);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0.002 260);
-  --sidebar-foreground: oklch(0.29 0.05 260);
-  --sidebar-primary: oklch(0.44 0.19 260);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.94 0.03 260);
-  --sidebar-accent-foreground: oklch(0.29 0.05 260);
-  --sidebar-border: oklch(0.91 0.005 260);
-  --sidebar-ring: oklch(0.44 0.19 260);
-  /* Logo — origami unfold */
-  --logo-left: #6AADFF;
-  --logo-left-dark: #2D6BDD;
-  --logo-right: #5B9FFF;
-  --logo-right-dark: #1A4FAA;
-  --logo-spine: #8AC4FF;
-  --logo-spark: #A8D4FF;
+  --radius: 0.5rem;            /* design uses 6–10px radii — 8px is the lg base */
+
+  /* Font families — UI is configurable, body uses serif for documents,
+   * mono for code, hand-written Caveat for editorial accents. */
+  --ui-font: 'Inter', system-ui, sans-serif;
+  --body-font: 'Source Serif 4', Georgia, serif;
+  --mono-font: 'JetBrains Mono', ui-monospace, monospace;
+  --hand-font: 'Caveat', cursive;
+
+  /* Accent — the five-preset hue+chroma system. JS sets these on <html>. */
+  --accent-h: 40;              /* terracotta */
+  --accent-c: 0.13;
+  --accent-l: 55%;
+  --accent: oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+  --accent-soft: oklch(95% 0.035 var(--accent-h));
+  --accent-ink: oklch(32% 0.08 var(--accent-h));
+  --accent-hover: oklch(48% 0.14 var(--accent-h));
+
+  /* Light theme — warm cream paper with graphite ink */
+  --bg: oklch(97.5% 0.012 80);
+  --bg-sunken: oklch(95% 0.014 80);
+  --bg-raised: oklch(99% 0.006 80);
+  --bg-elevated: oklch(100% 0 0);
+  --ink: oklch(22% 0.015 60);
+  --ink-2: oklch(38% 0.012 60);
+  --ink-3: oklch(55% 0.01 60);
+  --ink-4: oklch(72% 0.008 60);
+  --rule: oklch(89% 0.012 70);
+  --rule-strong: oklch(82% 0.015 70);
+  --highlight: oklch(92% 0.08 90);
+  --success: oklch(58% 0.11 150);
+  --warn: oklch(62% 0.14 65);
+  --danger: oklch(55% 0.17 25);
+
+  /* Shadows tuned for paper — soft, warm, not pure black */
+  --card-shadow: 0 1px 0 oklch(90% 0.015 70), 0 1px 2px oklch(85% 0.015 70 / 0.3);
+  --pop-shadow: 0 10px 30px oklch(40% 0.02 60 / 0.10),
+                0 4px 10px oklch(40% 0.02 60 / 0.06),
+                0 0 0 1px oklch(85% 0.015 70 / 0.8);
+
+  /* shadcn aliases — keeps every existing component visually consistent. */
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--bg-raised);
+  --card-foreground: var(--ink);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--ink);
+  --primary: var(--accent);
+  --primary-foreground: oklch(99% 0.005 var(--accent-h));
+  --secondary: var(--bg-sunken);
+  --secondary-foreground: var(--ink);
+  --muted: var(--bg-sunken);
+  --muted-foreground: var(--ink-3);
+  --accent-foreground: var(--accent-ink);
+  --destructive: var(--danger);
+  --border: var(--rule);
+  --input: var(--rule);
+  --ring: var(--accent);
+  --chart-1: oklch(60% 0.15 var(--accent-h));
+  --chart-2: oklch(60% 0.12 calc(var(--accent-h) + 60));
+  --chart-3: oklch(60% 0.12 calc(var(--accent-h) + 120));
+  --chart-4: oklch(60% 0.12 calc(var(--accent-h) + 180));
+  --chart-5: oklch(60% 0.12 calc(var(--accent-h) + 240));
+  --sidebar: var(--bg-sunken);
+  --sidebar-foreground: var(--ink-2);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: oklch(99% 0.005 var(--accent-h));
+  --sidebar-accent: var(--accent-soft);
+  --sidebar-accent-foreground: var(--accent-ink);
+  --sidebar-border: var(--rule);
+  --sidebar-ring: var(--accent);
+  --shadow-card: var(--card-shadow);
+  --shadow-card-hover: var(--pop-shadow);
+  --shadow-elevated: var(--pop-shadow);
+  --gradient-primary: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  --gradient-subtle: linear-gradient(135deg, var(--accent-soft), oklch(98% 0.02 var(--accent-h)));
+
+  /* Logo — accent-driven so brand color follows the palette */
+  --logo-left: var(--accent);
+  --logo-left-dark: var(--accent-hover);
+  --logo-right: var(--accent-hover);
+  --logo-right-dark: var(--accent-ink);
+  --logo-spine: var(--accent-soft);
+  --logo-spark: oklch(95% 0.035 var(--accent-h));
+
+  /* Sidebar refinements (compat with existing UnifiedSidebar) */
+  --sidebar-shadow: 1px 0 0 0 var(--rule);
+  --sidebar-item-active-bg: var(--accent-soft);
+  --sidebar-item-active-border: var(--accent);
+  --sidebar-search-bg: var(--bg-raised);
+  --sidebar-search-border: var(--rule);
 }
 
-/* ===== Anthropic-inspired Dark Theme ===== */
+/* Five accent presets — set via `data-accent` on <html> by the
+ * appearance store. Each just rewrites the hue + chroma; everything
+ * derived (`--accent-soft`, `--accent-ink`, etc.) recalculates. */
+:root[data-accent="terracotta"] { --accent-h: 40;  --accent-c: 0.13; }
+:root[data-accent="ink"]        { --accent-h: 260; --accent-c: 0.11; }
+:root[data-accent="moss"]       { --accent-h: 150; --accent-c: 0.10; }
+:root[data-accent="plum"]       { --accent-h: 340; --accent-c: 0.12; }
+:root[data-accent="sky"]        { --accent-h: 220; --accent-c: 0.10; }
+
+/* UI font swap — the appearance store sets data-uifont. */
+:root[data-uifont="serif"] { --ui-font: 'Source Serif 4', Georgia, serif; }
+:root[data-uifont="mono"]  { --ui-font: 'JetBrains Mono', ui-monospace, monospace; }
+
 .dark {
-  --background: oklch(0.18 0 0);
-  --foreground: oklch(0.92 0.01 80);
-  --card: oklch(0.2 0 0);
-  --card-foreground: oklch(0.92 0.01 80);
-  --popover: oklch(0.2 0 0);
-  --popover-foreground: oklch(0.92 0.01 80);
-  --primary: oklch(0.75 0.09 55);
-  --primary-foreground: oklch(0.18 0 0);
-  --secondary: oklch(0.25 0 0);
-  --secondary-foreground: oklch(0.92 0.01 80);
-  --muted: oklch(0.25 0 0);
-  --muted-foreground: oklch(0.68 0.02 55);
-  --accent: oklch(0.23 0.02 55);
-  --accent-foreground: oklch(0.92 0.01 80);
-  --destructive: oklch(0.68 0.14 22);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.75 0.09 55);
-  --chart-1: oklch(0.75 0.09 55);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.2 0 0);
-  --sidebar-foreground: oklch(0.92 0.01 80);
-  --sidebar-primary: oklch(0.75 0.09 55);
-  --sidebar-primary-foreground: oklch(0.18 0 0);
-  --sidebar-accent: oklch(0.23 0.02 55);
-  --sidebar-accent-foreground: oklch(0.92 0.01 80);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.75 0.09 55);
-  /* Logo — warm origami unfold */
-  --logo-left: #E8B86A;
-  --logo-left-dark: #C8883A;
-  --logo-right: #D9A050;
-  --logo-right-dark: #9A6828;
-  --logo-spine: #F0CC80;
-  --logo-spark: #F5DDA0;
+  /* Dark theme — graphite paper, warm ink */
+  --bg: oklch(18% 0.012 60);
+  --bg-sunken: oklch(15% 0.012 60);
+  --bg-raised: oklch(22% 0.013 60);
+  --bg-elevated: oklch(25% 0.014 60);
+  --ink: oklch(92% 0.012 80);
+  --ink-2: oklch(78% 0.012 70);
+  --ink-3: oklch(62% 0.012 70);
+  --ink-4: oklch(45% 0.012 70);
+  --rule: oklch(28% 0.012 70);
+  --rule-strong: oklch(35% 0.015 70);
+  --highlight: oklch(38% 0.1 80);
+  --accent-soft: oklch(32% 0.06 var(--accent-h));
+  --accent-ink: oklch(82% 0.08 var(--accent-h));
+  --card-shadow: 0 1px 0 oklch(10% 0.01 60), 0 1px 2px oklch(5% 0.01 60 / 0.6);
+  --pop-shadow: 0 12px 30px rgba(0,0,0,0.5),
+                0 4px 10px rgba(0,0,0,0.3),
+                0 0 0 1px oklch(32% 0.015 70);
+
+  /* shadcn aliases recompute with the new design tokens */
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--bg-raised);
+  --card-foreground: var(--ink);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--ink);
+  --primary: var(--accent);
+  --primary-foreground: oklch(15% 0.01 var(--accent-h));
+  --secondary: var(--bg-sunken);
+  --secondary-foreground: var(--ink);
+  --muted: var(--bg-sunken);
+  --muted-foreground: var(--ink-3);
+  --accent-foreground: var(--accent-ink);
+  --border: var(--rule);
+  --input: var(--rule);
+  --ring: var(--accent);
+  --sidebar: var(--bg-sunken);
+  --sidebar-foreground: var(--ink-2);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: oklch(15% 0.01 var(--accent-h));
+  --sidebar-accent: var(--accent-soft);
+  --sidebar-accent-foreground: var(--accent-ink);
+  --sidebar-border: var(--rule);
+  --sidebar-ring: var(--accent);
+  --shadow-card: var(--card-shadow);
+  --shadow-card-hover: var(--pop-shadow);
+  --shadow-elevated: var(--pop-shadow);
+  --sidebar-shadow: 1px 0 0 0 var(--rule);
+  --sidebar-item-active-bg: var(--accent-soft);
+  --sidebar-item-active-border: var(--accent);
+  --sidebar-search-bg: var(--bg-raised);
+  --sidebar-search-border: var(--rule);
 }
 
 @layer base {
@@ -136,6 +236,268 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: 'ss01', 'cv11'; /* subtle stylistic alternates on Jakarta */
+  }
+  /* Reading-surface typography: page titles and document headings use the
+   * editorial serif with optical-size tuning, while body/UI text stays with
+   * Jakarta. Scoped to .wikso-editor and .wikso-reading so generic admin/UI
+   * headings remain sans. */
+  .wikso-editor h1,
+  .wikso-editor h2,
+  .wikso-editor h3,
+  .wikso-reading h1,
+  .wikso-reading h2,
+  .wikso-reading h3,
+  .wikso-title {
+    font-family: var(--body-font), ui-serif, Georgia, serif;
+    font-feature-settings: 'ss01', 'ss02';
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  .wikso-editor h1,
+  .wikso-reading h1,
+  .wikso-title {
+    font-variation-settings: 'SOFT' 30, 'opsz' 144;
+    font-weight: 600;
+  }
+  .wikso-editor h2,
+  .wikso-reading h2 {
+    font-variation-settings: 'SOFT' 40, 'opsz' 72;
+    font-weight: 600;
+  }
+  .wikso-editor h3,
+  .wikso-reading h3 {
+    font-variation-settings: 'SOFT' 50, 'opsz' 36;
+    font-weight: 600;
+  }
+  /* Body prose — constrain line length, pretty wrap, hanging punctuation */
+  .wikso-editor p,
+  .wikso-reading p {
+    text-wrap: pretty;
+    hanging-punctuation: first last;
+  }
+  /* Smart defaults for large document surfaces */
+  .prose-wikso {
+    max-width: 72ch;
+    line-height: 1.7;
+    hyphens: auto;
+  }
+
+  /* ===== Editorial typography =====================================
+   * Drop cap on the first paragraph of an explicit reading surface
+   * (`.wikso-reading`, applied via the reading-mode toggle). The active
+   * editor (`.wikso-editor`) deliberately does NOT get a drop cap —
+   * having a giant first letter while typing is jarring and disrupts
+   * line-height calculations.
+   *
+   * If reading-mode is on, the global `html[data-reading="true"]` rule
+   * further down toggles the cap on the editor too — that's the only
+   * surface where a drop cap is wanted on top of the normal editor.
+   */
+  .wikso-reading > p:first-of-type::first-letter,
+  html[data-reading="true"] .wikso-editor > p:first-of-type::first-letter {
+    font-family: var(--body-font), ui-serif, Georgia, serif;
+    font-variation-settings: 'SOFT' 20, 'opsz' 144;
+    font-weight: 500;
+    float: left;
+    font-size: 3.6em;
+    line-height: 0.82;
+    margin: 0.08em 0.08em -0.05em 0;
+    padding-right: 0.05em;
+    color: var(--primary);
+    letter-spacing: -0.02em;
+  }
+
+  /* Pull-quote — editorial callout for mid-paragraph emphasis. Apply
+   * via `<blockquote class="pullquote">`. Oversized Fraunces italic
+   * with a decorative opening quotation mark behind the text. Bleeds
+   * slightly past the text column so it feels intentional. */
+  .wikso-editor blockquote.pullquote,
+  .wikso-reading blockquote.pullquote {
+    border: none;
+    margin: 2rem -0.5rem;
+    padding: 0.25rem 1.5rem 0.25rem 2.25rem;
+    font-family: var(--body-font), ui-serif, Georgia, serif;
+    font-variation-settings: 'SOFT' 40, 'opsz' 96;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.375em;
+    line-height: 1.35;
+    color: var(--foreground);
+    position: relative;
+    text-wrap: balance;
+  }
+  .wikso-editor blockquote.pullquote::before,
+  .wikso-reading blockquote.pullquote::before {
+    content: '\201C';
+    position: absolute;
+    left: 0.1em;
+    top: -0.35em;
+    font-size: 4.2em;
+    line-height: 1;
+    color: var(--primary);
+    opacity: 0.22;
+    font-family: var(--body-font), ui-serif, Georgia, serif;
+    font-variation-settings: 'SOFT' 80, 'opsz' 144;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Heading anchor-copy button — injected by HeadingAnchors.tsx into
+   * every h1..h3 inside a reading surface. Hidden by default, revealed
+   * on heading hover or keyboard focus. Clicking copies the full
+   * deep-link to clipboard and scrolls the heading into view. */
+  .wikso-editor h1,
+  .wikso-editor h2,
+  .wikso-editor h3,
+  .wikso-reading h1,
+  .wikso-reading h2,
+  .wikso-reading h3 {
+    position: relative;
+  }
+  .heading-anchor-btn {
+    position: absolute;
+    left: -1.6em;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    color: var(--muted-foreground);
+    text-decoration: none;
+    font-family: var(--body-font), ui-serif, Georgia, serif;
+    font-weight: 400;
+    font-size: 0.75em;
+    line-height: 1;
+    padding: 0.25em 0.4em;
+    border-radius: 0.25rem;
+    user-select: none;
+    transition: opacity 0.18s ease, color 0.12s ease, background 0.12s ease;
+  }
+  h1:hover > .heading-anchor-btn,
+  h2:hover > .heading-anchor-btn,
+  h3:hover > .heading-anchor-btn,
+  .heading-anchor-btn:focus-visible,
+  .heading-anchor-btn:hover {
+    opacity: 1;
+  }
+  .heading-anchor-btn:hover {
+    color: var(--primary);
+    background: color-mix(in oklch, var(--primary) 8%, transparent);
+  }
+  .heading-anchor-btn:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  .heading-anchor-btn[data-copied='true'] {
+    color: var(--primary);
+  }
+  .heading-anchor-btn[data-copied='true']::after {
+    content: 'copied';
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 4px);
+    transform: translateX(-50%);
+    padding: 0.15em 0.5em;
+    background: var(--popover);
+    color: var(--popover-foreground);
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    font-size: 0.85em;
+    white-space: nowrap;
+    box-shadow: var(--shadow-card);
+    pointer-events: none;
+  }
+
+  /* Reading-metadata chip — sits below the page title, hairline row of
+   * small-caps Jakarta with tabular numerals so the word count doesn't
+   * jitter as it updates. The chip itself has no border; separation
+   * comes from hue restraint and size. */
+  .reading-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    color: var(--muted-foreground);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+  .reading-meta > * {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .reading-meta svg {
+    width: 0.85rem;
+    height: 0.85rem;
+    stroke-width: 1.75;
+  }
+
+  /* Paper texture — very subtle dotted pattern so the cream background
+   * has weight, not just a flat fill. CSS-only (no /noise.svg fetch),
+   * scales perfectly, and tints with the accent so the paper feels
+   * cohesive with the brand color. Pointer-events off, fixed at z=0
+   * so it sits *behind* content but above the background fill. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    background-image:
+      radial-gradient(oklch(50% 0.02 60 / 0.05) 1px, transparent 1px),
+      radial-gradient(oklch(50% 0.02 60 / 0.03) 1px, transparent 1px);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1px 2px;
+    mix-blend-mode: multiply;
+  }
+  .dark body::before {
+    opacity: 0.18;
+    mix-blend-mode: screen;
+  }
+
+  /* Respect user motion preference — disable the non-essential
+   * transitions that get added for polish. Progress bar, outline
+   * scroll-spy, heading anchor reveal, theme-swap crossfade all gate
+   * off here. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
+    }
+  }
+
+  /* View-transitions — used by ThemeToggle to animate the theme swap
+   * as a circular wipe from the toggle's click origin. The incoming
+   * theme layer expands a circular clip-path from (--wipe-x, --wipe-y),
+   * which the toggle sets on <html> just before calling
+   * document.startViewTransition(). */
+  @keyframes theme-wipe-in {
+    from {
+      clip-path: circle(0% at var(--wipe-x, 100%) var(--wipe-y, 0%));
+    }
+    to {
+      clip-path: circle(150% at var(--wipe-x, 100%) var(--wipe-y, 0%));
+    }
+  }
+  ::view-transition-old(root) {
+    animation: none;
+    mix-blend-mode: normal;
+    z-index: 1;
+  }
+  ::view-transition-new(root) {
+    animation: theme-wipe-in 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    mix-blend-mode: normal;
+    z-index: 2;
   }
 }
 
@@ -288,11 +650,29 @@
   color: var(--muted-foreground);
 }
 
-/* Horizontal rule */
-.wikso-editor hr {
+/* Ornamental horizontal rule — three diamonds centered, editorial
+ * section break. Applies to both editor and reading surfaces. */
+.wikso-editor hr,
+.wikso-reading hr {
   border: none;
-  border-top: 2px solid var(--border);
-  margin: 1.5rem 0;
+  display: block;
+  height: 2.5rem;
+  margin: 2rem 0;
+  position: relative;
+  background: none;
+}
+.wikso-editor hr::before,
+.wikso-reading hr::before {
+  content: '\2756\00a0\00a0\00a0\2756\00a0\00a0\00a0\2756';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--muted-foreground);
+  opacity: 0.5;
+  font-size: 0.85em;
+  letter-spacing: 0.15em;
+  font-family: var(--body-font), ui-serif, Georgia, serif;
 }
 
 /* Placeholder styles */
@@ -1171,4 +1551,2840 @@
 
 @keyframes excalidraw-spin {
   to { transform: rotate(360deg); }
+}
+
+/* =============================================================
+ * Wikso "Warm Paper" — utility classes
+ *
+ * Direct port of patterns from `design_handoff_wikso_redesign/`.
+ * All names prefixed `wp-*` (warm paper) so they don't collide with
+ * shadcn or Tailwind-generated classes. Use them in JSX wherever the
+ * stock shadcn variant doesn't capture the hand-tuned spacing or
+ * decoration of the design (handwritten accents, slash menu rows,
+ * editorial greeting hero, etc.).
+ * ============================================================= */
+
+/* Document body — Source Serif 4, generous line-height. Apply on the
+ * outer ProseMirror container. Differs from `.wikso-editor` (which
+ * already exists) by tightening to the design's exact 17.5px / 1.65
+ * spec. */
+.wp-doc-body {
+  font-family: var(--body-font);
+  font-size: 17.5px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+/* Editorial hero greeting (dashboard) — serif 36, two-tone (greeting
+ * muted, name full ink), with a Caveat handwritten accent floating to
+ * the right of the subline. */
+.wp-hero {
+  font-family: var(--body-font);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin: 0;
+  text-wrap: balance;
+}
+.wp-hero .wp-greeting { color: var(--ink-3); font-weight: 400; }
+.wp-hero .wp-name     { color: var(--ink); }
+
+/* Hand-drawn underline under the hero name. Wraps the name in a
+   relative container; the SVG is absolutely positioned along the
+   baseline and its path animates from invisible to drawn on first
+   paint via stroke-dasharray. The stroke inherits accent so the
+   line tracks the user's palette. Disabled under reduced-motion
+   (see the existing prefers-reduced-motion block which zeros all
+   transition-durations). */
+.wp-hero-name {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+.wp-hero-underline {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  bottom: -0.18em;
+  width: calc(100% + 4px);
+  height: 0.42em;
+  pointer-events: none;
+  overflow: visible;
+  color: var(--accent);
+}
+.wp-hero-underline path {
+  stroke: currentColor;
+  stroke-dasharray: 240;
+  stroke-dashoffset: 240;
+  opacity: 0;
+  animation:
+    wp-hero-underline-draw 1.05s cubic-bezier(0.65, 0, 0.35, 1) 0.45s forwards,
+    wp-hero-underline-fade 0.4s ease 0.45s forwards;
+}
+@keyframes wp-hero-underline-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes wp-hero-underline-fade {
+  to { opacity: 0.7; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wp-hero-underline path {
+    stroke-dashoffset: 0;
+    opacity: 0.7;
+    animation: none;
+  }
+}
+
+.wp-sub {
+  color: var(--ink-3);
+  font-size: 14px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.wp-hand {
+  font-family: var(--hand-font);
+  font-size: 1.5em;
+  line-height: 1;
+  color: var(--accent);
+  position: relative;
+  top: 2px;
+}
+
+/* Paper card — generic container with the design's warm 1px border +
+ * hover lift to accent. */
+.wp-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  transition: border-color 120ms, transform 120ms, box-shadow 120ms;
+}
+.wp-card-interactive {
+  cursor: pointer;
+}
+.wp-card-interactive:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px oklch(40% 0.02 60 / 0.06);
+}
+
+/* Quick-action card (4-up grid on the dashboard) */
+.wp-qa {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg-raised);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 120ms, transform 120ms;
+  text-decoration: none;
+  color: inherit;
+}
+.wp-qa:hover { border-color: var(--accent); transform: translateY(-1px); }
+.wp-qa-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.wp-qa-title { font-size: 13.5px; font-weight: 500; color: var(--ink); }
+.wp-qa-sub   { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; line-height: 1.35; }
+
+/* Section title (uppercase tracking, optional inline action) */
+.wp-section-title {
+  margin: 0 0 14px 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Recent / pinned list item — emoji + title + breadcrumb (mono) + time */
+.wp-rec {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg-raised);
+  border: 1px solid var(--rule);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 120ms, background 120ms;
+}
+.wp-rec:hover { border-color: var(--rule-strong); background: var(--bg-elevated); }
+.wp-rec-icon { font-size: 20px; line-height: 1; flex-shrink: 0; }
+.wp-rec-body { flex: 1; min-width: 0; }
+.wp-rec-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wp-rec-path {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  font-family: var(--mono-font);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wp-rec-time { font-size: 11.5px; color: var(--ink-3); flex-shrink: 0; }
+
+/* Activity feed — avatar + sentence + timestamp, dashed rule between */
+.wp-activity-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 2px;
+  border-bottom: 1px dashed var(--rule);
+}
+.wp-activity-item:last-child { border-bottom: 0; }
+.wp-activity-text {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+.wp-activity-text b { color: var(--ink); font-weight: 600; }
+.wp-activity-time {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+
+/* Empty state — large emoji, serif title, handwritten subtitle */
+.wp-empty {
+  max-width: 660px;
+  margin: 0 auto;
+  padding: 18vh 24px 40px;
+  text-align: center;
+}
+.wp-empty-emoji { font-size: 64px; line-height: 1; }
+.wp-empty-title {
+  font-family: var(--body-font);
+  font-size: 34px;
+  font-weight: 600;
+  margin: 18px 0 6px 0;
+  color: var(--ink-3);
+}
+
+/* Floating bubble bar — bottom-pointing arrow tail. The TipTap
+ * BubbleMenu extension positions this; we style the inner container. */
+.wp-bubble {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border-radius: 7px;
+  box-shadow: var(--pop-shadow);
+  z-index: 30;
+  animation: wp-pop-in 140ms cubic-bezier(.2,.9,.3,1);
+}
+.wp-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 30px;
+  width: 10px;
+  height: 10px;
+  background: var(--bg-elevated);
+  transform: rotate(45deg);
+  box-shadow: 3px 3px 6px oklch(40% 0.02 60 / 0.08);
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+@keyframes wp-pop-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.wp-bubble button {
+  min-width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 5px;
+  color: var(--ink-2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.wp-bubble button:hover  { background: var(--bg-sunken); color: var(--ink); }
+.wp-bubble button[data-active="true"],
+.wp-bubble button.active { background: var(--accent-soft); color: var(--accent-ink); }
+.wp-bubble button.wp-bubble-text {
+  padding: 0 8px;
+  white-space: nowrap;
+}
+.wp-bubble button.wp-bubble-accent { color: var(--accent); }
+.wp-bubble button.wp-bubble-accent:hover { background: var(--accent-soft); color: var(--accent-ink); }
+.wp-bubble .sep {
+  width: 1px;
+  height: 18px;
+  background: var(--rule);
+  margin: 0 2px;
+}
+.wp-bubble input[type="text"] {
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 12px;
+  outline: none;
+}
+.wp-bubble input[type="text"]:focus { border-color: var(--accent); }
+
+/* Slash-menu row — square icon + title + description. Reset button
+ * defaults so the HTML <button> doesn't carry inherited styling. */
+.wp-slash-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  cursor: pointer;
+  transition: background 120ms;
+  text-align: left;
+}
+.wp-slash-item:hover,
+.wp-slash-item.is-selected { background: var(--accent-soft); color: var(--accent-ink); }
+.wp-slash-item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule);
+  display: grid;
+  place-items: center;
+  color: var(--ink-2);
+  flex-shrink: 0;
+  font-family: var(--body-font);
+  font-size: 16px;
+  font-weight: 600;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+.wp-slash-item:hover .wp-slash-item-icon,
+.wp-slash-item.is-selected .wp-slash-item-icon {
+  background: var(--bg-elevated);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+.wp-slash-item-title { font-size: 13px; font-weight: 500; color: var(--ink); }
+.wp-slash-item:hover .wp-slash-item-title,
+.wp-slash-item.is-selected .wp-slash-item-title { color: var(--accent-ink); }
+.wp-slash-item-desc { font-size: 11.5px; color: var(--ink-3); margin-top: 1px; }
+
+/* Toolbar — sticky group of formatting buttons. Three variants:
+ * full / compact / minimal — toggled via a data attribute. */
+.wp-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: var(--bg-raised);
+  border: 1px solid var(--rule);
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.wp-toolbar::-webkit-scrollbar { display: none; }
+.wp-toolbar[data-variant="compact"] { padding: 4px 3px; }
+.wp-toolbar[data-variant="minimal"] {
+  background: transparent;
+  border: 0;
+  padding: 6px 0;
+  gap: 8px;
+}
+.wp-tb-btn {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  color: var(--ink-2);
+  flex-shrink: 0;
+  transition: background 120ms, color 120ms;
+}
+.wp-tb-btn:hover { background: var(--bg-sunken); color: var(--ink); }
+.wp-tb-btn[data-active="true"],
+.wp-tb-btn.active { background: var(--accent-soft); color: var(--accent-ink); }
+.wp-tb-btn.wide { width: auto; padding: 0 10px; gap: 6px; }
+.wp-toolbar[data-variant="compact"] .wp-tb-btn { width: 26px; height: 26px; }
+.wp-toolbar[data-variant="minimal"] .wp-tb-btn { color: var(--ink-3); }
+.wp-toolbar[data-variant="minimal"] .wp-tb-btn:hover { color: var(--ink); }
+.wp-tb-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--rule);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Command palette overrides — applied alongside cmdk's built-in
+ * classes. The CommandPalette component opts in via `wp-cmdk` on the
+ * root. */
+.wp-cmdk {
+  width: 680px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  box-shadow: var(--pop-shadow), 0 30px 80px rgba(0,0,0,0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+}
+.wp-cmdk-overlay {
+  position: fixed; inset: 0;
+  background: oklch(20% 0.02 70 / 0.3);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: grid;
+  place-items: flex-start center;
+  padding-top: 10vh;
+  animation: wp-pop-in 120ms ease;
+}
+.wp-cmdk-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--rule);
+}
+.wp-cmdk-search input {
+  flex: 1;
+  font-size: 16px;
+  font-family: var(--body-font);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--ink);
+}
+.wp-cmdk-section,
+.wp-cmdk [cmdk-group-heading] {
+  padding: 10px 10px 4px 10px;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+.wp-cmdk [cmdk-group]:not(:first-child) [cmdk-group-heading] { padding-top: 14px; }
+.wp-cmdk [cmdk-list] { scrollbar-width: thin; }
+.wp-cmdk-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.wp-cmdk-row[data-selected="true"],
+.wp-cmdk-row:hover { background: var(--bg-sunken); }
+.wp-cmdk-row-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule);
+  display: grid;
+  place-items: center;
+  color: var(--ink-2);
+  flex-shrink: 0;
+}
+.wp-cmdk-row[data-selected="true"] .wp-cmdk-row-icon {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-color: var(--accent-soft);
+}
+.wp-cmdk-row-title { font-size: 13.5px; color: var(--ink); }
+.wp-cmdk-row-sub   { font-size: 11.5px; color: var(--ink-3); }
+.wp-cmdk-row-shortcut {
+  font-family: var(--mono-font);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.wp-cmdk-foot {
+  padding: 8px 14px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  gap: 18px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  background: var(--bg-sunken);
+}
+.wp-cmdk-foot kbd {
+  font-family: var(--mono-font);
+  font-size: 10px;
+  padding: 1px 5px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+
+/* Tweaks settings panel — anchored bottom-right, slides up from the
+ * floating toggle. Sits 80px above the bottom edge so it stacks above
+ * the AskAI floating button (which owns bottom-16/right-16). */
+.wp-tweaks {
+  position: fixed;
+  /* Anchored to the bottom-left because the trigger now lives next to
+   * the user-menu in the sidebar — having the panel pop up on the same
+   * side keeps the click→panel relationship spatially obvious. The
+   * `left` offset lands it just inside the sidebar edge on desktop and
+   * is safely inside the viewport on mobile. */
+  left: 16px;
+  bottom: 76px;
+  width: 320px;
+  /* Avoid stretching the panel past the viewport on narrow displays. */
+  max-width: calc(100vw - 32px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  box-shadow: var(--pop-shadow);
+  z-index: 40;
+  overflow: hidden;
+  font-size: 13px;
+  animation: wp-pop-in 140ms ease;
+}
+.wp-tweaks-head {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--rule);
+  font-weight: 600;
+  font-size: 13px;
+}
+.wp-tweaks-body { padding: 8px 14px 14px; max-height: 70vh; overflow-y: auto; }
+.wp-tweaks-field {
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--rule);
+}
+.wp-tweaks-field:last-child { border-bottom: 0; }
+.wp-tweaks-label {
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.wp-seg {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-sunken);
+  padding: 3px;
+  border-radius: 7px;
+}
+.wp-seg button {
+  flex: 1;
+  height: 28px;
+  border-radius: 5px;
+  font-size: 12px;
+  color: var(--ink-2);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.wp-seg button.on {
+  background: var(--bg-elevated);
+  color: var(--ink);
+  box-shadow: 0 1px 2px oklch(40% 0.01 70 / 0.15);
+}
+.wp-swatches { display: flex; gap: 8px; }
+.wp-sw {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 120ms;
+  display: grid;
+  place-items: center;
+}
+.wp-sw:hover { transform: scale(1.1); }
+.wp-sw.on { border-color: var(--ink); box-shadow: 0 0 0 2px var(--bg); }
+.wp-sw .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: white;
+  opacity: 0;
+}
+.wp-sw.on .dot { opacity: 1; }
+
+/* `.wp-tweaks-toggle` was a fixed bottom-right ink circle. The trigger
+ * now lives inline in the sidebar (see `AppearanceTrigger.tsx`) so the
+ * floating button is gone. The class is kept as an empty rule for
+ * backwards compatibility with any export styles or third-party code
+ * that might still match it; remove once a release confirms nothing
+ * external depends on the selector. */
+.wp-tweaks-toggle { display: none; }
+
+/* Sidebar rail mode — hover-expand from 56px → 280px. The
+ * `wp-sidebar-rail` class is applied by UnifiedSidebar in `hover`
+ * mode; in `pinned` mode it stays expanded. */
+.wp-sidebar-rail {
+  width: 56px;
+  transition: width 180ms cubic-bezier(.2,.9,.3,1);
+}
+.wp-sidebar-rail:hover,
+.wp-sidebar-rail[data-pinned="true"] { width: 280px; }
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Comments — warm-paper thread bubbles. The container is a flat card
+ * with a 1px dashed left rule that turns solid + accent on the active
+ * comment (mirrors the document ribbon / wp-doc-meta visual language).
+ * Reactions, reply, and edit affordances live in a single dense row
+ * to keep the discussion column tight and readable.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-comment {
+  display: flex;
+  gap: 12px;
+  padding: 14px 14px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  transition: border-color 150ms, background 150ms;
+}
+.wp-comment + .wp-comment { margin-top: 10px; }
+.wp-comment:hover { border-color: oklch(from var(--rule) l c h / 1.6); }
+.wp-comment[data-pinned="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.wp-comment[data-resolved="true"] {
+  background: var(--bg-sunken);
+  opacity: 0.7;
+}
+.wp-comment[data-resolved="true"] .wp-comment-body { text-decoration: line-through; }
+
+.wp-comment-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--accent);
+  flex-shrink: 0;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--rule);
+}
+
+.wp-comment-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+  margin-bottom: 4px;
+}
+.wp-comment-meta .name {
+  font-weight: 600;
+  color: var(--ink);
+  font-family: var(--ui-font);
+}
+.wp-comment-meta .time {
+  color: var(--ink-4);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+.wp-comment-meta .badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 2px 5px;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  background: transparent;
+}
+
+.wp-comment-body {
+  font-family: var(--body-font);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.wp-comment-body .mention {
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 0 4px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.wp-comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.wp-comment-actions button {
+  height: 24px;
+  padding: 0 7px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font: inherit;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.wp-comment-actions button:hover {
+  background: var(--bg-sunken);
+  color: var(--ink);
+}
+.wp-comment-actions button.danger:hover {
+  color: var(--danger, oklch(55% 0.18 25));
+  background: oklch(95% 0.04 25 / 0.5);
+}
+.wp-comment-actions .sep {
+  width: 1px;
+  height: 12px;
+  background: var(--rule);
+  margin: 0 2px;
+}
+
+/* Threaded replies — a soft dashed rule on the left replaces the
+ * heavy accent border of the previous treatment. */
+.wp-thread {
+  margin: 12px 0 0 16px;
+  padding-left: 16px;
+  border-left: 1px dashed var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wp-thread .wp-comment {
+  padding: 10px 12px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+}
+.wp-thread .wp-comment:hover { background: var(--bg-sunken); border: 0; }
+.wp-thread .wp-comment-avatar { width: 24px; height: 24px; font-size: 10px; }
+
+/* Composer — tight inline composer with a subtle accent on focus.
+ * Used both for the top-level comment form and inline replies. */
+.wp-comment-composer {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.wp-comment-composer:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.wp-comment-composer .grow { flex: 1; min-width: 0; }
+.wp-comment-composer textarea,
+.wp-comment-composer input[type="text"] {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-family: var(--body-font);
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  resize: none;
+}
+.wp-comment-composer .send {
+  height: 30px;
+  width: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  border: 0;
+  background: var(--accent);
+  color: var(--bg);
+  cursor: pointer;
+  transition: background 120ms, transform 120ms;
+}
+.wp-comment-composer .send:hover { background: var(--accent-hover); }
+.wp-comment-composer .send:disabled {
+  background: var(--bg-sunken);
+  color: var(--ink-4);
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Dialog — dashed-rule separators inside Share / Version History to
+ * echo the page-level visual language. The shadcn DialogContent stays
+ * intact; this just adds a `wp-dialog` modifier class for the inner
+ * sections.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-dialog-section + .wp-dialog-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--rule);
+}
+.wp-dialog-label {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-bottom: 8px;
+}
+.wp-dialog-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed transparent;
+}
+.wp-dialog-row + .wp-dialog-row { border-top: 1px dashed var(--rule); }
+.wp-dialog-row:hover { background: var(--bg-sunken); margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: 6px; }
+
+/* Editor topbar — slim 48px row with breadcrumbs + actions */
+.wp-topbar {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--rule);
+  gap: 10px;
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.wp-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.wp-crumbs a { color: inherit; text-decoration: none; }
+.wp-crumbs a:hover { color: var(--ink); }
+.wp-crumbs .current { color: var(--ink); font-weight: 500; }
+.wp-crumbs .sep { color: var(--ink-4); }
+
+/* Document ribbon — emoji + title + meta row above the toolbar */
+.wp-doc-ribbon {
+  padding: 36px 0 20px 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+}
+.wp-doc-ribbon .emoji {
+  font-size: 42px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+}
+.wp-doc-ribbon h1 {
+  margin: 0;
+  font-family: var(--body-font);
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+.wp-doc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 14px 0 0 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.wp-doc-meta .m {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.wp-doc-meta .m .lab { color: var(--ink-4); }
+.wp-doc-meta .m.bt {
+  cursor: pointer;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font: inherit;
+  transition: background 120ms, color 120ms;
+}
+.wp-doc-meta .m.bt:hover { background: var(--bg-sunken); color: var(--ink); }
+.wp-doc-meta .m.follow.on { color: var(--accent); font-weight: 500; }
+.wp-doc-meta .m.follow.on::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 2px;
+  display: inline-block;
+}
+
+/* Avatar stack for the topbar collaborators */
+.wp-collab {
+  display: flex;
+  align-items: center;
+  margin-right: 6px;
+}
+.wp-collab .av {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  margin-left: -6px;
+  flex-shrink: 0;
+}
+.wp-collab .av:first-child { margin-left: 0; }
+.wp-collab .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-left: 8px;
+  background: var(--success);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+/* Collab caret tweaks (TipTap uses `.collaboration-cursor__caret`
+ * class — we already style it above. These rules add the design's
+ * blink + flag treatment as an enhancement). */
+.collaboration-cursor__caret {
+  animation: wp-caret-blink 1.1s infinite;
+}
+@keyframes wp-caret-blink {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0.4; }
+}
+.collaboration-cursor__label {
+  border-radius: 4px 4px 4px 0;
+  font-family: var(--ui-font);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 6px;
+}
+
+/* Editorial callout inside .wikso-editor — accent-soft bg with a 3px
+ * left border in the active accent. Replaces the previous info/warn/
+ * success/error colour set with a single accent-driven look (other
+ * variants still work via their own classes above). */
+.wikso-editor .callout-accent {
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Editor body, scoped to the design's exact specs. We don't override
+ * `.wikso-editor` wholesale (lots of integration with TipTap is
+ * already wired up there); this just nudges line-height + font-size
+ * to the warm-paper feel. */
+.wikso-editor .ProseMirror {
+  font-family: var(--body-font);
+  font-size: 17.5px;
+  line-height: 1.65;
+}
+.wikso-editor .ProseMirror p { min-height: 1.5em; }
+
+/* Scrollbars — soft warm thumb that doesn't fight the cream paper */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: oklch(80% 0.01 70 / 0.5);
+  border-radius: 10px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: oklch(70% 0.01 70 / 0.7); }
+.dark ::-webkit-scrollbar-thumb { background: oklch(40% 0.01 70 / 0.5); }
+
+/* ─────────────────────────────────────────────────────────────────────
+ * BONUS POLISH — additions that elevate the warm-paper feel without
+ * touching any components. Each block is self-contained so it can be
+ * removed without cascading.
+ * ───────────────────────────────────────────────────────────────────── */
+
+/* Selection — accent-soft instead of the system default. The contrast
+ * stays excellent while reinforcing the chosen palette. */
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+::-moz-selection {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+/* Caret in inputs / contenteditable inherits the accent. */
+input,
+textarea,
+[contenteditable="true"] {
+  caret-color: var(--accent);
+}
+
+/* Focus ring — replace the harsh blue Chrome default with a soft
+ * accent halo. We scope to keyboard focus so click targets stay quiet. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Skeleton — replace the generic muted pulse with a paper-grain
+ * shimmer. The gradient drifts diagonally to feel less synthetic. */
+@keyframes wp-skel-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.animate-pulse,
+[data-skeleton="true"] {
+  background: linear-gradient(
+    100deg,
+    var(--bg-sunken) 30%,
+    oklch(from var(--bg-sunken) calc(l + 0.04) c h) 50%,
+    var(--bg-sunken) 70%
+  );
+  background-size: 200% 100%;
+  animation: wp-skel-shimmer 1.6s ease-in-out infinite;
+}
+
+/* Keyboard shortcut chips — `<kbd>` and `[data-kbd]` get the
+ * embossed-key treatment seen in reading apps. Pairs nicely with
+ * the cmdk hint row and any "press ⌘K" prompts. */
+kbd,
+[data-kbd] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+  line-height: 1;
+}
+kbd + kbd,
+[data-kbd] + [data-kbd] {
+  margin-left: 4px;
+}
+
+/* Sonner toast — pull it into the warm-paper palette so it doesn't
+ * look like a stock notification on cream paper. The library exposes
+ * `[data-sonner-toast]` plus state attributes we can target. */
+[data-sonner-toaster] {
+  --normal-bg: var(--bg-elevated);
+  --normal-border: var(--rule);
+  --normal-text: var(--ink);
+  --success-bg: var(--bg-elevated);
+  --success-border: var(--accent);
+  --success-text: var(--accent-ink);
+  --error-bg: oklch(96% 0.04 25);
+  --error-border: oklch(60% 0.18 25);
+  --error-text: oklch(35% 0.18 25);
+}
+[data-sonner-toast] {
+  font-family: var(--ui-font);
+  border-radius: 10px !important;
+  box-shadow: var(--pop-shadow) !important;
+}
+.dark [data-sonner-toaster] {
+  --error-bg: oklch(28% 0.06 25);
+  --error-text: oklch(85% 0.04 25);
+}
+
+/* Reading-mode body polish — opt-in via `.wp-reading` on the article
+ * container. Adds a drop-cap and proper hyphenation for long-form. */
+.wp-reading {
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  text-align: justify;
+  text-justify: inter-word;
+  font-feature-settings: "kern", "liga", "onum";
+}
+.wp-reading > p:first-of-type::first-letter {
+  font-family: var(--body-font);
+  float: left;
+  font-size: 4.4em;
+  line-height: 0.85;
+  font-weight: 700;
+  margin: 0.05em 0.08em 0 -0.04em;
+  color: var(--accent);
+  font-feature-settings: "lnum";
+}
+
+/* Reading-progress strip — a 2px accent bar pinned to the top of the
+ * viewport. Width is bound to a CSS custom property the page sets. */
+.wp-reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: var(--accent);
+  width: var(--progress, 0%);
+  transition: width 80ms linear;
+  z-index: 60;
+  pointer-events: none;
+  box-shadow: 0 0 10px var(--accent-soft);
+}
+
+/* Footnote / aside marker — for inline references that pop a tooltip.
+ * Use as `<sup data-fn="1">1</sup>` from rendered prose. */
+sup[data-fn] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  margin: 0 1px;
+  font-size: 9.5px;
+  font-weight: 700;
+  font-family: var(--ui-font);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 3px;
+  cursor: help;
+  vertical-align: super;
+  line-height: 1;
+}
+
+/* Link-card — use on a paragraph that contains a single bare URL.
+ * Renders the link as a horizontal card with title/url/host. Apply via
+ * the `wp-linkcard` class on a wrapping anchor. */
+.wp-linkcard {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 150ms, transform 150ms;
+}
+.wp-linkcard:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.wp-linkcard .title {
+  font-family: var(--body-font);
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.wp-linkcard .host {
+  font-family: var(--ui-font);
+  font-size: 11.5px;
+  color: var(--ink-4);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+
+/* Margin annotation — a thin colored stroke on the gutter that marks
+ * a passage as commented. Use on the editor block via
+ * `data-annotation="comment"`. */
+.wikso-editor [data-annotation="comment"],
+.wikso-editor [data-annotation="suggestion"] {
+  position: relative;
+  padding-left: 12px;
+  margin-left: -12px;
+  border-left: 3px solid var(--accent);
+  background: linear-gradient(
+    90deg,
+    var(--accent-soft) 0%,
+    transparent 100%
+  );
+  border-radius: 0 4px 4px 0;
+}
+.wikso-editor [data-annotation="suggestion"] {
+  border-left-color: oklch(70% 0.13 100);
+  background: linear-gradient(
+    90deg,
+    oklch(95% 0.06 100 / 0.5) 0%,
+    transparent 100%
+  );
+}
+
+/* Subtle paper grain — applied to <body> as a fixed background overlay.
+ * The SVG is inlined so there's no extra request. Disabled in `.dark`
+ * because it muddies the warmer dark-paper palette. */
+body {
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.13 0 0 0 0 0.10 0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-attachment: fixed;
+}
+.dark body { background-image: none; }
+
+/* Page transition — subtle fade + lift on route change. Next.js
+ * doesn't ship a built-in animation API; this targets the layout
+ * wrapper class that we already use. */
+@keyframes wp-page-fade {
+  0% { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+main, [data-page-root] {
+  animation: wp-page-fade 240ms cubic-bezier(.2, .9, .3, 1);
+}
+
+/* Empty-state inline card — for the "this list is empty" case inside a
+ * larger layout (recent pages column, favorites column, backlinks panel,
+ * etc). A dashed sunken card with a circular accent glyph slot and a
+ * 280-px hint line. Distinct from `.wp-empty` above (line ~1770) which
+ * is the *full-viewport* grand welcome used only on the dashboard root.
+ *
+ * We deliberately renamed this to `.wp-empty-card` because the two
+ * layouts fought each other in the cascade — the dashboard intentionally
+ * relies on `max-width: 660px` + `padding: 18vh 24px` for vertical
+ * centering, and having a second `.wp-empty` rule below with a dashed
+ * border was stealing those properties on later-loaded routes.
+ *
+ * Usage:
+ *   <div class="wp-empty-card">
+ *     <div class="glyph"><Icon/></div>
+ *     <p>Nothing here yet.</p>
+ *     <p class="hint">Try creating one from the command palette.</p>
+ *   </div>
+ */
+.wp-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 20px;
+  border: 1px dashed var(--rule);
+  border-radius: 12px;
+  background: var(--bg-sunken);
+  color: var(--ink-3);
+  font-family: var(--ui-font);
+  font-size: 13.5px;
+  text-align: center;
+}
+.wp-empty-card .glyph {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.wp-empty-card .hint {
+  font-size: 12px;
+  color: var(--ink-4);
+  max-width: 280px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Search highlight — `<mark>` blocks rendered as a hand-applied
+ * highlighter stripe. The slight rotation + uneven inset edge keeps it
+ * from looking like a generic CSS background-color. Use plain `<mark>`
+ * or `[data-mark="search"]` for any matched substring.
+ * ───────────────────────────────────────────────────────────────────── */
+mark,
+[data-mark="search"] {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 12%,
+    oklch(94% 0.13 95) 12%,
+    oklch(94% 0.13 95) 88%,
+    transparent 88%,
+    transparent 100%
+  );
+  color: var(--ink);
+  padding: 0 2px;
+  margin: 0 -1px;
+  border-radius: 2px;
+  font-weight: 500;
+  /* Faint deckled edge */
+  box-shadow:
+    inset 0 -1px 0 oklch(80% 0.16 90 / 0.4),
+    inset 0 1px 0 oklch(98% 0.06 90 / 0.4);
+}
+mark[data-mark="active"],
+[data-mark="search"][data-active="true"] {
+  background: oklch(86% 0.20 90);
+  box-shadow: 0 0 0 1px oklch(70% 0.20 80);
+}
+.dark mark,
+.dark [data-mark="search"] {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 12%,
+    oklch(45% 0.13 95 / 0.55) 12%,
+    oklch(45% 0.13 95 / 0.55) 88%,
+    transparent 88%,
+    transparent 100%
+  );
+  color: var(--ink);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Tag chips — paper-stamp aesthetic. A flat washi-tape rectangle with
+ * a tiny perforated shadow on the right; uses `wp-tag` on the wrapper
+ * and `wp-tag-x` on the dismiss button. Color is driven by an inline
+ * `--tag-h` custom property the consumer sets per-tag.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-tag {
+  --tag-h: 40;
+  --tag-l: 60%;
+  --tag-c: 0.10;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 9px;
+  font-family: var(--ui-font);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: oklch(28% calc(var(--tag-c) * 0.7) var(--tag-h));
+  background: oklch(95% calc(var(--tag-c) * 0.4) var(--tag-h));
+  border: 1px solid oklch(75% calc(var(--tag-c) * 0.6) var(--tag-h) / 0.55);
+  border-radius: 3px;
+  position: relative;
+  text-transform: lowercase;
+  font-variant: small-caps;
+  /* Faint paper texture */
+  box-shadow:
+    inset 0 1px 0 oklch(99% 0.01 var(--tag-h) / 0.6),
+    inset 0 -1px 0 oklch(70% calc(var(--tag-c) * 0.6) var(--tag-h) / 0.15);
+  transition: transform 120ms, box-shadow 120ms;
+}
+.wp-tag::before {
+  /* Left "punched corner" accent dot */
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: oklch(45% calc(var(--tag-c) * 0.9) var(--tag-h));
+  flex-shrink: 0;
+}
+.wp-tag:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 0 oklch(70% calc(var(--tag-c) * 0.6) var(--tag-h) / 0.25),
+    inset 0 1px 0 oklch(99% 0.01 var(--tag-h) / 0.6);
+}
+.wp-tag-x {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  border-radius: 2px;
+  margin-right: -3px;
+  margin-left: 2px;
+}
+.wp-tag-x:hover {
+  background: oklch(70% calc(var(--tag-c) * 0.6) var(--tag-h) / 0.25);
+  opacity: 1;
+}
+.dark .wp-tag {
+  color: oklch(85% calc(var(--tag-c) * 0.5) var(--tag-h));
+  background: oklch(28% calc(var(--tag-c) * 0.5) var(--tag-h) / 0.4);
+  border-color: oklch(45% calc(var(--tag-c) * 0.7) var(--tag-h) / 0.5);
+}
+
+/* Tag picker dropdown — same warm-paper popover treatment used by
+ * the slash menu. Used by TagManager. */
+.wp-tag-picker {
+  background: var(--bg-elevated);
+  border: 1px solid var(--rule);
+  box-shadow: var(--pop-shadow);
+  border-radius: 8px;
+  padding: 6px;
+  min-width: 240px;
+}
+.wp-tag-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  font-size: 12.5px;
+  font-family: var(--ui-font);
+  color: var(--ink-2);
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: background 120ms;
+}
+.wp-tag-picker-row:hover { background: var(--accent-soft); color: var(--accent-ink); }
+.wp-tag-picker-row .count { color: var(--ink-4); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Custom date+time picker — slim warm-paper popover used by the share
+ * dialog (replaces the OS-themed `datetime-local` input that breaks
+ * the page palette). The trigger is a regular field; the popover is
+ * a 280px panel with a 7-col month grid and HH:MM steppers.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-datepicker {
+  background: var(--bg-elevated);
+  border: 1px solid var(--rule);
+  box-shadow: var(--pop-shadow);
+  border-radius: 10px;
+  padding: 12px;
+  width: 280px;
+  font-family: var(--ui-font);
+  color: var(--ink);
+}
+.wp-dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.wp-dp-head button {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.wp-dp-head button:hover { background: var(--bg-sunken); color: var(--ink); }
+.wp-dp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  font-size: 11.5px;
+}
+.wp-dp-dow {
+  text-align: center;
+  color: var(--ink-4);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 0;
+}
+.wp-dp-day {
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  border-radius: 5px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background 100ms, color 100ms;
+}
+.wp-dp-day:hover { background: var(--bg-sunken); color: var(--ink); }
+.wp-dp-day[data-other="true"] { color: var(--ink-4); opacity: 0.5; }
+.wp-dp-day[data-today="true"] {
+  position: relative;
+  color: var(--accent);
+  font-weight: 600;
+}
+.wp-dp-day[data-today="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.wp-dp-day[data-selected="true"] {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+}
+.wp-dp-day[data-selected="true"]:hover { background: var(--accent-hover); color: var(--bg); }
+.wp-dp-day[data-disabled="true"] {
+  color: var(--ink-4);
+  opacity: 0.3;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.wp-dp-time {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+.wp-dp-time .label {
+  color: var(--ink-4);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.wp-dp-time .digits {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.wp-dp-time input {
+  width: 32px;
+  height: 26px;
+  text-align: center;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  -moz-appearance: textfield;
+}
+.wp-dp-time input::-webkit-outer-spin-button,
+.wp-dp-time input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.wp-dp-time input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.wp-dp-time .colon { color: var(--ink-4); padding: 0 2px; }
+.wp-dp-presets {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.wp-dp-preset {
+  padding: 3px 8px;
+  border: 1px dashed var(--rule);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 10.5px;
+  font-family: var(--ui-font);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 120ms;
+}
+.wp-dp-preset:hover {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Trigger button — looks like an Input but signals click-to-open */
+.wp-dp-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: border-color 120ms, box-shadow 120ms;
+  text-align: left;
+}
+.wp-dp-trigger:hover { border-color: oklch(from var(--rule) calc(l - 0.06) c h); }
+.wp-dp-trigger:focus-visible,
+.wp-dp-trigger[data-open="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
+.wp-dp-trigger[data-empty="true"] { color: var(--ink-4); }
+/* Sibling clear button — sits absolutely positioned over the right edge
+   of the trigger. Kept outside the trigger <button> to avoid nested
+   interactive elements (invalid HTML). */
+.wp-dp-clear {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 3px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-4);
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.wp-dp-clear:hover { background: var(--bg-sunken); color: var(--ink); }
+.wp-dp-clear:focus-visible {
+  outline: none;
+  background: var(--bg-sunken);
+  color: var(--ink);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Reading mode — toggled by a topbar button. Hides chrome, narrows the
+ * column, applies hyphenation + drop-cap from `.wp-reading`. Uses a
+ * `data-reading="true"` attribute on the document so any chrome can
+ * opt out of being hidden.
+ * ───────────────────────────────────────────────────────────────────── */
+html[data-reading="true"] [data-chrome="sidebar"],
+html[data-reading="true"] [data-chrome="toolbar"],
+html[data-reading="true"] [data-chrome="topbar-secondary"],
+html[data-reading="true"] [data-chrome="comments"],
+html[data-reading="true"] [data-chrome="outline"] {
+  display: none !important;
+}
+html[data-reading="true"] [data-chrome="topbar"] {
+  background: transparent;
+  border-bottom-color: transparent;
+}
+html[data-reading="true"] .wikso-editor .ProseMirror {
+  max-width: 720px;
+  margin: 0 auto;
+  font-size: 18.5px;
+  line-height: 1.75;
+}
+html[data-reading="true"] body {
+  background: oklch(98% 0.018 80);
+}
+.dark[data-reading="true"] body {
+  background: oklch(20% 0.015 70);
+}
+
+/* Reading-mode toggle pill — a thin top-bar button that morphs to
+ * "Exit reading" when active. */
+.wp-reading-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ink-3);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 150ms;
+}
+.wp-reading-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.wp-reading-toggle[data-active="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Print stylesheet — strip the chrome, render only the document.
+ * Optimized for both browser PDF export and desktop printing.
+ * ───────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Remove background textures + colors that don't print well */
+  html, body {
+    background: white !important;
+    color: black !important;
+    background-image: none !important;
+  }
+
+  /* Hide all non-content chrome — list explicit values only.
+     Do NOT use a bare `[data-chrome]` selector here: the wrapper
+     around the document title also carries `data-chrome="topbar"`
+     for reading-mode purposes, and we still want the title to print. */
+  [data-chrome="sidebar"],
+  [data-chrome="topbar"],
+  [data-chrome="topbar-secondary"],
+  [data-chrome="toolbar"],
+  [data-chrome="comments"],
+  [data-chrome="outline"],
+  [data-chrome="bubble"],
+  [data-sonner-toaster],
+  .wp-tweaks-toggle,
+  .wp-reading-progress,
+  nav,
+  aside,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Editor surface fills the page */
+  main, [data-page-root], .wikso-editor, .ProseMirror {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Show URLs after links so paper readers can find them */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+    word-break: break-all;
+  }
+
+  /* Page break controls */
+  h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
+  pre, blockquote, table, figure, img { page-break-inside: avoid; break-inside: avoid; }
+
+  /* Readable serif body for print */
+  body, .ProseMirror {
+    font-family: "Source Serif 4", Georgia, serif !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Margins */
+  @page {
+    margin: 18mm 16mm 22mm 16mm;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * 404 / error illustration — hand-drawn paper-bag character using
+ * pure CSS (no SVG asset to ship). The face animates a slow breathing
+ * loop and the bag wrinkles shimmer.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-404 {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse at 50% 30%, var(--accent-soft) 0%, transparent 50%),
+    var(--bg);
+}
+.wp-404-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  max-width: 520px;
+  text-align: center;
+}
+.wp-404-bag {
+  position: relative;
+  width: 200px;
+  height: 220px;
+  background: oklch(78% 0.10 75);
+  border: 2px solid oklch(50% 0.13 65);
+  border-radius: 8px 8px 18px 18px;
+  box-shadow:
+    inset 12px 0 24px oklch(60% 0.10 60 / 0.25),
+    inset -12px 0 24px oklch(95% 0.05 80 / 0.25),
+    inset 0 -8px 16px oklch(50% 0.10 60 / 0.3),
+    8px 12px 0 oklch(50% 0.13 65 / 0.18);
+  animation: wp-404-breathe 4s ease-in-out infinite;
+}
+.wp-404-bag::before {
+  /* Crinkled top fold */
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: -2px;
+  right: -2px;
+  height: 16px;
+  background:
+    linear-gradient(135deg, transparent 30%, oklch(50% 0.13 65) 30% 32%, transparent 32%) 0 0 / 18px 18px,
+    oklch(72% 0.10 70);
+  border: 2px solid oklch(50% 0.13 65);
+  border-radius: 4px 4px 0 0;
+  z-index: 1;
+}
+.wp-404-bag::after {
+  /* Vertical wrinkle line down the middle */
+  content: "";
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 50%;
+  width: 1px;
+  background: oklch(55% 0.10 60 / 0.4);
+}
+.wp-404-eyes {
+  position: absolute;
+  top: 70px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+}
+.wp-404-eyes span {
+  width: 16px;
+  height: 22px;
+  background: oklch(20% 0.04 60);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  position: relative;
+  animation: wp-404-blink 5s ease-in-out infinite;
+}
+.wp-404-eyes span::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: oklch(98% 0 0);
+}
+.wp-404-mouth {
+  position: absolute;
+  top: 130px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 18px;
+  border: 2px solid oklch(20% 0.04 60);
+  border-top: 0;
+  border-radius: 0 0 18px 18px;
+}
+.wp-404-tag {
+  position: absolute;
+  top: -4px;
+  right: -32px;
+  transform: rotate(12deg);
+  background: oklch(98% 0.03 80);
+  color: var(--ink-2);
+  border: 1px solid var(--rule);
+  padding: 4px 8px;
+  font-family: var(--ui-font);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  box-shadow: 0 2px 4px oklch(40% 0.05 60 / 0.15);
+}
+.wp-404-tag::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 1px solid var(--rule);
+}
+.wp-404-code {
+  font-family: var(--body-font);
+  font-size: 88px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  color: var(--ink);
+  font-feature-settings: "lnum";
+}
+.wp-404-code .digit {
+  display: inline-block;
+}
+.wp-404-code .digit.middle {
+  color: var(--accent);
+  transform: rotate(-6deg) translateY(-4px);
+}
+.wp-404-title {
+  font-family: var(--body-font);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.wp-404-desc {
+  font-family: var(--ui-font);
+  font-size: 14px;
+  color: var(--ink-3);
+  max-width: 360px;
+  line-height: 1.5;
+}
+.wp-404-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.wp-404-actions a,
+.wp-404-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-family: var(--ui-font);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 150ms;
+  cursor: pointer;
+  border: 0;
+}
+.wp-404-actions .primary {
+  background: var(--accent);
+  color: var(--bg);
+}
+.wp-404-actions .primary:hover { background: var(--accent-hover); }
+.wp-404-actions .ghost {
+  color: var(--ink-3);
+  background: transparent;
+  border: 1px solid var(--rule);
+}
+.wp-404-actions .ghost:hover { color: var(--ink); border-color: var(--ink-3); }
+
+@keyframes wp-404-breathe {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+@keyframes wp-404-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  94%, 98%      { transform: scaleY(0.1); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Editorial dateline — magazine-style small-caps line that sits above
+ * the page title. Uses tabular numerals so word counts / read times
+ * never jitter as they update. Apply as
+ *   <p class="wp-dateline">
+ *     <time>Friday · 23 April</time>
+ *     <span>·</span>
+ *     <span>4 min read</span>
+ *   </p>
+ * The dot separators inherit color so individual rows can highlight
+ * the active datum (e.g. "now" in accent).
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-dateline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 12px;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+.wp-dateline > * {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.wp-dateline time { color: var(--ink-3); }
+.wp-dateline .live { color: var(--accent); }
+.wp-dateline .live::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 2px;
+  display: inline-block;
+  animation: wp-dateline-pulse 1.6s ease-in-out infinite;
+}
+@keyframes wp-dateline-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50%      { opacity: 1;   transform: scale(1); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Sidenote — editorial marginalia. On wide screens floats to the right
+ * margin (negative `right`); on narrow screens collapses to an inline
+ * dashed-bordered note. Use as
+ *   <aside class="wp-sidenote">
+ *     <span class="ref">1</span>
+ *     Body of the note in handwritten Caveat.
+ *   </aside>
+ * Place inside `.wikso-reading` or `.wikso-editor` for proper context.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-sidenote {
+  display: block;
+  font-family: var(--hand-font);
+  font-size: 1.1rem;
+  line-height: 1.4;
+  color: var(--ink-2);
+  position: relative;
+  padding: 8px 12px 8px 16px;
+  border-left: 2px solid var(--accent);
+  background: linear-gradient(
+    90deg,
+    var(--accent-soft) 0%,
+    transparent 60%
+  );
+  margin: 14px 0;
+  border-radius: 0 6px 6px 0;
+}
+.wp-sidenote .ref {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  margin-right: 6px;
+  font-family: var(--ui-font);
+  font-size: 10px;
+  font-weight: 700;
+  font-feature-settings: "lnum";
+  color: var(--accent-ink);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  vertical-align: 2px;
+  line-height: 1;
+}
+@media (min-width: 1280px) {
+  /* Float into the gutter on wide screens. The container needs
+     position: relative + enough horizontal padding for the gutter to
+     exist. .wikso-reading / .wikso-editor already provide that on
+     standard reading layouts. */
+  .wikso-reading .wp-sidenote,
+  .wikso-editor .wp-sidenote {
+    position: absolute;
+    right: -240px;
+    width: 220px;
+    margin: 0;
+    padding: 4px 0 4px 12px;
+    background: none;
+    border-radius: 0;
+    /* Dashed gutter rule replaces the gradient */
+    border-left: 1px dashed var(--accent);
+  }
+  .wikso-reading,
+  .wikso-editor .ProseMirror {
+    position: relative;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Ink-bleed loader — replaces generic spinners on whole-page loading
+ * states. A drop of "ink" lands on cream paper and spreads in two
+ * concentric rings, then fades. Pure CSS, accent-driven.
+ * Usage: <div class="wp-inkbleed" role="status" aria-label="Loading"/>.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-inkbleed {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+}
+.wp-inkbleed::before,
+.wp-inkbleed::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    var(--accent) 0%,
+    var(--accent) 28%,
+    color-mix(in oklch, var(--accent) 30%, transparent) 50%,
+    transparent 72%
+  );
+  animation: wp-inkbleed 1.8s cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
+}
+.wp-inkbleed::after {
+  animation-delay: 0.6s;
+  opacity: 0.5;
+}
+@keyframes wp-inkbleed {
+  0% {
+    transform: scale(0);
+    opacity: 0.9;
+    filter: blur(0);
+  }
+  60% {
+    opacity: 0.55;
+    filter: blur(0.5px);
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+    filter: blur(1.5px);
+  }
+}
+.wp-inkbleed-label {
+  display: block;
+  margin-top: 16px;
+  text-align: center;
+  font-family: var(--hand-font);
+  font-size: 1.1rem;
+  color: var(--ink-3);
+  letter-spacing: 0.01em;
+}
+/* Reduced-motion fallback — the global rule zeroes animation-duration,
+   which lands the bleed on its 100% keyframe (opacity 0 → invisible).
+   Pin a static, visible state instead so the user still sees a loader. */
+@media (prefers-reduced-motion: reduce) {
+  .wp-inkbleed::before,
+  .wp-inkbleed::after {
+    animation: none;
+    transform: scale(0.95);
+    opacity: 0.7;
+    filter: blur(0);
+  }
+  .wp-inkbleed::after {
+    transform: scale(1.1);
+    opacity: 0.35;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Accent-aware ornamental divider — replaces the plain three-diamond
+ * <hr> ornament with a glyph that varies per accent preset, so the
+ * brand color also shows in the typographic furniture.
+ *   terracotta → ❖ ❖ ❖   (diamonds — current default)
+ *   ink        → ⁂        (asterism — a single editorial mark)
+ *   moss       → ❦        (floral heart — botanical feel)
+ *   plum       → ✦ ✧ ✦    (mixed stars)
+ *   sky        → ◆ · ◆     (geometric)
+ * Falls back to diamonds via :root rule above.
+ * ───────────────────────────────────────────────────────────────────── */
+:root[data-accent="ink"] .wikso-editor hr::before,
+:root[data-accent="ink"] .wikso-reading hr::before {
+  content: "\2042"; /* asterism */
+  letter-spacing: 0;
+  font-size: 1.4em;
+}
+:root[data-accent="moss"] .wikso-editor hr::before,
+:root[data-accent="moss"] .wikso-reading hr::before {
+  content: "\2766"; /* floral heart */
+  letter-spacing: 0;
+  font-size: 1.3em;
+  color: var(--accent);
+  opacity: 0.7;
+}
+:root[data-accent="plum"] .wikso-editor hr::before,
+:root[data-accent="plum"] .wikso-reading hr::before {
+  content: "\2726\00a0\00a0\00a0\2727\00a0\00a0\00a0\2726"; /* ✦ ✧ ✦ */
+  color: var(--accent);
+  opacity: 0.7;
+}
+:root[data-accent="sky"] .wikso-editor hr::before,
+:root[data-accent="sky"] .wikso-reading hr::before {
+  content: "\25C6\00a0\00a0\00a0\00b7\00a0\00a0\00a0\25C6"; /* ◆ · ◆ */
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Save indicator — editorial autosave chip used by the editor topbar.
+ * "saved" state shows a hairline pen-stroke checkmark; "saving" shows
+ * a tiny ink-bleed dot. Tabular numerals so the relative-time text
+ * doesn't reflow during ticks.
+ *   <span class="wp-saved" data-state="saved">
+ *     <svg/> autosaved <time>4 min ago</time>
+ *   </span>
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--ui-font);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  user-select: none;
+}
+.wp-saved time {
+  color: var(--ink-3);
+}
+.wp-saved svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+.wp-saved[data-state="saving"] {
+  color: var(--accent);
+}
+.wp-saved[data-state="saving"]::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 2px;
+  animation: wp-saved-pulse 1.2s ease-in-out infinite;
+}
+.wp-saved[data-state="error"] {
+  color: var(--danger);
+}
+.wp-saved[data-state="error"]::before {
+  content: "!";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: var(--bg);
+  font-size: 9px;
+  font-weight: 700;
+  display: inline-grid;
+  place-items: center;
+  margin-right: 2px;
+}
+@keyframes wp-saved-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50%      { opacity: 1;   transform: scale(1.05); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Accent swatch in Tweaks panel — render a tiny serif "A" inside each
+ * color circle so users see *both* the hue AND how a serif glyph looks
+ * on top of it before committing. The original `.wp-sw .dot` is kept
+ * for the active checkmark.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-sw {
+  position: relative;
+}
+.wp-sw::before {
+  content: "Aa";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--body-font);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bg);
+  letter-spacing: -0.04em;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.85;
+}
+.wp-sw.on::before {
+  /* When active, hide the Aa so the checkmark dot is visible */
+  opacity: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Toast stamps — paper-stamp icons used by Sonner via the `icons` prop
+ * in providers.tsx. Each is a 22px circle with a hand-set glyph and a
+ * deliberate slight rotation so the stamp reads as ink-on-paper rather
+ * than a flat icon. Concentric inset shadow gives the impression of
+ * uneven pressure where the stamp met the page.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-toast-stamp {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-family: var(--body-font);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  flex-shrink: 0;
+  /* Subtle "uneven ink" via a layered radial inset */
+  box-shadow:
+    inset 0 0 0 1.5px currentColor,
+    inset 1px 1px 1.5px oklch(40% 0.04 60 / 0.15);
+  background: transparent;
+  position: relative;
+  /* Tiny rotation so the stamp doesn't sit flat */
+  transform: rotate(-6deg);
+}
+.wp-toast-stamp-success {
+  color: var(--accent);
+  transform: rotate(-7deg);
+}
+.wp-toast-stamp-error {
+  color: var(--danger);
+  transform: rotate(8deg);
+}
+.wp-toast-stamp-warn {
+  color: var(--warn);
+  transform: rotate(-4deg);
+}
+.wp-toast-stamp-info {
+  color: var(--ink-2);
+  font-style: italic;
+  transform: rotate(5deg);
+}
+/* Toast text — pull body into the warm-paper serif so it doesn't
+   read like a generic notification. Title stays in UI font for
+   weight contrast. */
+.wp-toast {
+  font-family: var(--ui-font) !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+.wp-toast-title {
+  font-family: var(--ui-font);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.wp-toast-desc {
+  font-family: var(--body-font);
+  font-size: 12.5px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Reading-mode highlighter — chunkier physical-book aesthetic. The
+ * existing `mark` rule above is good for general use; in reading mode
+ * we override it with a thicker stripe + slight rotation so it feels
+ * hand-applied rather than digital. Only active when `data-reading`
+ * is set on <html>, so casual editing keeps the precise highlighter.
+ * ───────────────────────────────────────────────────────────────────── */
+html[data-reading="true"] .wikso-editor mark,
+html[data-reading="true"] .wikso-reading mark,
+.wikso-reading mark[data-mark="reader"] {
+  background: linear-gradient(
+    104deg,
+    transparent 0%,
+    transparent 8%,
+    oklch(92% 0.16 90 / 0.85) 8%,
+    oklch(94% 0.14 95 / 0.95) 50%,
+    oklch(90% 0.18 85 / 0.85) 92%,
+    transparent 92%,
+    transparent 100%
+  );
+  padding: 1px 4px 2px;
+  margin: 0 -2px;
+  border-radius: 2px 4px 3px 5px;
+  /* Tiny rotation breaks the perfect rectangle */
+  display: inline-block;
+  transform: rotate(-0.35deg);
+  /* Faint deckled top + bottom edge for the highlighter "wax" look */
+  box-shadow:
+    inset 0 -2px 0 oklch(75% 0.18 85 / 0.45),
+    inset 0 1px 0 oklch(98% 0.06 95 / 0.55);
+}
+.dark html[data-reading="true"] .wikso-editor mark,
+.dark html[data-reading="true"] .wikso-reading mark {
+  background: linear-gradient(
+    104deg,
+    transparent 8%,
+    oklch(48% 0.14 90 / 0.6) 8%,
+    oklch(52% 0.12 95 / 0.7) 50%,
+    oklch(46% 0.16 85 / 0.6) 92%,
+    transparent 92%
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Page-transition ink bleed — a tiny accent-colored "ink drop"
+ * splashes from the top-left of the page on route change, then
+ * dissolves. Reuses the existing `wp-page-fade` content reveal but
+ * adds a one-shot decorative overlay anchored to <main>.
+ * Disabled under reduced-motion (animation-duration zeroed out by
+ * the global rule).
+ * ───────────────────────────────────────────────────────────────────── */
+main, [data-page-root] {
+  position: relative;
+}
+main::after,
+[data-page-root]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at center,
+    var(--accent-soft) 0%,
+    color-mix(in oklch, var(--accent-soft) 50%, transparent) 50%,
+    transparent 75%
+  );
+  opacity: 0;
+  transform: scale(0.2);
+  filter: blur(2px);
+  z-index: 0;
+  animation: wp-ink-bleed-once 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+@keyframes wp-ink-bleed-once {
+  0%   { opacity: 0;    transform: scale(0.15); }
+  35%  { opacity: 0.55; transform: scale(0.85); }
+  100% { opacity: 0;    transform: scale(1.7); filter: blur(8px); }
+}
+/* The overlay must not cover real content — explicit z-indexing on
+   children of main keeps them clickable. */
+main > *,
+[data-page-root] > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * .wp-callout — editorial callout block (four variants)
+ *
+ * Replaces the generic "blue-50 / amber-50 / green-50 / red-50" Tailwind
+ * look that TipTap's CalloutView used to render with. Each variant gets:
+ *   • accent-scoped soft surface (uses `color-mix` against the warm-paper
+ *     palette so moss/plum/sky themes stay cohesive, not neon-green)
+ *   • a 3-px left rule in the variant's mature hue
+ *   • a tiny "stamp" glyph tinted with the same hue
+ *   • a subtle paper-bleed radial behind the icon so the mark looks
+ *     printed, not drawn
+ *
+ * Applied from CalloutView.tsx via `data-callout-type="note|tip|warn|quote"`.
+ * The four types map to the editor's `info | success | warning | error`
+ * attributes (see CalloutExtension.ts) — renamed visually for the warm-
+ * paper vocabulary: note (info), tip (success), warn (warning),
+ * decision (error). All types share the same structural rules; only
+ * the CSS custom property `--cal-h` (hue) shifts.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-callout {
+  --cal-h: 220;           /* default: note (sky-ish, neutral info) */
+  --cal-c: 0.06;
+  --cal-surface: oklch(96% calc(var(--cal-c) * 0.6) var(--cal-h) / 0.7);
+  --cal-rule: oklch(55% var(--cal-c) var(--cal-h));
+  --cal-ink: oklch(32% calc(var(--cal-c) + 0.04) var(--cal-h));
+
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 12px;
+  align-items: start;
+  margin: 1.25rem 0;
+  padding: 14px 16px 14px 14px;
+  background: var(--cal-surface);
+  border-left: 3px solid var(--cal-rule);
+  border-top: 1px solid color-mix(in oklch, var(--cal-rule) 18%, transparent);
+  border-right: 1px solid color-mix(in oklch, var(--cal-rule) 12%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--cal-rule) 18%, transparent);
+  border-radius: 8px 10px 10px 8px;
+  position: relative;
+  color: var(--ink);
+  font-family: var(--body-font);
+  line-height: 1.55;
+}
+.wp-callout > .wp-callout-stamp {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  color: var(--cal-rule);
+  position: relative;
+  isolation: isolate;
+  flex-shrink: 0;
+}
+.wp-callout > .wp-callout-stamp::before {
+  /* faint paper-bleed halo behind the glyph — printed, not painted. */
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    color-mix(in oklch, var(--cal-rule) 22%, transparent) 0%,
+    transparent 70%
+  );
+  z-index: -1;
+  filter: blur(1.5px);
+}
+.wp-callout > .wp-callout-body {
+  min-width: 0;
+}
+.wp-callout .wp-callout-body > :first-child { margin-top: 0; }
+.wp-callout .wp-callout-body > :last-child  { margin-bottom: 0; }
+
+/* ── Variant hues — follow the warm-paper accent vocabulary. ──────── */
+.wp-callout[data-callout-type="info"],
+.wp-callout[data-callout-type="note"] {
+  --cal-h: 230; --cal-c: 0.07;
+}
+.wp-callout[data-callout-type="success"],
+.wp-callout[data-callout-type="tip"] {
+  --cal-h: 155; --cal-c: 0.08;
+}
+.wp-callout[data-callout-type="warning"],
+.wp-callout[data-callout-type="warn"] {
+  --cal-h: 75; --cal-c: 0.11;
+}
+.wp-callout[data-callout-type="error"],
+.wp-callout[data-callout-type="decision"] {
+  --cal-h: 25; --cal-c: 0.13;
+}
+
+/* Dark mode rebalance — surfaces lift, ink lightens, rules stay vivid. */
+.dark .wp-callout {
+  --cal-surface: oklch(28% calc(var(--cal-c) + 0.02) var(--cal-h) / 0.35);
+  --cal-rule: oklch(70% var(--cal-c) var(--cal-h));
+  --cal-ink: oklch(85% calc(var(--cal-c) * 0.5) var(--cal-h));
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * .wp-kbd — paper-stamp keycap
+ *
+ * A replacement for the flat-grey `<kbd class="border rounded">`. Two
+ * layers of shadow create a pressed-into-paper effect; the inside is a
+ * faint gradient so the cap has dimensionality without resorting to
+ * glossy plastic. Mono font with tabular numerals means `⌘K` and
+ * `⌃⇧P` stay aligned in a shortcut list.
+ *
+ * Use on actual `<kbd>` elements so screen readers keep the semantics.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-family: var(--mono-font);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink-2);
+  background: linear-gradient(
+    180deg,
+    var(--bg-elevated) 0%,
+    var(--bg-raised) 100%
+  );
+  border: 1px solid var(--rule-strong);
+  border-radius: 5px;
+  box-shadow:
+    0 1px 0 0 var(--rule-strong),
+    inset 0 1px 0 0 color-mix(in oklch, var(--bg-elevated) 80%, white);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  user-select: none;
+  white-space: nowrap;
+  vertical-align: baseline;
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+.wp-kbd[data-pressed="true"],
+.wp-kbd:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 0 0 0 var(--rule-strong),
+    inset 0 1px 2px 0 color-mix(in oklch, var(--ink) 14%, transparent);
+}
+.dark .wp-kbd {
+  background: linear-gradient(
+    180deg,
+    var(--bg-elevated) 0%,
+    var(--bg-sunken) 100%
+  );
+  box-shadow:
+    0 1px 0 0 oklch(12% 0.01 60),
+    inset 0 1px 0 0 color-mix(in oklch, var(--bg-elevated) 60%, white);
+  color: var(--ink);
+}
+/* + plus separator between shortcut keys — editorially soft, not a
+ * literal plus sign smashed between keycaps. */
+.wp-kbd-joiner {
+  display: inline-block;
+  margin: 0 3px;
+  color: var(--ink-4);
+  font-family: var(--ui-font);
+  font-size: 11px;
+  vertical-align: baseline;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * .wp-marginalia — margin note
+ *
+ * A classic editorial technique: short handwritten annotation pulled
+ * into the margin, tied to the adjacent paragraph by a tiny accent
+ * tick. Used inside reading surfaces to flag "editor's note", a
+ * side-thought, a quick warning, or an uncertainty. Renders in
+ * Caveat so it reads as hand-written, not as body text.
+ *
+ * On narrow viewports the margin disappears — the note falls back to
+ * an italic inline block with a left tick so it still reads but
+ * doesn't overflow or crowd the column. On wide viewports it floats
+ * into the right margin.
+ *
+ * HTML:
+ *   <aside class="wp-marginalia" data-side="right|left">…</aside>
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-marginalia {
+  display: block;
+  margin: 0.5rem 0;
+  padding: 6px 10px 6px 14px;
+  font-family: var(--hand-font);
+  font-size: 18px;
+  line-height: 1.25;
+  color: var(--ink-2);
+  border-left: 2px solid var(--accent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--accent-soft) 70%, transparent) 0%,
+    transparent 80%
+  );
+  font-style: italic;
+  letter-spacing: 0.005em;
+}
+/* Wide viewports — float into the margin so the column stays clean.
+ *
+ * Math: a typical reading column is `max-width: 72ch` (~720px) centered
+ * in the page. At a 1280px viewport that leaves ~280px of margin on
+ * each side. The note needs `width + (negative margin)` to fit inside
+ * that gutter — keeping it under 280px:
+ *
+ *   180px (width) + 24px (gap to text) = 204px → fits in 280px ✓
+ *
+ * The previous breakpoint (1100px) only had 190px of gutter, so the
+ * 220px-wide note overflowed the viewport and triggered horizontal
+ * scrollbars on common 13" laptop displays. Bumping to 1280px and
+ * shrinking the note keeps the layout safe.
+ */
+@media (min-width: 1280px) {
+  .wp-marginalia[data-side="right"] {
+    float: right;
+    clear: right;
+    width: 180px;
+    margin: 0 -204px 0.75rem 24px;
+    background: none;
+    padding: 4px 0 4px 12px;
+    border-left: 1px dashed var(--accent);
+  }
+  .wp-marginalia[data-side="left"] {
+    float: left;
+    clear: left;
+    width: 180px;
+    margin: 0 24px 0.75rem -204px;
+    background: none;
+    border-right: 1px dashed var(--accent);
+    border-left: none;
+    padding: 4px 12px 4px 0;
+    text-align: right;
+  }
+}
+/* Tiny accent tick that mimics the thread between a paragraph and its
+ * marginal note, drawn as a right-angle so it reads like a pen stroke. */
+.wp-marginalia::before {
+  content: "↳";
+  display: inline-block;
+  margin-right: 4px;
+  color: var(--accent);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  font-style: normal;
+  vertical-align: 2px;
+}
+@media (min-width: 1100px) {
+  .wp-marginalia[data-side="left"]::before {
+    content: "↲";
+    margin-left: 4px;
+    margin-right: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * .wp-ornament — hand-drawn section divider
+ *
+ * A Caveat-glyph pair with a ruled hairline on each side. Use between
+ * major sections of a document or a long page to give the eye a
+ * breathing point. Four built-in glyph variants via `data-glyph`.
+ *
+ * Feels hand-placed because the dot is slightly off-baseline and the
+ * rules are different lengths — less "CSS decoration", more "typographer
+ * set the line". On hover (if interactive) the glyph nudges rightward.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-ornament {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 2.5rem auto;
+  max-width: 360px;
+  color: var(--ink-4);
+  font-family: var(--body-font);
+  font-variation-settings: 'SOFT' 80, 'opsz' 144;
+  user-select: none;
+}
+.wp-ornament::before,
+.wp-ornament::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--rule-strong) 30%,
+    var(--rule-strong) 70%,
+    transparent 100%
+  );
+}
+.wp-ornament::before { transform: translateY(1px); }
+.wp-ornament::after  { transform: translateY(-1px); }
+.wp-ornament > .glyph {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+.wp-ornament[data-glyph="leaf"]    > .glyph::before { content: "❦"; }
+.wp-ornament[data-glyph="diamond"] > .glyph::before { content: "❖"; }
+.wp-ornament[data-glyph="asterism"] > .glyph::before { content: "⁂"; }
+.wp-ornament[data-glyph="fleuron"]  > .glyph::before { content: "❧"; }
+.wp-ornament:not([data-glyph]) > .glyph::before     { content: "✦"; }
+
+/* ─────────────────────────────────────────────────────────────────────
+ * .wp-ribbon — fabric bookmark tab
+ *
+ * For favorited pages in the dashboard. A thin "ribbon" that hangs
+ * from the top of a card, folded at the bottom with a triangular
+ * notch, rotated a degree so it doesn't look mechanically pinned.
+ * Accent-colored; stays visible in dark mode by shifting saturation,
+ * not brightness.
+ *
+ * Position the parent `.wp-rec` / `.wp-qa` as `position: relative;` —
+ * the ribbon is absolutely positioned at the top-right corner.
+ *
+ * HTML:  <span class="wp-ribbon" aria-hidden="true"></span>
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-ribbon {
+  position: absolute;
+  top: -3px;
+  right: 14px;
+  width: 12px;
+  height: 26px;
+  background: linear-gradient(
+    180deg,
+    var(--accent) 0%,
+    var(--accent-hover) 100%
+  );
+  transform: rotate(-1.5deg);
+  box-shadow:
+    -1px 0 0 color-mix(in oklch, var(--accent-hover) 70%, black),
+    2px 2px 4px oklch(40% 0.02 60 / 0.15);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 100%,
+    50% 75%,
+    0 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+  transition: transform 160ms cubic-bezier(.2,.9,.3,1);
+}
+.wp-rec:hover > .wp-ribbon,
+.wp-qa:hover > .wp-ribbon {
+  transform: rotate(-1.5deg) translateY(-2px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * .wp-pullquote — reusable editorial pull-quote
+ *
+ * Different from the editor's `blockquote.pullquote` (which targets
+ * TipTap output inside `.wikso-editor`/`.wikso-reading`). This one is
+ * a generic primitive you can drop into any product surface: dashboard
+ * hero, onboarding splash, release notes. Keeps the same warm-paper
+ * language — oversized italic serif with a ghosted opening quote
+ * behind the text.
+ * ───────────────────────────────────────────────────────────────────── */
+.wp-pullquote {
+  position: relative;
+  margin: 1.5rem 0 1.5rem 0.5rem;
+  padding: 0.5rem 1.25rem 0.5rem 2rem;
+  font-family: var(--body-font);
+  font-variation-settings: 'SOFT' 40, 'opsz' 96;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 1.35;
+  color: var(--ink);
+  text-wrap: balance;
+  max-width: 42ch;
+}
+.wp-pullquote::before {
+  content: '\201C';
+  position: absolute;
+  left: -0.1em;
+  top: -0.4em;
+  font-size: 4em;
+  line-height: 1;
+  color: var(--accent);
+  opacity: 0.22;
+  font-family: var(--body-font);
+  font-variation-settings: 'SOFT' 80, 'opsz' 144;
+  pointer-events: none;
+  user-select: none;
+}
+.wp-pullquote > cite {
+  display: block;
+  margin-top: 0.6rem;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.wp-pullquote > cite::before {
+  content: "— ";
+  color: var(--ink-4);
 }

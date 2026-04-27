@@ -25,6 +25,7 @@ import { slashCommandSuggestion } from './editor/slashCommandSuggestion';
 import { CalloutExtension } from './editor/CalloutExtension';
 import { CodeBlockExtension } from './editor/CodeBlockExtension';
 import { MermaidExtension } from './editor/MermaidExtension';
+import { MermaidBlock } from './editor/extensions/MermaidBlock';
 import { ExcalidrawExtension } from './editor/ExcalidrawExtension';
 import { createMentionExtension } from './editor/MentionExtension';
 import { EmojiPickerButton } from './editor/EmojiPickerButton';
@@ -50,6 +51,7 @@ import { useAiTransform } from '@/hooks/useAiTransform';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
+import { useAppearanceStore } from '@/store/appearanceStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -138,6 +140,7 @@ type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
 export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEditorReady, initialContent, onContentChange }: CollaborativeEditorProps) {
   const user = useAuthStore((s) => s.user);
+  const toolbarVariant = useAppearanceStore((s) => s.toolbarVariant);
   const { t } = useTranslation();
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [synced, setSynced] = useState(false);
@@ -344,6 +347,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
         CalloutExtension,
         CodeBlockExtension,
         MermaidExtension,
+        MermaidBlock,
         ExcalidrawExtension,
         SlashCommandExtension.configure({
           suggestion: {
@@ -545,6 +549,8 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
 
   if (!editor) return null;
 
+  // wp-tb-btn — warm-paper toolbar button. `data-active` drives the
+  // accent-soft pill background via globals.css.
   const ToolbarButton = ({
     onClick,
     isActive,
@@ -558,21 +564,20 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
     title: string;
     disabled?: boolean;
   }) => (
-    <Button
-      variant="ghost"
-      size="icon"
-      className={cn('h-8 w-8', isActive && 'bg-accent text-accent-foreground')}
+    <button
+      type="button"
+      className="wp-tb-btn"
+      data-active={isActive ? 'true' : undefined}
       onClick={onClick}
       onMouseDown={(e) => e.preventDefault()}
       title={title}
-      type="button"
       disabled={disabled}
     >
       {children}
-    </Button>
+    </button>
   );
 
-  const ToolbarDivider = () => <div className="mx-0.5 h-6 w-px bg-border" />;
+  const ToolbarDivider = () => <div className="wp-tb-sep" />;
 
   /** Build a tooltip string with optional keyboard shortcut */
   const tip = (label: string, shortcut?: string) => {
@@ -599,7 +604,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
       />
 
       {editable && (
-        <div className="flex flex-wrap items-center gap-0.5 border-b border-border/50 p-1.5 sticky top-0 z-10 bg-background">
+        <div className="wp-toolbar" data-variant={toolbarVariant} data-chrome="toolbar">
           {/* Text formatting */}
           <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title={tip(t('editor.bold'), 'Ctrl+B')}>
             <Bold className="h-4 w-4" />
@@ -807,7 +812,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
           <ToolbarButton onClick={() => editor.chain().focus().setExcalidrawBlock().run()} title={t('editor.drawing')}>
             <PenTool className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().setMermaidDiagram().run()} title={t('editor.mermaidDiagram')}>
+          <ToolbarButton onClick={() => editor.chain().focus().setMermaidBlock().run()} title={t('mermaid.insert')}>
             <GitBranch className="h-4 w-4" />
           </ToolbarButton>
 
@@ -887,7 +892,11 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
             onKeyDown={(e) => {
               if (e.key === 'Enter' && aiPrompt.trim() && !aiGenerating) {
                 e.preventDefault();
-                aiTransform(pageId, aiPrompt, 'expand' as any).then((result) => {
+                // The prompt bar is a free-form instruction ("Write an article about X").
+                // It must be routed through the `custom-prompt` operation with the
+                // text in the customPrompt slot — passing it as `selection` with
+                // `expand` causes the backend to expand the instruction prose itself.
+                aiTransform(pageId, '', 'custom-prompt', undefined, aiPrompt.trim()).then((result) => {
                   if (result && editor) {
                     editor.chain().focus().insertContent(result).run();
                     setAiPrompt('');
@@ -904,7 +913,7 @@ export function CollaborativeEditor({ pageId, spaceSlug, editable = true, onEdit
             size="sm"
             disabled={aiGenerating || !aiPrompt.trim()}
             onClick={() => {
-              aiTransform(pageId, aiPrompt, 'expand' as any).then((result) => {
+              aiTransform(pageId, '', 'custom-prompt', undefined, aiPrompt.trim()).then((result) => {
                 if (result && editor) {
                   editor.chain().focus().insertContent(result).run();
                   setAiPrompt('');

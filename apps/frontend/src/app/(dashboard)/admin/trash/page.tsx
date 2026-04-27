@@ -20,6 +20,7 @@ import {
   useAdminSpaces,
 } from '@/hooks/useAdmin';
 import { useTranslation } from '@/hooks/useTranslation';
+import { bcp47Locale } from '@/lib/locale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -243,7 +244,7 @@ export default function AdminTrashPage() {
                         </td>
                         <td className="py-3 text-muted-foreground">
                           {page.deletedAt
-                            ? new Date(page.deletedAt).toLocaleDateString(locale, {
+                            ? new Date(page.deletedAt).toLocaleDateString(bcp47Locale(locale), {
                                 month: 'short',
                                 day: 'numeric',
                                 year: 'numeric',

@@ -4,25 +4,28 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Search, Bell, Plus, Shield, Star, Clock,
-  ChevronDown, ChevronRight, FileText, Settings,
-  Loader2, FolderOpen, PanelLeftClose, PanelLeftOpen,
+  Bell, Plus, Shield, Star, Clock,
+  ChevronRight, FileText, Settings,
+  Loader2, FolderOpen, PanelLeftClose, PanelLeftOpen, Pin, PinOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useSidebarStore, MIN_WIDTH, MAX_WIDTH } from '@/store/sidebarStore';
+import { useAppearanceStore } from '@/store/appearanceStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSpaces } from '@/hooks/useSpaces';
 import { usePages, useCreatePage } from '@/hooks/usePages';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useRecentPages } from '@/hooks/useRecentPages';
 import { PageTree } from '@/components/features/PageTree';
-import { GlobalSearchDialog } from '@/components/features/GlobalSearchDialog';
 import { PageTemplatesDialog } from '@/components/features/PageTemplates';
+import { NotificationBell } from '@/components/features/NotificationBell';
 import { UserMenu } from '@/components/features/UserMenu';
+import { AppearanceTrigger } from '@/components/features/AppearanceTrigger';
 import { WiksoLogo } from '@/components/ui/WiksoLogo';
 import { Button } from '@/components/ui/button';
+import { paletteFor, initialsFor } from '@/lib/avatarColor';
 import type { Space } from '@/types';
 
 /* ─── Resize handle ────────────────────────────────────────────────── */
@@ -55,14 +58,16 @@ function ResizeHandle({ onResize }: { onResize: (width: number) => void }) {
   return (
     <div
       ref={handleRef}
-      className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize z-20 hover:bg-primary/30 active:bg-primary/50 transition-colors"
+      className="group/resize absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize z-20 flex items-center justify-center"
       onMouseDown={(e) => {
         e.preventDefault();
         dragging.current = true;
         document.body.style.cursor = 'col-resize';
         document.body.style.userSelect = 'none';
       }}
-    />
+    >
+      <div className="h-8 w-0.5 rounded-full bg-transparent group-hover/resize:bg-primary/40 group-active/resize:bg-primary/60 transition-colors duration-150" />
+    </div>
   );
 }
 
@@ -110,28 +115,45 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
       {/* Space row */}
       <div
         className={cn(
-          'group flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors cursor-pointer',
+          'group relative flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all duration-150 cursor-pointer',
           isCurrentSpace
-            ? 'bg-sidebar-accent/70 text-sidebar-accent-foreground font-medium'
-            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground',
+            ? 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground font-medium'
+            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground',
         )}
         onClick={onToggle}
       >
+        {/* Active indicator bar */}
+        {isCurrentSpace && (
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[var(--sidebar-item-active-border)]" />
+        )}
         <ChevronRight
           className={cn(
-            'h-3.5 w-3.5 shrink-0 transition-transform duration-150',
+            'h-3.5 w-3.5 shrink-0 text-sidebar-foreground/40 transition-transform duration-150',
             isExpanded && 'rotate-90',
           )}
         />
         <div
           className={cn(
-            'flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-bold',
-            isCurrentSpace
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-sidebar-foreground/10 text-sidebar-foreground/70',
+            'flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md text-[10px] font-bold transition-colors',
           )}
+          style={
+            isCurrentSpace
+              ? {
+                  background: 'var(--accent)',
+                  color: 'var(--bg)',
+                  boxShadow: `inset 0 0 0 1px ${paletteFor(space.name).ring}`,
+                }
+              : (() => {
+                  const p = paletteFor(space.name);
+                  return {
+                    background: p.bg,
+                    color: p.fg,
+                    boxShadow: `inset 0 0 0 1px ${p.ring}`,
+                  };
+                })()
+          }
         >
-          {space.name.charAt(0).toUpperCase()}
+          {initialsFor(space.name).charAt(0)}
         </div>
         <Link
           href={`/spaces/${space.slug}`}
@@ -141,11 +163,11 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
           {space.name}
         </Link>
 
-        {/* Settings gear – visible on hover or when expanded */}
+        {/* Settings gear – visible on hover */}
         <Link
           href={`/spaces/${space.slug}/settings`}
           onClick={(e) => e.stopPropagation()}
-          className="shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 text-sidebar-foreground/50 hover:text-sidebar-foreground transition-opacity"
+          className="shrink-0 p-0.5 rounded-md opacity-0 group-hover:opacity-100 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/60 transition-all duration-150"
         >
           <Settings className="h-3 w-3" />
         </Link>
@@ -159,7 +181,7 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 flex-1 justify-start gap-1.5 text-xs text-muted-foreground px-2"
+              className="h-6 flex-1 justify-start gap-1.5 text-xs text-muted-foreground/70 hover:text-muted-foreground px-2"
               onClick={() => setShowTemplates(true)}
               disabled={createPage.isPending}
             >
@@ -198,6 +220,36 @@ function SpaceTreeNode({ space, isExpanded, onToggle, isCurrentSpace }: SpaceTre
   );
 }
 
+/* ─── Section header ───────────────────────────────────────────────── */
+
+function SectionHeader({
+  icon: Icon,
+  label,
+  isOpen,
+  onToggle,
+}: {
+  icon: React.ElementType;
+  label: string;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="flex items-center gap-2 w-full px-1 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/40 hover:text-sidebar-foreground/60 transition-colors"
+    >
+      <Icon className="h-3 w-3" />
+      {label}
+      <ChevronRight
+        className={cn(
+          'ml-auto h-3 w-3 transition-transform duration-150',
+          isOpen && 'rotate-90',
+        )}
+      />
+    </button>
+  );
+}
+
 /* ─── UnifiedSidebar ────────────────────────────────────────────────── */
 
 export function UnifiedSidebar() {
@@ -205,16 +257,22 @@ export function UnifiedSidebar() {
   const { user } = useAuthStore();
   const { t } = useTranslation();
   const { collapsed, toggle, hydrate, width, setWidth } = useSidebarStore();
+  const sidebarMode = useAppearanceStore((s) => s.sidebarMode);
+  const setSidebarMode = useAppearanceStore((s) => s.setSidebarMode);
+  const hydrateAppearance = useAppearanceStore((s) => s.hydrate);
   const { data: spaces, isLoading: spacesLoading } = useSpaces();
 
-  // Hydrate sidebar collapsed state from localStorage on mount
-  useEffect(() => { hydrate(); }, [hydrate]);
+  // Hover-to-expand state for rail mode
+  const [hoverExpanded, setHoverExpanded] = useState(false);
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Hydrate stores on mount
+  useEffect(() => { hydrate(); hydrateAppearance(); }, [hydrate, hydrateAppearance]);
   const { data: favorites } = useFavorites();
   const { data: recentPages } = useRecentPages();
 
   const [showFavorites, setShowFavorites] = useState(true);
   const [showRecent, setShowRecent] = useState(true);
-  const [searchOpen, setSearchOpen] = useState(false);
 
   // Extract current space slug from URL
   const currentSlugMatch = pathname.match(/^\/spaces\/([^/]+)/);
@@ -245,88 +303,135 @@ export function UnifiedSidebar() {
     setWidth(x);
   }, [setWidth]);
 
+  // Hover handlers (with small delay so a fast cursor sweep doesn't flicker)
+  const handleEnter = useCallback(() => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    setHoverExpanded(true);
+  }, []);
+  const handleLeave = useCallback(() => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => setHoverExpanded(false), 180);
+  }, []);
+
+  // In hover-rail mode: collapsed visually unless hovered. The actual
+  // `collapsed` flag from sidebarStore is bypassed in this mode.
+  const isHoverRail = sidebarMode === 'hover';
+  const showCollapsed = isHoverRail ? !hoverExpanded : collapsed;
+
   /* ── Collapsed (icon-only) sidebar ── */
-  if (collapsed) {
-    return (
-    <>
-      <aside className="flex h-screen w-14 flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-all duration-200">
+  if (showCollapsed) {
+    const railContent = (
+      <aside
+        data-chrome="sidebar"
+        onMouseEnter={isHoverRail ? handleEnter : undefined}
+        onMouseLeave={isHoverRail ? handleLeave : undefined}
+        className={cn(
+          'flex h-screen w-14 flex-col bg-sidebar text-sidebar-foreground transition-all duration-200',
+          isHoverRail && 'fixed left-0 top-0 z-30',
+        )}
+        style={{ boxShadow: 'var(--sidebar-shadow)' }}
+      >
         {/* Logo */}
-        <div className="flex items-center justify-center border-b border-border py-3">
+        <div className="flex items-center justify-center py-3.5">
           <Link href="/spaces">
             <WiksoLogo showText={false} className="h-7 w-7" />
           </Link>
         </div>
 
-        {/* Expand button */}
-        <div className="flex justify-center py-2 border-b border-border">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggle} title={t('sidebar.expand') || 'Expand sidebar'}>
-            <PanelLeftOpen className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* Expand button — only in pinned mode (hover-rail uses cursor) */}
+        {!isHoverRail && (
+          <div className="flex justify-center py-1.5">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50" onClick={toggle} title={t('sidebar.expand') || 'Expand sidebar'}>
+              <PanelLeftOpen className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Divider */}
+        <div className="mx-2.5 h-px bg-sidebar-foreground/8" />
 
         {/* Quick nav icons */}
-        <div className="flex flex-col items-center gap-1 py-2 border-b border-border">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            title={t('sidebar.search')}
-            onClick={() => setSearchOpen(true)}
-          >
-            <Search className="h-4 w-4" />
-          </Button>
+        <div className="flex flex-col items-center gap-0.5 py-2">
           {[
             { href: '/notifications', icon: Bell, label: t('sidebar.notifications') },
             { href: '/profile', icon: Settings, label: t('sidebar.profile') },
           ].map((item) => {
             const Icon = item.icon;
             const isActive = pathname.startsWith(item.href);
+            const isBell = item.href === '/notifications';
             return (
               <Link key={item.href} href={item.href} title={item.label}>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={cn('h-8 w-8', isActive && 'bg-sidebar-accent text-sidebar-accent-foreground')}
+                  className={cn(
+                    'h-8 w-8 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50',
+                    isActive && 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground',
+                  )}
                 >
-                  <Icon className="h-4 w-4" />
+                  {isBell ? (
+                    <NotificationBell iconClassName="h-4 w-4" variant="corner" />
+                  ) : (
+                    <Icon className="h-4 w-4" />
+                  )}
                 </Button>
               </Link>
             );
           })}
         </div>
 
+        {/* Divider */}
+        <div className="mx-2.5 h-px bg-sidebar-foreground/8" />
+
         {/* Space icons */}
         <div className="flex-1 overflow-y-auto flex flex-col items-center gap-1 py-2">
-          {spaces?.map((space) => (
-            <Link
-              key={space.id}
-              href={`/spaces/${space.slug}`}
-              title={space.name}
-              className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-md text-[11px] font-bold transition-colors',
-                space.slug === currentSlug
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-sidebar-foreground/10 text-sidebar-foreground/70 hover:bg-sidebar-accent/50',
-              )}
-            >
-              {space.name.charAt(0).toUpperCase()}
-            </Link>
-          ))}
+          {spaces?.map((space) => {
+            const isActive = space.slug === currentSlug;
+            const p = paletteFor(space.name);
+            return (
+              <Link
+                key={space.id}
+                href={`/spaces/${space.slug}`}
+                title={space.name}
+                className={cn(
+                  'relative flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-bold transition-all duration-150 hover:scale-105',
+                )}
+                style={
+                  isActive
+                    ? {
+                        background: 'var(--accent)',
+                        color: 'var(--bg)',
+                        boxShadow: `0 1px 3px ${p.ring}, inset 0 0 0 1px ${p.ring}`,
+                      }
+                    : {
+                        background: p.bg,
+                        color: p.fg,
+                        boxShadow: `inset 0 0 0 1px ${p.ring}`,
+                      }
+                }
+              >
+                {initialsFor(space.name).charAt(0)}
+              </Link>
+            );
+          })}
           <Link href="/spaces/new" title={t('sidebar.newSpace')}>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/40 hover:bg-sidebar-accent/40 transition-colors">
-              <Plus className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg text-sidebar-foreground/30 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/60 transition-all duration-150 border border-dashed border-sidebar-foreground/15">
+              <Plus className="h-3.5 w-3.5" />
             </div>
           </Link>
         </div>
 
         {/* Admin */}
         {user?.role === 'ADMIN' && (
-          <div className="flex justify-center border-t border-border py-1">
+          <div className="flex justify-center py-1.5">
             <Link href="/admin" title={t('sidebar.admin')}>
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn('h-8 w-8', pathname.startsWith('/admin') && 'bg-sidebar-accent text-sidebar-accent-foreground')}
+                className={cn(
+                  'h-8 w-8 text-sidebar-foreground/50 hover:text-sidebar-foreground',
+                  pathname.startsWith('/admin') && 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground',
+                )}
               >
                 <Shield className="h-4 w-4" />
               </Button>
@@ -334,80 +439,147 @@ export function UnifiedSidebar() {
           </div>
         )}
 
-        {/* User avatar */}
-        <div className="border-t border-border flex justify-center py-3">
+        {/* Divider */}
+        <div className="mx-2.5 h-px bg-sidebar-foreground/8" />
+
+        {/* User avatar — stacked with the appearance trigger so the
+            collapsed rail surfaces both controls without horizontal
+            crowding. Avatar is the primary action; sliders sits below. */}
+        <div className="flex flex-col items-center gap-2 py-3">
           <UserMenu avatarSize="h-7 w-7" showName={false} />
+          <AppearanceTrigger />
         </div>
       </aside>
-      <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
-    </>
     );
+
+    // In hover-rail mode, render a placeholder in the flow + the
+    // floating overlay aside that expands on hover. In pinned mode,
+    // just render the aside directly so the existing layout works.
+    return isHoverRail ? (
+      <>
+        <div className="w-14 shrink-0" aria-hidden />
+        {railContent}
+      </>
+    ) : railContent;
   }
 
   /* ── Expanded (full) sidebar ── */
-  return (
-    <>
+  const expandedAside = (
     <aside
-      className="relative flex h-screen flex-col border-r border-border bg-sidebar text-sidebar-foreground shrink-0"
-      style={{ width: `${width}px`, minWidth: `${MIN_WIDTH}px`, maxWidth: `${MAX_WIDTH}px` }}
+      data-chrome="sidebar"
+      onMouseEnter={isHoverRail ? handleEnter : undefined}
+      onMouseLeave={isHoverRail ? handleLeave : undefined}
+      className={cn(
+        'flex h-screen flex-col bg-sidebar text-sidebar-foreground',
+        isHoverRail ? 'fixed left-0 top-0 z-30' : 'relative shrink-0',
+      )}
+      style={{
+        width: `${width}px`,
+        minWidth: `${MIN_WIDTH}px`,
+        maxWidth: `${MAX_WIDTH}px`,
+        boxShadow: isHoverRail ? 'var(--pop-shadow)' : 'var(--sidebar-shadow)',
+      }}
     >
       {/* Resize handle */}
       <ResizeHandle onResize={handleResize} />
 
       {/* ── Logo + collapse toggle ── */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <Link href="/spaces" className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-4 py-3.5">
+        <Link href="/spaces" className="flex items-center gap-2.5">
           <WiksoLogo showText={false} className="h-7 w-7" />
-          <span className="text-base font-semibold">Wikso</span>
+          <span
+            className="text-[17px] font-semibold tracking-[-0.01em]"
+            style={{ fontFamily: 'var(--body-font)' }}
+          >
+            Wikso
+          </span>
         </Link>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground" onClick={toggle} title={t('sidebar.collapse') || 'Collapse sidebar'}>
-          <PanelLeftClose className="h-4 w-4" />
-        </Button>
+        {/* In hover-rail mode the sidebar floats and disappears on
+            mouse-leave; the only way the user can keep it open is to
+            promote it to pinned mode. So in that mode this button
+            *pins* (Pin icon → switches to pinned). In pinned mode it
+            collapses to the rail. Holding shift while clicking in
+            pinned mode unpins back to hover so power users can flip
+            modes without going to settings. */}
+        {isHoverRail ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            onClick={() => {
+              setSidebarMode('pinned');
+              setHoverExpanded(false); // tear down the hover overlay
+            }}
+            title={t('sidebar.pin') || 'Pin sidebar open'}
+          >
+            <Pin className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-sidebar-foreground/30 hover:text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
+            onClick={(e) => {
+              if (e.shiftKey) setSidebarMode('hover');
+              else toggle();
+            }}
+            title={
+              t('sidebar.collapse') ||
+              'Collapse sidebar (shift-click to switch to hover mode)'
+            }
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
-      {/* ── Quick nav ── */}
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-border">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          title={t('sidebar.search')}
-          onClick={() => setSearchOpen(true)}
-        >
-          <Search className="h-4 w-4" />
-        </Button>
+      {/* ── Quick nav icons ── */}
+      <div className="flex items-center gap-0.5 px-3 pb-2">
         {[
           { href: '/notifications', icon: Bell, label: t('sidebar.notifications') },
           { href: '/profile', icon: Settings, label: t('sidebar.profile') },
         ].map((item) => {
           const Icon = item.icon;
           const isActive = pathname.startsWith(item.href);
+          const isBell = item.href === '/notifications';
           return (
             <Link key={item.href} href={item.href} title={item.label}>
               <Button
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  'h-8 w-8',
-                  isActive && 'bg-sidebar-accent text-sidebar-accent-foreground',
+                  'h-8 w-8 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50',
+                  isActive && 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground',
                 )}
               >
-                <Icon className="h-4 w-4" />
+                {isBell ? (
+                  <NotificationBell iconClassName="h-4 w-4" variant="corner" />
+                ) : (
+                  <Icon className="h-4 w-4" />
+                )}
               </Button>
             </Link>
           );
         })}
       </div>
 
+      {/* Divider */}
+      <div className="mx-3 h-px bg-sidebar-foreground/8" />
+
       {/* ── Scrollable content ── */}
       <div className="flex-1 overflow-y-auto">
         {/* Spaces section header */}
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/40">
             {t('sidebar.spaces')}
           </span>
           <Link href="/spaces/new">
-            <Button variant="ghost" size="icon" className="h-5 w-5" title={t('sidebar.newSpace')}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 text-sidebar-foreground/30 hover:text-sidebar-foreground/60 hover:bg-sidebar-accent/50"
+              title={t('sidebar.newSpace')}
+            >
               <Plus className="h-3.5 w-3.5" />
             </Button>
           </Link>
@@ -418,7 +590,7 @@ export function UnifiedSidebar() {
           {spacesLoading && (
             <div className="space-y-2 p-2">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-6 animate-pulse rounded bg-muted" />
+                <div key={i} className="h-6 animate-pulse rounded-lg bg-muted/50" />
               ))}
             </div>
           )}
@@ -432,11 +604,11 @@ export function UnifiedSidebar() {
             />
           ))}
           {spaces && spaces.length === 0 && (
-            <div className="px-3 py-4 text-center">
-              <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
-              <p className="text-xs text-muted-foreground">{t('spaces.noSpaces') || 'No spaces yet'}</p>
+            <div className="px-3 py-6 text-center">
+              <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
+              <p className="text-xs text-muted-foreground/60">{t('spaces.noSpaces') || 'No spaces yet'}</p>
               <Link href="/spaces/new">
-                <Button variant="outline" size="sm" className="mt-2 gap-1.5">
+                <Button variant="outline" size="sm" className="mt-3 gap-1.5 text-xs">
                   <Plus className="h-3.5 w-3.5" />
                   {t('sidebar.newSpace')}
                 </Button>
@@ -447,33 +619,38 @@ export function UnifiedSidebar() {
 
         {/* ── Favorites ── */}
         {favorites && favorites.length > 0 && (
-          <div className="px-3 pt-1 border-t border-border">
-            <button
-              onClick={() => setShowFavorites(!showFavorites)}
-              className="flex items-center gap-2 w-full px-0 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/70 transition-colors"
-            >
-              {showFavorites ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              <Star className="h-3 w-3" />
-              {t('sidebar.favorites') || 'Favorites'}
-            </button>
+          <div className="px-3 pt-1">
+            <div className="mx-0 h-px bg-sidebar-foreground/8 mb-1" />
+            <SectionHeader
+              icon={Star}
+              label={t('sidebar.favorites') || 'Favorites'}
+              isOpen={showFavorites}
+              onToggle={() => setShowFavorites(!showFavorites)}
+            />
             {showFavorites && (
-              <div className="space-y-0.5 mt-0.5">
-                {favorites.slice(0, 8).map((fav) => (
-                  <Link
-                    key={fav.id}
-                    href={`/spaces/${fav.page.space.slug}/pages/${fav.page.id}`}
-                    className={cn(
-                      'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
-                      pathname.includes(fav.page.id)
-                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground',
-                    )}
-                    title={`${fav.page.title} — ${fav.page.space.name}`}
-                  >
-                    <FileText className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{fav.page.title}</span>
-                  </Link>
-                ))}
+              <div className="space-y-0.5">
+                {favorites.slice(0, 8).map((fav) => {
+                  const isActive = pathname.includes(fav.page.id);
+                  return (
+                    <Link
+                      key={fav.id}
+                      href={`/spaces/${fav.page.space.slug}/pages/${fav.page.id}`}
+                      className={cn(
+                        'relative flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all duration-150',
+                        isActive
+                          ? 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground font-medium'
+                          : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground',
+                      )}
+                      title={`${fav.page.title} — ${fav.page.space.name}`}
+                    >
+                      {isActive && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-r-full bg-[var(--sidebar-item-active-border)]" />
+                      )}
+                      <FileText className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                      <span className="truncate">{fav.page.title}</span>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -481,33 +658,38 @@ export function UnifiedSidebar() {
 
         {/* ── Recent pages ── */}
         {recentPages && recentPages.length > 0 && (
-          <div className="px-3 pt-1 border-t border-border">
-            <button
-              onClick={() => setShowRecent(!showRecent)}
-              className="flex items-center gap-2 w-full px-0 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/70 transition-colors"
-            >
-              {showRecent ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              <Clock className="h-3 w-3" />
-              {t('sidebar.recent') || 'Recent'}
-            </button>
+          <div className="px-3 pt-1">
+            <div className="mx-0 h-px bg-sidebar-foreground/8 mb-1" />
+            <SectionHeader
+              icon={Clock}
+              label={t('sidebar.recent') || 'Recent'}
+              isOpen={showRecent}
+              onToggle={() => setShowRecent(!showRecent)}
+            />
             {showRecent && (
-              <div className="space-y-0.5 mt-0.5">
-                {recentPages.slice(0, 6).map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/spaces/${item.page.space.slug}/pages/${item.page.id}`}
-                    className={cn(
-                      'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
-                      pathname.includes(item.page.id)
-                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground',
-                    )}
-                    title={`${item.page.title} — ${item.page.space.name}`}
-                  >
-                    <FileText className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{item.page.title}</span>
-                  </Link>
-                ))}
+              <div className="space-y-0.5">
+                {recentPages.slice(0, 6).map((item) => {
+                  const isActive = pathname.includes(item.page.id);
+                  return (
+                    <Link
+                      key={item.id}
+                      href={`/spaces/${item.page.space.slug}/pages/${item.page.id}`}
+                      className={cn(
+                        'relative flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all duration-150',
+                        isActive
+                          ? 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground font-medium'
+                          : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground',
+                      )}
+                      title={`${item.page.title} — ${item.page.space.name}`}
+                    >
+                      {isActive && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-r-full bg-[var(--sidebar-item-active-border)]" />
+                      )}
+                      <FileText className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                      <span className="truncate">{item.page.title}</span>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -516,16 +698,20 @@ export function UnifiedSidebar() {
 
       {/* ── Admin link ── */}
       {user?.role === 'ADMIN' && (
-        <div className="px-3 pb-1 border-t border-border pt-1">
+        <div className="px-3 pt-1 pb-1">
+          <div className="mx-0 h-px bg-sidebar-foreground/8 mb-1.5" />
           <Link
             href="/admin"
             className={cn(
-              'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
+              'relative flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all duration-150',
               pathname.startsWith('/admin')
-                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground',
+                ? 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground font-medium'
+                : 'text-sidebar-foreground/50 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground',
             )}
           >
+            {pathname.startsWith('/admin') && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-r-full bg-[var(--sidebar-item-active-border)]" />
+            )}
             <Shield className="h-3.5 w-3.5" />
             {t('sidebar.admin')}
           </Link>
@@ -533,11 +719,29 @@ export function UnifiedSidebar() {
       )}
 
       {/* ── User menu ── */}
-      <div className="border-t border-border p-3">
-        <UserMenu avatarSize="h-7 w-7" showName />
+      {/* Two-up footer: avatar + name on the left, the appearance
+          trigger (sliders icon) pinned right. The trigger lived as a
+          floating bottom-right button before; pulling it in here keeps
+          related identity/skin controls together at the same edge of
+          the screen and frees the bottom-right corner for AskAI. */}
+      <div className="px-3 pb-3 pt-1">
+        <div className="mx-0 h-px bg-sidebar-foreground/8 mb-2.5" />
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <UserMenu avatarSize="h-7 w-7" showName />
+          </div>
+          <AppearanceTrigger />
+        </div>
       </div>
     </aside>
-    <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
-    </>
   );
+
+  // Hover-rail mode: render a 56px placeholder + the floating overlay
+  // so main content doesn't shift when the rail expands.
+  return isHoverRail ? (
+    <>
+      <div className="w-14 shrink-0" aria-hidden />
+      {expandedAside}
+    </>
+  ) : expandedAside;
 }

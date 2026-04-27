@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from '@/hooks/useTranslation';
+import { bcp47Locale } from '@/lib/locale';
 
 const PAGE_SIZE = 10;
 
@@ -174,7 +175,7 @@ export default function AdminSpacesPage() {
                         <td className="py-3 text-muted-foreground">{space.owner?.name || '—'}</td>
                         <td className="py-3 text-muted-foreground">{space._count?.pages ?? 0}</td>
                         <td className="py-3 text-muted-foreground">
-                          {new Date(space.createdAt).toLocaleDateString(locale)}
+                          {new Date(space.createdAt).toLocaleDateString(bcp47Locale(locale))}
                         </td>
                         <td className="py-3">
                           <div className="flex items-center gap-1">

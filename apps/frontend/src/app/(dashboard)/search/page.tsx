@@ -6,6 +6,7 @@ import { Search as SearchIcon, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSearch } from '@/hooks/useSearch';
 import { useTranslation } from '@/hooks/useTranslation';
+import { HighlightText } from '@/components/ui/HighlightText';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
@@ -56,10 +57,14 @@ export default function SearchPage() {
             >
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{result.title}</span>
+                <span className="font-medium">
+                  <HighlightText text={result.title} query={query} />
+                </span>
               </div>
               {result.excerpt && (
-                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{result.excerpt}</p>
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                  <HighlightText text={result.excerpt} query={query} />
+                </p>
               )}
               <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                 {result.spaceName && <span>{result.spaceName}</span>}

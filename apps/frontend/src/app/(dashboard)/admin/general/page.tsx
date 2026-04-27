@@ -241,12 +241,14 @@ export default function AdminGeneralPage() {
 
   return (
     <div>
-      <div className="mb-4 sm:mb-8 flex items-center gap-3">
-        <Settings className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
+      <div className="mb-6 sm:mb-8 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/8">
+          <Settings className="h-5 w-5 text-primary" />
+        </div>
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">{t('admin.general.title')}</h1>
+          <h1 className="text-[1.5rem] font-bold tracking-[-0.02em]">{t('admin.general.title')}</h1>
           {settings?.appVersion && (
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-[11px] text-muted-foreground/50 mt-0.5">
               {t('admin.general.version', { version: settings.appVersion })}
             </p>
           )}
@@ -258,18 +260,20 @@ export default function AdminGeneralPage() {
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card key={stat.label}>
+            <Card key={stat.label} className="rounded-xl border-border/50">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-[13px] font-medium text-muted-foreground/70">
                   {stat.label}
                 </CardTitle>
-                <Icon className={`h-4 w-4 ${stat.color}`} />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50">
+                  <Icon className={`h-4 w-4 ${stat.color}`} />
+                </div>
               </CardHeader>
               <CardContent>
                 {statsLoading ? (
-                  <div className="h-8 w-16 animate-pulse rounded bg-muted" />
+                  <div className="h-8 w-16 animate-pulse rounded-lg bg-muted/50" />
                 ) : (
-                  <p className="text-2xl font-bold">{stat.value ?? 0}</p>
+                  <p className="text-[1.75rem] font-bold tracking-[-0.02em]">{stat.value ?? 0}</p>
                 )}
               </CardContent>
             </Card>
@@ -278,13 +282,13 @@ export default function AdminGeneralPage() {
       </div>
 
       {/* Activity Chart */}
-      <Card className="mb-8">
+      <Card className="mb-8 rounded-xl border-border/50">
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-[15px]">
+            <BarChart3 className="h-4 w-4 text-muted-foreground/60" />
             Activity
           </CardTitle>
-          <div className="flex items-center gap-1 rounded-lg bg-muted p-1 flex-wrap">
+          <div className="flex items-center gap-0.5 rounded-lg border border-border/60 bg-muted/20 p-0.5 flex-wrap">
             {PERIOD_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
@@ -314,32 +318,34 @@ export default function AdminGeneralPage() {
       </Card>
 
       {/* Site Settings */}
-      <Card>
+      <Card className="rounded-xl border-border/50">
         <CardHeader>
-          <CardTitle>{t('admin.general.siteConfig')}</CardTitle>
+          <CardTitle className="text-[15px]">{t('admin.general.siteConfig')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {settingsLoading ? (
             <div className="space-y-3">
-              <div className="h-10 animate-pulse rounded bg-muted" />
-              <div className="h-10 animate-pulse rounded bg-muted" />
+              <div className="h-10 animate-pulse rounded-lg bg-muted/50" />
+              <div className="h-10 animate-pulse rounded-lg bg-muted/50" />
             </div>
           ) : (
             <>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">{t('admin.general.siteName')}</label>
+                <label className="text-[13px] font-medium mb-1.5 block">{t('admin.general.siteName')}</label>
                 <Input
                   value={siteName}
                   onChange={(e) => setSiteName(e.target.value)}
                   placeholder="Wikso"
+                  className="bg-muted/30 border-border/60 focus-visible:bg-background"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">{t('admin.general.siteDescription')}</label>
+                <label className="text-[13px] font-medium mb-1.5 block">{t('admin.general.siteDescription')}</label>
                 <Input
                   value={siteDescription}
                   onChange={(e) => setSiteDescription(e.target.value)}
                   placeholder="A modern wiki & knowledge base"
+                  className="bg-muted/30 border-border/60 focus-visible:bg-background"
                 />
               </div>
               <Button

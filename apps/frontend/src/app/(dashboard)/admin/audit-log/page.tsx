@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from '@/hooks/useTranslation';
+import { bcp47Locale } from '@/lib/locale';
 
 const PAGE_SIZE = 20;
 
@@ -202,7 +203,7 @@ export default function AdminAuditLogPage() {
                         <span className="text-muted-foreground">{entry.entityType}</span>
                       </p>
                       <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
-                        <span>{new Date(entry.createdAt).toLocaleString(locale)}</span>
+                        <span>{new Date(entry.createdAt).toLocaleString(bcp47Locale(locale))}</span>
                         {entry.entityId && (
                           <span className="font-mono truncate max-w-[120px] sm:max-w-[200px]">
                             ID: {entry.entityId}

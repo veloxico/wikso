@@ -45,7 +45,12 @@ export class HealthController {
   @Get()
   @ApiOperation({ summary: 'Public health check (minimal info)' })
   async check() {
-    // Public endpoint — only return minimal status, no internals
+    // Public endpoint — only return minimal status, no internals.
+    // Respond "setup_required" when Prisma isn't ready, so Docker healthcheck
+    // still passes (container is up — just not fully configured).
+    if (!this.prisma.isReady) {
+      return { status: 'setup_required' };
+    }
     try {
       await this.prisma.$queryRaw`SELECT 1`;
       return { status: 'ok' };

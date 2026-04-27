@@ -41,6 +41,9 @@ model User {
   commentReactions CommentReaction[]
   webhooks      Webhook[]
   attachments   Attachment[]
+  pageShares    PageShare[]
+  pageWatches   PageWatch[]
+  aiConversations AiConversation[]
 }
 
 model OAuthAccount {
@@ -65,10 +68,11 @@ model Space {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  owner       User              @relation(fields: [ownerId], references: [id])
-  pages       Page[]
-  permissions SpacePermission[]
-  templates   PageTemplate[]
+  owner              User                       @relation(fields: [ownerId], references: [id])
+  pages              Page[]
+  permissions        SpacePermission[]
+  templates          PageTemplate[]
+  slackSubscriptions SlackChannelSubscription[]
 }
 
 model SpacePermission {
@@ -113,8 +117,26 @@ model Page {
   favorites   Favorite[]
   recentPages RecentPage[]
   pageViews   PageView[]
+  shares      PageShare[]
+  linksOut    PageLink[]    @relation("PageLinksFrom")
+  linksIn     PageLink[]    @relation("PageLinksTo")
+  watchers    PageWatch[]
 
   @@index([spaceId, deletedAt])
+}
+
+model PageWatch {
+  id        String   @id @default(uuid())
+  userId    String
+  pageId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pageId])
+  @@index([pageId])
+  @@index([userId])
 }
 
 model PageVersion {
@@ -311,6 +333,45 @@ model PageView {
   @@index([pageId, createdAt])
 }
 
+/// Guest share link — lets anonymous visitors view a page without a Wikso account.
+/// Token is a url-safe opaque secret; we never expose the page id publicly.
+model PageShare {
+  id             String    @id @default(uuid())
+  pageId         String
+  token          String    @unique
+  createdById    String
+  expiresAt      DateTime?
+  passwordHash   String?
+  allowComments  Boolean   @default(false)
+  viewCount      Int       @default(0)
+  lastViewedAt   DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  page      Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@index([createdById])
+}
+
+/// Extracted reference from one page to another — populated on page save by
+/// walking the ProseMirror doc. Enables "Mentioned in" backlink panels.
+model PageLink {
+  id         String   @id @default(uuid())
+  fromPageId String
+  toPageId   String
+  createdAt  DateTime @default(now())
+
+  from Page @relation("PageLinksFrom", fields: [fromPageId], references: [id], onDelete: Cascade)
+  to   Page @relation("PageLinksTo",   fields: [toPageId],   references: [id], onDelete: Cascade)
+
+  @@unique([fromPageId, toPageId])
+  @@index([toPageId])
+  @@index([fromPageId])
+}
+
 model Group {
   id          String            @id @default(uuid())
   name        String            @unique
@@ -331,6 +392,58 @@ model GroupMember {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, userId])
+}
+
+model AiConversation {
+  id        String      @id @default(uuid())
+  userId    String
+  title     String      @default("New conversation")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  AiMessage[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+}
+
+model AiMessage {
+  id             String         @id @default(uuid())
+  conversationId String
+  role           String
+  content        String
+  sources        Json?
+  createdAt      DateTime       @default(now())
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+model SlackWorkspace {
+  id                String   @id @default(uuid())
+  slackTeamId       String   @unique
+  slackTeamName     String
+  botAccessToken    String
+  botUserId         String
+  connectedByUserId String
+  connectedAt       DateTime @default(now())
+
+  subscriptions SlackChannelSubscription[]
+}
+
+model SlackChannelSubscription {
+  id               String   @id @default(uuid())
+  workspaceId      String
+  slackChannelId   String
+  slackChannelName String
+  spaceId          String
+  eventTypes       String[]
+  createdAt        DateTime @default(now())
+
+  workspace SlackWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  space     Space          @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, slackChannelId, spaceId])
+  @@index([spaceId])
 }
 
 enum GlobalRole {

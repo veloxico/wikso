@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/c
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
+import { requireSecret } from '../../common/utils/secrets';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -9,7 +10,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'default-secret',
+      // Hard-fail at boot if JWT_SECRET is unset / placeholder / too short.
+      // Better than silently signing tokens with a guessable key.
+      secretOrKey: requireSecret('JWT_SECRET'),
     });
   }
 

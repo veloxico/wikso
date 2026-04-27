@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,7 +18,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ChevronRight, GripVertical, Search, X, Trash2, Plus, MoveHorizontal } from 'lucide-react';
+import { ChevronRight, GripVertical, Trash2, Plus, MoveHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -115,7 +115,6 @@ interface PageTreeNodeProps {
   page: Page;
   slug: string;
   level: number;
-  searchQuery?: string;
   onDeletePage?: (page: Page) => void;
   onCreateChildPage?: (parentId: string) => void;
   onMovePage?: (page: Page) => void;
@@ -127,7 +126,7 @@ interface PageTreeNodeProps {
 }
 
 function SortablePageNode({
-  page, slug, level, searchQuery, onDeletePage, onCreateChildPage, onMovePage,
+  page, slug, level, onDeletePage, onCreateChildPage, onMovePage,
   onContextMenu, onExpand, expandedIds,
 }: PageTreeNodeProps) {
   const pathname = usePathname();
@@ -162,21 +161,6 @@ function SortablePageNode({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  // Highlight matching text
-  const titleContent = useMemo(() => {
-    if (!searchQuery) return page.title;
-    const idx = page.title.toLowerCase().indexOf(searchQuery.toLowerCase());
-    if (idx === -1) return page.title;
-    const before = page.title.slice(0, idx);
-    const match = page.title.slice(idx, idx + searchQuery.length);
-    const after = page.title.slice(idx + searchQuery.length);
-    return (
-      <>
-        {before}<mark className="bg-yellow-200 dark:bg-yellow-800 rounded-sm px-0.5">{match}</mark>{after}
-      </>
-    );
-  }, [page.title, searchQuery]);
-
   return (
     <div ref={setNodeRef} style={style}>
       <div
@@ -190,20 +174,18 @@ function SortablePageNode({
         onContextMenu={(e) => { if (onContextMenu) { e.preventDefault(); onContextMenu(e, page); } }}
       >
         {/* Drag handle — appears on hover over the chevron area */}
-        {!searchQuery && (
-          <button
-            {...attributes}
-            {...listeners}
-            className="absolute flex h-full w-4 cursor-grab items-center justify-center opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity"
-            style={{ left: `${level * INDENT_PX}px` }}
-            tabIndex={-1}
-          >
-            <GripVertical className="h-2.5 w-2.5" />
-          </button>
-        )}
+        <button
+          {...attributes}
+          {...listeners}
+          className="absolute flex h-full w-4 cursor-grab items-center justify-center opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity"
+          style={{ left: `${level * INDENT_PX}px` }}
+          tabIndex={-1}
+        >
+          <GripVertical className="h-2.5 w-2.5" />
+        </button>
 
         {/* Expand/collapse chevron — only for parents, leaves get no spacer */}
-        {hasChildren && !searchQuery ? (
+        {hasChildren ? (
           <button
             onClick={handleToggle}
             className="flex h-4 w-4 shrink-0 items-center justify-center rounded hover:bg-accent"
@@ -213,7 +195,7 @@ function SortablePageNode({
             />
           </button>
         ) : (
-          !searchQuery && <span className="w-3 shrink-0" />
+          <span className="w-3 shrink-0" />
         )}
 
         {/* Page link — Notion-style: just the title, maximum space */}
@@ -222,7 +204,7 @@ function SortablePageNode({
           className="flex-1 truncate pl-0.5"
           title={page.title}
         >
-          {titleContent}
+          {page.title}
         </Link>
 
         {/* Status badge */}
@@ -233,7 +215,7 @@ function SortablePageNode({
         )}
 
         {/* Quick add child button — only on hover */}
-        {onCreateChildPage && !searchQuery && (
+        {onCreateChildPage && (
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCreateChildPage(page.id); }}
             className="flex h-4 w-4 shrink-0 items-center justify-center rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
@@ -243,7 +225,7 @@ function SortablePageNode({
           </button>
         )}
       </div>
-      {hasChildren && expanded && !searchQuery && (
+      {hasChildren && expanded && (
         <SortableContext
           items={page.children!.map((c) => c.id)}
           strategy={verticalListSortingStrategy}
@@ -268,56 +250,6 @@ function SortablePageNode({
   );
 }
 
-/** Lightweight page node for search results — no DndContext/useSortable dependency. */
-function SearchPageNode({ page, slug, searchQuery, onDeletePage }: Omit<PageTreeNodeProps, 'level'>) {
-  const pathname = usePathname();
-  const isActive = pathname === `/spaces/${slug}/pages/${page.id}`;
-
-  const titleContent = useMemo(() => {
-    if (!searchQuery) return page.title;
-    const idx = page.title.toLowerCase().indexOf(searchQuery.toLowerCase());
-    if (idx === -1) return page.title;
-    const before = page.title.slice(0, idx);
-    const match = page.title.slice(idx, idx + searchQuery.length);
-    const after = page.title.slice(idx + searchQuery.length);
-    return (
-      <>
-        {before}<mark className="bg-yellow-200 dark:bg-yellow-800 rounded-sm px-0.5">{match}</mark>{after}
-      </>
-    );
-  }, [page.title, searchQuery]);
-
-  return (
-    <div
-      className={cn(
-        'group flex items-center rounded-md px-2 py-[5px] text-[13px] transition-colors',
-        isActive
-          ? 'bg-accent text-accent-foreground font-medium'
-          : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground'
-      )}
-    >
-      <Link
-        href={`/spaces/${slug}/pages/${page.id}`}
-        className="flex-1 truncate"
-        title={page.title}
-      >
-        {titleContent}
-      </Link>
-      {onDeletePage && (
-        <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDeletePage(page); }}
-          className="shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-        >
-          <Trash2 className="h-3 w-3" />
-        </button>
-      )}
-      {page.status === 'DRAFT' && (
-        <span className="text-[9px] uppercase tracking-wider text-amber-600 dark:text-amber-400 font-medium ml-1">D</span>
-      )}
-    </div>
-  );
-}
-
 interface PageTreeProps {
   pages: Page[];
   slug: string;
@@ -328,7 +260,6 @@ export function PageTree({ pages, slug, onCreateChildPage }: PageTreeProps) {
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const { t } = useTranslation();
-  const [search, setSearch] = useState('');
   const [pageToDelete, setPageToDelete] = useState<Page | null>(null);
   const [pageToMove, setPageToMove] = useState<Page | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -410,80 +341,28 @@ export function PageTree({ pages, slug, onCreateChildPage }: PageTreeProps) {
     setContextMenu({ page, x: e.clientX, y: e.clientY });
   }, []);
 
-  // Filter pages when searching
-  const filteredPages = useMemo(() => {
-    if (!search) return pages;
-    const query = search.toLowerCase();
-    const allPages = flattenPages(pages);
-    return allPages.filter((p) => p.title.toLowerCase().includes(query));
-  }, [pages, search]);
-
-  const isSearching = search.length > 0;
-
   return (
     <div>
-      {/* Search input */}
-      <div className="relative mb-1.5 px-0.5">
-        <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder={t('common.search') || 'Filter pages...'}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-md border border-border bg-background py-1 pl-7 pr-6 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-        />
-        {search && (
-          <button
-            onClick={() => setSearch('')}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        )}
-      </div>
-
-      {/* Results count when searching */}
-      {isSearching && (
-        <p className="text-[10px] text-muted-foreground px-2 mb-1">
-          {filteredPages.length} result{filteredPages.length !== 1 ? 's' : ''}
-        </p>
-      )}
-
-      {isSearching ? (
-        // Flat search results — no DndContext needed
-        <div className="space-y-px">
-          {filteredPages.map((page) => (
-            <SearchPageNode key={page.id} page={page} slug={slug} searchQuery={search} onDeletePage={setPageToDelete} />
-          ))}
-          {filteredPages.length === 0 && (
-            <p className="px-3 py-4 text-xs text-muted-foreground text-center">
-              {t('spaces.noResults') || 'No pages match your search'}
-            </p>
-          )}
-        </div>
-      ) : (
-        // Normal tree with DnD
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={pages.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-px">
-              {pages.map((page) => (
-                <SortablePageNode
-                  key={page.id}
-                  page={page}
-                  slug={slug}
-                  level={0}
-                  onDeletePage={setPageToDelete}
-                  onCreateChildPage={onCreateChildPage}
-                  onMovePage={setPageToMove}
-                  onContextMenu={handleContextMenu}
-                  onExpand={handleExpand}
-                  expandedIds={expandedIds}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      )}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={pages.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-px">
+            {pages.map((page) => (
+              <SortablePageNode
+                key={page.id}
+                page={page}
+                slug={slug}
+                level={0}
+                onDeletePage={setPageToDelete}
+                onCreateChildPage={onCreateChildPage}
+                onMovePage={setPageToMove}
+                onContextMenu={handleContextMenu}
+                onExpand={handleExpand}
+                expandedIds={expandedIds}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* Right-click context menu */}
       {contextMenu && (

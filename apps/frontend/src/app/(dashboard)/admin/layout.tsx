@@ -33,7 +33,7 @@ export default function AdminLayout({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-8">{children}</div>
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 max-w-[1200px]">{children}</div>
     </div>
   );
 }

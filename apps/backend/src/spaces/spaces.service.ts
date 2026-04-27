@@ -27,6 +27,19 @@ export class SpacesService {
     }
   }
 
+  /**
+   * Invalidate spaces list cache for ALL users.
+   * Used when a space is renamed/updated/deleted — the change affects everyone
+   * who can see that space, not just one user.
+   */
+  private async invalidateAllSpacesCache() {
+    try {
+      await this.redis.delPattern('cache:spaces:*');
+    } catch {
+      // Non-critical
+    }
+  }
+
   async create(dto: CreateSpaceDto, userId: string) {
     const exists = await this.prisma.space.findUnique({ where: { slug: dto.slug } });
     if (exists) throw new ConflictException('Slug already taken');
@@ -100,6 +113,12 @@ export class SpacesService {
 
     const space = await this.prisma.space.update({ where: { slug }, data: dto });
 
+    // Invalidate for everyone — name/visibility changes affect all members.
+    // (Slug is intentionally immutable via UpdateSpaceDto + global ValidationPipe
+    // `whitelist: true`, so cache:tree:${slug}/cache:popular:${slug}:* keys
+    // never become orphaned here. If slug ever becomes mutable, drop them too.)
+    await this.invalidateAllSpacesCache();
+
     await this.webhooksService.fireEvent('space.updated', {
       spaceId: space.id,
       name: space.name,
@@ -114,6 +133,16 @@ export class SpacesService {
     if (!space) throw new NotFoundException('Space not found');
 
     await this.prisma.space.delete({ where: { slug } });
+
+    // Invalidate for everyone — deletion removes space from all users' lists.
+    await this.invalidateAllSpacesCache();
+    // Drop orphaned space-scoped caches so nothing survives past the TTL.
+    try {
+      await this.redis.del(`cache:tree:${slug}`);
+      await this.redis.delPattern(`cache:popular:${slug}:*`);
+    } catch {
+      // Non-critical
+    }
 
     await this.webhooksService.fireEvent('space.deleted', {
       spaceId: space.id,
@@ -182,8 +211,11 @@ export class SpacesService {
       },
     });
 
+    // Broad invalidation — group members might change (joined/left) between
+    // this write and the next read, so resolving the exact member list is racy.
+    await this.invalidateAllSpacesCache();
+
     if (dto.userId) {
-      await this.invalidateSpacesCache(dto.userId);
       try {
         await this.notificationsService.create(dto.userId, 'space.member_added', {
           spaceId: space.id,
@@ -193,17 +225,6 @@ export class SpacesService {
         });
       } catch {
         // Non-critical
-      }
-    }
-
-    if (dto.groupId) {
-      // Invalidate cache for all group members
-      const members = await this.prisma.groupMember.findMany({
-        where: { groupId: dto.groupId },
-        select: { userId: true },
-      });
-      for (const m of members) {
-        await this.invalidateSpacesCache(m.userId);
       }
     }
 
@@ -223,7 +244,7 @@ export class SpacesService {
       where: { spaceId: space.id, userId },
     });
 
-    await this.invalidateSpacesCache(userId);
+    await this.invalidateAllSpacesCache();
 
     try {
       await this.notificationsService.create(userId, 'space.member_removed', {
@@ -241,19 +262,11 @@ export class SpacesService {
   async removeGroupMember(slug: string, groupId: string) {
     const space = await this.findBySlug(slug);
 
-    // Get group members before deleting permission (for cache invalidation)
-    const members = await this.prisma.groupMember.findMany({
-      where: { groupId },
-      select: { userId: true },
-    });
-
     await this.prisma.spacePermission.deleteMany({
       where: { spaceId: space.id, groupId },
     });
 
-    for (const m of members) {
-      await this.invalidateSpacesCache(m.userId);
-    }
+    await this.invalidateAllSpacesCache();
 
     return { message: 'Group removed from space' };
   }

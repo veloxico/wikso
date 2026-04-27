@@ -46,6 +46,23 @@ export class RedisService implements OnModuleDestroy {
     await this.client.del(key);
   }
 
+  /**
+   * Delete all keys matching a glob pattern (e.g. "cache:spaces:*").
+   * Uses SCAN + DEL in batches; safe for production (non-blocking).
+   * Returns the number of keys deleted.
+   */
+  async delPattern(pattern: string): Promise<number> {
+    let count = 0;
+    const stream = this.client.scanStream({ match: pattern, count: 100 });
+    for await (const keys of stream as AsyncIterable<string[]>) {
+      if (keys.length > 0) {
+        await this.client.del(...keys);
+        count += keys.length;
+      }
+    }
+    return count;
+  }
+
   async exists(key: string): Promise<boolean> {
     const result = await this.client.exists(key);
     return result === 1;

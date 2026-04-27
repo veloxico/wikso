@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { MailModule } from '../mail/mail.module';
+import { requireSecret } from '../common/utils/secrets';
 
 const optionalProviders: any[] = [];
 
@@ -32,7 +33,9 @@ if (process.env.SAML_ENTRY_POINT) {
     UsersModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'default-secret',
+      // Same boot-time check as JwtStrategy — keep them in sync so we never
+      // sign with one secret and verify with another.
+      secret: requireSecret('JWT_SECRET'),
       signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any },
     }),
     MailModule,

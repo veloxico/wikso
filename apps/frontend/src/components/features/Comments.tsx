@@ -6,9 +6,9 @@ import { useComments, useCreateComment, useDeleteComment, useUpdateComment } fro
 import { useAuthStore } from '@/store/authStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { MentionInput } from '@/components/features/MentionInput';
 import { CommentReactions } from '@/components/features/CommentReactions';
+import { avatarStyle, initialsFor } from '@/lib/avatarColor';
 import type { Comment } from '@/types';
 import { toast } from 'sonner';
 
@@ -19,13 +19,25 @@ function renderContent(content: string) {
     const match = part.match(/^@\[([^\]]+)\]\(([^)]+)\)$/);
     if (match) {
       return (
-        <span key={i} className="rounded bg-primary/10 px-1 font-medium text-primary">
+        <span key={i} className="mention">
           @{match[1]}
         </span>
       );
     }
     return part;
   });
+}
+
+/** Format a comment timestamp: full datetime under 1h, then relative. */
+function formatTime(iso: string, locale: string) {
+  const d = new Date(iso);
+  const diffMs = Date.now() - d.getTime();
+  const min = Math.round(diffMs / 60000);
+  if (min < 1) return 'now';
+  if (min < 60) return `${min}m`;
+  const hours = Math.round(min / 60);
+  if (hours < 24) return `${hours}h`;
+  return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }
 
 interface CommentsProps {
@@ -122,30 +134,43 @@ export function Comments({ pageId }: CommentsProps) {
 
   return (
     <div className="space-y-4">
-      {/* New comment form */}
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-          {user?.name?.charAt(0)?.toUpperCase() || '?'}
+      {/* New comment composer */}
+      <form onSubmit={handleSubmit} className="wp-comment-composer">
+        <div className="wp-comment-avatar" style={avatarStyle(user?.name)}>
+          {initialsFor(user?.name)}
         </div>
-        <MentionInput
-          value={newComment}
-          onChange={setNewComment}
-          placeholder={t('comments.addComment')}
-        />
-        <Button
+        <div className="grow">
+          <MentionInput
+            value={newComment}
+            onChange={setNewComment}
+            placeholder={t('comments.addComment')}
+          />
+        </div>
+        <button
           type="submit"
-          size="icon"
+          className="send"
           disabled={createComment.isPending || !newComment.trim()}
+          aria-label={t('comments.send') || 'Send'}
         >
-          <Send className="h-4 w-4" />
-        </Button>
+          <Send className="h-3.5 w-3.5" />
+        </button>
       </form>
 
       {/* Empty state */}
       {rootComments.length === 0 && (
-        <div className="py-8 text-center">
-          <MessageSquare className="mx-auto mb-2 h-8 w-8 text-muted-foreground/30" />
-          <p className="text-sm text-muted-foreground">
+        <div
+          className="py-10 text-center"
+          style={{
+            border: '1px dashed var(--rule)',
+            borderRadius: '10px',
+            background: 'var(--bg-sunken)',
+          }}
+        >
+          <MessageSquare
+            className="mx-auto mb-2 h-8 w-8"
+            style={{ color: 'var(--ink-4)', opacity: 0.4 }}
+          />
+          <p className="text-sm" style={{ color: 'var(--ink-3)' }}>
             {t('comments.noComments')}
           </p>
         </div>
@@ -235,249 +260,237 @@ function CommentItem({
   const authorName =
     (comment as any).author?.name ||
     (comment.authorId === userId ? t('common.you') : t('common.user'));
-  const authorInitial = authorName.charAt(0).toUpperCase();
+  const authorInitial = initialsFor(authorName);
   const isOwner = comment.authorId === userId;
   const isReplyOpen = replyingTo === comment.id;
   const isEditingThis = editingId === comment.id;
 
   return (
-    <div className="rounded-lg border border-border p-4">
-      <div className="flex items-start gap-3">
-        {/* Avatar */}
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
-          {authorInitial}
+    <div className="wp-comment">
+      <div className="wp-comment-avatar" style={avatarStyle(authorName)}>
+        {authorInitial}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        {/* Header */}
+        <div className="wp-comment-meta">
+          <span className="name">
+            {isOwner ? t('common.you') : authorName}
+          </span>
+          <span className="time" title={new Date(comment.createdAt).toLocaleString(locale)}>
+            {formatTime(comment.createdAt, locale)}
+          </span>
+          {isOwner && <span className="badge">{t('common.you')}</span>}
         </div>
 
-        <div className="min-w-0 flex-1">
-          {/* Header */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">
-              {isOwner ? t('common.you') : authorName}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {new Date(comment.createdAt).toLocaleString(locale)}
-            </span>
+        {/* Content or Edit form */}
+        {isEditingThis ? (
+          <div className="mt-1 flex gap-2">
+            <MentionInput
+              value={editContent}
+              onChange={onEditContentChange}
+              className="flex-1"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') onCancelEdit();
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  onSaveEdit(comment.id);
+                }
+              }}
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              style={{ color: 'var(--accent)' }}
+              onClick={() => onSaveEdit(comment.id)}
+              disabled={isEditing || !editContent.trim()}
+            >
+              <Check className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={onCancelEdit}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
           </div>
+        ) : (
+          <div className="wp-comment-body">{renderContent(comment.content)}</div>
+        )}
 
-          {/* Content or Edit form */}
-          {isEditingThis ? (
-            <div className="mt-2 flex gap-2">
-              <MentionInput
-                value={editContent}
-                onChange={onEditContentChange}
-                className="flex-1"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') onCancelEdit();
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    onSaveEdit(comment.id);
-                  }
-                }}
-              />
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 text-green-600"
-                onClick={() => onSaveEdit(comment.id)}
-                disabled={isEditing || !editContent.trim()}
-              >
-                <Check className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
-                onClick={onCancelEdit}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <p className="mt-1 text-sm text-foreground/90 whitespace-pre-wrap">
-              {renderContent(comment.content)}
-            </p>
-          )}
+        {/* Reactions row */}
+        {!isEditingThis && (
+          <div className="mt-2">
+            <CommentReactions
+              reactions={comment.reactions || []}
+              commentId={comment.id}
+              pageId={pageId}
+              currentUserId={userId}
+            />
+          </div>
+        )}
 
-          {/* Actions */}
-          {!isEditingThis && (
-            <div className="mt-2 flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 px-2 text-xs text-muted-foreground"
-                onClick={() => onStartReply(comment.id)}
-              >
-                <Reply className="h-3 w-3" />
-                {t('comments.reply')}
-              </Button>
-              {isOwner && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1 px-2 text-xs text-muted-foreground"
-                    onClick={() => onStartEdit(comment.id, comment.content)}
-                  >
-                    <Pencil className="h-3 w-3" />
-                    {t('comments.edit')}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
-                    onClick={() => onDelete(comment.id)}
-                    disabled={isDeleting}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    {t('comments.delete')}
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
+        {/* Actions */}
+        {!isEditingThis && (
+          <div className="wp-comment-actions">
+            <button type="button" onClick={() => onStartReply(comment.id)}>
+              <Reply className="h-3 w-3" />
+              {t('comments.reply')}
+            </button>
+            {isOwner && (
+              <>
+                <span className="sep" />
+                <button type="button" onClick={() => onStartEdit(comment.id, comment.content)}>
+                  <Pencil className="h-3 w-3" />
+                  {t('comments.edit')}
+                </button>
+                <button
+                  type="button"
+                  className="danger"
+                  onClick={() => onDelete(comment.id)}
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="h-3 w-3" />
+                  {t('comments.delete')}
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
-          {/* Reactions */}
-          {!isEditingThis && (
-            <div className="mt-2">
-              <CommentReactions
-                reactions={comment.reactions || []}
-                commentId={comment.id}
-                pageId={pageId}
-                currentUserId={userId}
-              />
-            </div>
-          )}
+        {/* Reply form */}
+        {isReplyOpen && (
+          <div className="mt-3 flex gap-2 items-start">
+            <CornerDownRight
+              className="mt-2 h-4 w-4 shrink-0"
+              style={{ color: 'var(--ink-4)' }}
+            />
+            <MentionInput
+              value={replyContent}
+              onChange={onReplyContentChange}
+              placeholder={t('comments.writeReply')}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') onCancelReply();
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  onSubmitReply(comment.id);
+                }
+              }}
+            />
+            <Button
+              size="sm"
+              onClick={() => onSubmitReply(comment.id)}
+              disabled={isReplying || !replyContent.trim()}
+              style={{ background: 'var(--accent)', color: 'var(--bg)' }}
+            >
+              {t('comments.reply')}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onCancelReply}>
+              {t('common.cancel')}
+            </Button>
+          </div>
+        )}
 
-          {/* Reply form */}
-          {isReplyOpen && (
-            <div className="mt-3 flex gap-2">
-              <CornerDownRight className="mt-2 h-4 w-4 shrink-0 text-muted-foreground" />
-              <MentionInput
-                value={replyContent}
-                onChange={onReplyContentChange}
-                placeholder={t('comments.writeReply')}
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') onCancelReply();
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    onSubmitReply(comment.id);
-                  }
-                }}
-              />
-              <Button
-                size="sm"
-                onClick={() => onSubmitReply(comment.id)}
-                disabled={isReplying || !replyContent.trim()}
-              >
-                {t('comments.reply')}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={onCancelReply}>
-                {t('common.cancel')}
-              </Button>
-            </div>
-          )}
-
-          {/* Threaded replies */}
-          {comment.children && comment.children.length > 0 && (
-            <div className="mt-3 space-y-3 border-l-2 border-border pl-4">
-              {comment.children.map((reply) => {
-                const replyAuthorName =
-                  (reply as any).author?.name ||
-                  (reply.authorId === userId ? t('common.you') : t('common.user'));
-                const replyIsOwner = reply.authorId === userId;
-                const isEditingReply = editingId === reply.id;
-                return (
-                  <div key={reply.id} className="flex items-start gap-2">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                      {replyAuthorName.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
-                          {replyIsOwner ? t('common.you') : replyAuthorName}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(reply.createdAt).toLocaleString(locale)}
-                        </span>
-                      </div>
-                      {isEditingReply ? (
-                        <div className="mt-1 flex gap-2">
-                          <MentionInput
-                            value={editContent}
-                            onChange={onEditContentChange}
-                            className="flex-1"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === 'Escape') onCancelEdit();
-                              if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                onSaveEdit(reply.id);
-                              }
-                            }}
-                          />
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 text-green-600"
-                            onClick={() => onSaveEdit(reply.id)}
-                            disabled={isEditing || !editContent.trim()}
-                          >
-                            <Check className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6"
-                            onClick={onCancelEdit}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-foreground/90 whitespace-pre-wrap">
-                          {renderContent(reply.content)}
-                        </p>
-                      )}
-                      {!isEditingReply && replyIsOwner && (
-                        <div className="mt-1 flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-5 px-1 text-xs text-muted-foreground"
-                            onClick={() => onStartEdit(reply.id, reply.content)}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-5 px-1 text-xs text-destructive hover:text-destructive"
-                            onClick={() => onDelete(reply.id)}
-                            disabled={isDeleting}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
-                      {!isEditingReply && (
-                        <div className="mt-1">
-                          <CommentReactions
-                            reactions={reply.reactions || []}
-                            commentId={reply.id}
-                            pageId={pageId}
-                            currentUserId={userId}
-                          />
-                        </div>
-                      )}
-                    </div>
+        {/* Threaded replies */}
+        {comment.children && comment.children.length > 0 && (
+          <div className="wp-thread">
+            {comment.children.map((reply) => {
+              const replyAuthorName =
+                (reply as any).author?.name ||
+                (reply.authorId === userId ? t('common.you') : t('common.user'));
+              const replyIsOwner = reply.authorId === userId;
+              const isEditingReply = editingId === reply.id;
+              return (
+                <div key={reply.id} className="wp-comment">
+                  <div className="wp-comment-avatar" style={avatarStyle(replyAuthorName)}>
+                    {initialsFor(replyAuthorName)}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="wp-comment-meta">
+                      <span className="name">
+                        {replyIsOwner ? t('common.you') : replyAuthorName}
+                      </span>
+                      <span className="time" title={new Date(reply.createdAt).toLocaleString(locale)}>
+                        {formatTime(reply.createdAt, locale)}
+                      </span>
+                    </div>
+                    {isEditingReply ? (
+                      <div className="mt-1 flex gap-2">
+                        <MentionInput
+                          value={editContent}
+                          onChange={onEditContentChange}
+                          className="flex-1"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') onCancelEdit();
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              onSaveEdit(reply.id);
+                            }
+                          }}
+                        />
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          style={{ color: 'var(--accent)' }}
+                          onClick={() => onSaveEdit(reply.id)}
+                          disabled={isEditing || !editContent.trim()}
+                        >
+                          <Check className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={onCancelEdit}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="wp-comment-body" style={{ fontSize: '13px' }}>
+                        {renderContent(reply.content)}
+                      </div>
+                    )}
+                    {!isEditingReply && (
+                      <div className="mt-1.5">
+                        <CommentReactions
+                          reactions={reply.reactions || []}
+                          commentId={reply.id}
+                          pageId={pageId}
+                          currentUserId={userId}
+                        />
+                      </div>
+                    )}
+                    {!isEditingReply && replyIsOwner && (
+                      <div className="wp-comment-actions">
+                        <button type="button" onClick={() => onStartEdit(reply.id, reply.content)}>
+                          <Pencil className="h-3 w-3" />
+                          {t('comments.edit')}
+                        </button>
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={() => onDelete(reply.id)}
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          {t('comments.delete')}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

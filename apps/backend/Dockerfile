@@ -52,6 +52,12 @@ COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/backend/node_modules ./apps/backend/node_modules
 COPY --from=builder /app/apps/backend/prisma ./apps/backend/prisma
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+# Smart-startup script: applies pending Prisma migrations on every container
+# boot when the DB is reachable, then launches NestJS. Replaces the old
+# wizard-only migration flow so app upgrades pick up new migrations
+# automatically without operator intervention.
+COPY apps/backend/scripts/start.sh ./apps/backend/scripts/start.sh
+RUN chmod +x ./apps/backend/scripts/start.sh
 
 WORKDIR /app/apps/backend
 
@@ -59,4 +65,12 @@ WORKDIR /app/apps/backend
 RUN mkdir -p /root/.gemini /root/.claude
 
 EXPOSE 3000 1234
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+# Smart entrypoint:
+#   1. If DATABASE_URL is configured (env or /app/data/wikso.config.json):
+#      run `prisma migrate deploy` (idempotent — no-op if up-to-date).
+#   2. If not configured: skip migrations, start in setup-wizard mode.
+#   3. If migrations fail: log the error and start anyway (degraded mode);
+#      operator can investigate via /admin/health and shell access.
+# The setup wizard still triggers an explicit migration on first config so
+# the new admin can land on a usable instance without restarting the container.
+CMD ["sh", "scripts/start.sh"]

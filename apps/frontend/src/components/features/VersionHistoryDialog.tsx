@@ -28,11 +28,35 @@ export function VersionHistoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent
+        className="sm:max-w-2xl max-h-[80vh] overflow-y-auto"
+        style={{
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--rule)',
+          boxShadow: 'var(--pop-shadow)',
+        }}
+      >
         <DialogHeader>
-          <DialogTitle>{t('pages.versionHistoryTitle')}</DialogTitle>
+          <DialogTitle
+            style={{
+              fontFamily: 'var(--body-font)',
+              fontSize: '20px',
+              fontWeight: 600,
+              letterSpacing: '-0.01em',
+              color: 'var(--ink)',
+            }}
+          >
+            {t('pages.versionHistoryTitle')}
+          </DialogTitle>
         </DialogHeader>
-        <PageVersions slug={slug} pageId={pageId} currentContent={currentContent} />
+        <div
+          style={{
+            paddingTop: 12,
+            borderTop: '1px dashed var(--rule)',
+          }}
+        >
+          <PageVersions slug={slug} pageId={pageId} currentContent={currentContent} />
+        </div>
       </DialogContent>
     </Dialog>
   );

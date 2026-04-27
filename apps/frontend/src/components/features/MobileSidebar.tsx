@@ -5,11 +5,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import Link from 'next/link';
 import {
-  Search, Bell, Shield, Star, Clock, Plus,
+  Search, Shield, Star, Clock, Plus,
   ChevronDown, ChevronRight, FileText, Settings,
   Loader2, FolderOpen, ArrowLeft,
   Users, UsersRound, Trash2, ScrollText, Key, Mail,
-  Webhook, Activity, Upload, Bot,
+  Webhook, Activity, Upload, Bot, LayoutTemplate, MessageCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -28,9 +28,41 @@ import { useRecentPages } from '@/hooks/useRecentPages';
 import { PageTree } from '@/components/features/PageTree';
 import { GlobalSearchDialog } from '@/components/features/GlobalSearchDialog';
 import { PageTemplatesDialog } from '@/components/features/PageTemplates';
+import { paletteFor, initialsFor } from '@/lib/avatarColor';
+import { NotificationBell } from '@/components/features/NotificationBell';
 import { UserMenu } from '@/components/features/UserMenu';
 import { WiksoLogo } from '@/components/ui/WiksoLogo';
 import type { Space } from '@/types';
+
+/* ─── Section header ───────────────────────────────────────────────── */
+
+function SectionHeader({
+  icon: Icon,
+  label,
+  isOpen,
+  onToggle,
+}: {
+  icon: React.ElementType;
+  label: string;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="flex items-center gap-2 w-full px-1 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/40 hover:text-sidebar-foreground/60 transition-colors"
+    >
+      <Icon className="h-3 w-3" />
+      {label}
+      <ChevronRight
+        className={cn(
+          'ml-auto h-3 w-3 transition-transform duration-150',
+          isOpen && 'rotate-90',
+        )}
+      />
+    </button>
+  );
+}
 
 /* ─── Mobile space tree node ─────────────────────────────────────── */
 
@@ -63,19 +95,33 @@ function MobileSpaceNode({ space, isExpanded, onToggle, isCurrentSpace }: {
     <div>
       <div
         className={cn(
-          'group flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors cursor-pointer',
+          'group relative flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all duration-150 cursor-pointer',
           isCurrentSpace
-            ? 'bg-sidebar-accent/70 text-sidebar-accent-foreground font-medium'
-            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/40',
+            ? 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground font-medium'
+            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/40',
         )}
         onClick={onToggle}
       >
-        <ChevronRight className={cn('h-3.5 w-3.5 shrink-0 transition-transform duration-150', isExpanded && 'rotate-90')} />
-        <div className={cn(
-          'flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-bold',
-          isCurrentSpace ? 'bg-primary text-primary-foreground' : 'bg-sidebar-foreground/10 text-sidebar-foreground/70',
-        )}>
-          {space.name.charAt(0).toUpperCase()}
+        {isCurrentSpace && (
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[var(--sidebar-item-active-border)]" />
+        )}
+        <ChevronRight className={cn('h-3.5 w-3.5 shrink-0 text-sidebar-foreground/40 transition-transform duration-150', isExpanded && 'rotate-90')} />
+        <div
+          className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md text-[10px] font-bold transition-colors"
+          style={
+            isCurrentSpace
+              ? { background: 'var(--accent)', color: 'var(--bg)' }
+              : (() => {
+                  const p = paletteFor(space.name);
+                  return {
+                    background: p.bg,
+                    color: p.fg,
+                    boxShadow: `inset 0 0 0 1px ${p.ring}`,
+                  };
+                })()
+          }
+        >
+          {initialsFor(space.name).charAt(0)}
         </div>
         <Link href={`/spaces/${space.slug}`} className="flex-1 truncate" onClick={(e) => e.stopPropagation()}>
           {space.name}
@@ -84,7 +130,7 @@ function MobileSpaceNode({ space, isExpanded, onToggle, isCurrentSpace }: {
       {isExpanded && (
         <div className="pl-2">
           <div className="flex items-center py-0.5 px-0.5">
-            <Button variant="ghost" size="sm" className="h-6 flex-1 justify-start gap-1.5 text-xs text-muted-foreground px-2"
+            <Button variant="ghost" size="sm" className="h-6 flex-1 justify-start gap-1.5 text-xs text-muted-foreground/70 hover:text-muted-foreground px-2"
               onClick={() => setShowTemplates(true)} disabled={createPage.isPending}>
               {createPage.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
               {t('pages.newPage')}
@@ -93,7 +139,7 @@ function MobileSpaceNode({ space, isExpanded, onToggle, isCurrentSpace }: {
           <div className="pb-1">
             {isLoading && (
               <div className="space-y-1.5 p-2">
-                {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-4 animate-pulse rounded bg-muted" />)}
+                {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-4 animate-pulse rounded-lg bg-muted/50" />)}
               </div>
             )}
             {pages && <PageTree pages={pages} slug={space.slug} onCreateChildPage={(parentId) => handleNewPage(undefined, parentId)} />}
@@ -124,38 +170,46 @@ function MobileAdminContent() {
     { href: '/admin/auth', labelKey: 'admin.nav.authProviders', icon: Key },
     { href: '/admin/email', labelKey: 'admin.nav.email', icon: Mail },
     { href: '/admin/webhooks', labelKey: 'admin.nav.webhooks', icon: Webhook },
+    { href: '/admin/integrations/slack', labelKey: 'admin.nav.integrationsSlack', icon: MessageCircle },
     { href: '/admin/health', labelKey: 'admin.nav.systemHealth', icon: Activity },
     { href: '/admin/ai', labelKey: 'admin.nav.ai', icon: Bot },
+    { href: '/admin/templates', labelKey: 'admin.nav.templates', icon: LayoutTemplate },
     { href: '/admin/import', labelKey: 'admin.nav.import', icon: Upload, badge: 'Beta' },
   ];
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-4">
-        <Link href="/spaces" className="flex items-center gap-2">
+      <div className="flex items-center gap-2 px-4 py-3.5">
+        <Link href="/spaces" className="flex items-center gap-2.5">
           <WiksoLogo showText={false} className="h-7 w-7" />
-          <span className="text-base font-semibold">Wikso</span>
+          <span className="text-[15px] font-semibold tracking-[-0.01em]">Wikso</span>
         </Link>
       </div>
-      <div className="px-3 py-2 border-b border-border">
-        <Link href="/spaces" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors">
-          <ArrowLeft className="h-4 w-4" />
+      <div className="px-3 pb-2">
+        <Link href="/spaces" className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm text-sidebar-foreground/50 hover:bg-sidebar-accent/40 transition-all duration-150">
+          <ArrowLeft className="h-3.5 w-3.5" />
           {t('admin.backToSpaces') || 'Back to Spaces'}
         </Link>
       </div>
-      <div className="px-6 pt-4 pb-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">{t('admin.title')}</h2>
+      <div className="mx-3 h-px bg-sidebar-foreground/8" />
+      <div className="px-4 pt-3 pb-1.5">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/40">{t('admin.title')}</h2>
       </div>
-      <nav className="flex-1 space-y-1 px-3 overflow-y-auto">
+      <nav className="flex-1 space-y-0.5 px-3 overflow-y-auto">
         {adminNav.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <Link key={item.href} href={item.href} className={cn(
-              'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-              isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50',
+              'relative flex items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-sm font-medium transition-all duration-150',
+              isActive
+                ? 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground'
+                : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/40',
             )}>
-              <Icon className="h-4 w-4" />
+              {isActive && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[var(--sidebar-item-active-border)]" />
+              )}
+              <Icon className="h-4 w-4 shrink-0" />
               {t(item.labelKey)}
               {(item as any).badge && (
                 <span className="ml-auto rounded-full bg-yellow-100 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
@@ -166,7 +220,8 @@ function MobileAdminContent() {
           );
         })}
       </nav>
-      <div className="border-t border-border p-3">
+      <div className="px-3 pb-3 pt-1">
+        <div className="mx-0 h-px bg-sidebar-foreground/8 mb-2.5" />
         <UserMenu avatarSize="h-7 w-7" showName />
       </div>
     </div>
@@ -206,37 +261,54 @@ function MobileMainContent() {
     <>
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
       {/* Logo */}
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        <Link href="/spaces" className="flex items-center gap-2">
+      <div className="flex items-center gap-2 px-4 py-3.5">
+        <Link href="/spaces" className="flex items-center gap-2.5">
           <WiksoLogo showText={false} className="h-7 w-7" />
-          <span className="text-base font-semibold">Wikso</span>
+          <span className="text-[15px] font-semibold tracking-[-0.01em]">Wikso</span>
         </Link>
       </div>
 
+      {/* Search bar */}
+      <div className="px-3 pb-2">
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="flex w-full items-center gap-2.5 rounded-lg border border-[var(--sidebar-search-border)] bg-[var(--sidebar-search-bg)] px-3 py-[7px] text-sm text-sidebar-foreground/40 hover:text-sidebar-foreground/60 transition-all duration-150"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span className="flex-1 text-left text-[13px]">{t('sidebar.search')}</span>
+        </button>
+      </div>
+
       {/* Quick nav */}
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-border">
-        <Button variant="ghost" size="icon" className="h-8 w-8" title={t('sidebar.search')} onClick={() => setSearchOpen(true)}>
-          <Search className="h-4 w-4" />
-        </Button>
+      <div className="flex items-center gap-0.5 px-3 pb-2">
         <Link href="/notifications" title={t('sidebar.notifications')}>
-          <Button variant="ghost" size="icon" className={cn('h-8 w-8', pathname.startsWith('/notifications') && 'bg-sidebar-accent text-sidebar-accent-foreground')}>
-            <Bell className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className={cn(
+            'h-8 w-8 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50',
+            pathname.startsWith('/notifications') && 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground',
+          )}>
+            <NotificationBell iconClassName="h-4 w-4" variant="corner" />
           </Button>
         </Link>
         <Link href="/profile" title={t('sidebar.profile')}>
-          <Button variant="ghost" size="icon" className={cn('h-8 w-8', pathname.startsWith('/profile') && 'bg-sidebar-accent text-sidebar-accent-foreground')}>
+          <Button variant="ghost" size="icon" className={cn(
+            'h-8 w-8 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50',
+            pathname.startsWith('/profile') && 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground',
+          )}>
             <Settings className="h-4 w-4" />
           </Button>
         </Link>
       </div>
 
+      {/* Divider */}
+      <div className="mx-3 h-px bg-sidebar-foreground/8" />
+
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         {/* Spaces */}
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">{t('sidebar.spaces')}</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/40">{t('sidebar.spaces')}</span>
           <Link href="/spaces/new">
-            <Button variant="ghost" size="icon" className="h-5 w-5" title={t('sidebar.newSpace')}>
+            <Button variant="ghost" size="icon" className="h-5 w-5 text-sidebar-foreground/30 hover:text-sidebar-foreground/60" title={t('sidebar.newSpace')}>
               <Plus className="h-3.5 w-3.5" />
             </Button>
           </Link>
@@ -244,7 +316,7 @@ function MobileMainContent() {
         <div className="px-2 pb-2">
           {spacesLoading && (
             <div className="space-y-2 p-2">
-              {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-6 animate-pulse rounded bg-muted" />)}
+              {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-6 animate-pulse rounded-lg bg-muted/50" />)}
             </div>
           )}
           {spaces?.map((space) => (
@@ -257,11 +329,11 @@ function MobileMainContent() {
             />
           ))}
           {spaces && spaces.length === 0 && (
-            <div className="px-3 py-4 text-center">
-              <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
-              <p className="text-xs text-muted-foreground">{t('spaces.noSpaces') || 'No spaces yet'}</p>
+            <div className="px-3 py-6 text-center">
+              <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
+              <p className="text-xs text-muted-foreground/60">{t('spaces.noSpaces') || 'No spaces yet'}</p>
               <Link href="/spaces/new">
-                <Button variant="outline" size="sm" className="mt-2 gap-1.5">
+                <Button variant="outline" size="sm" className="mt-3 gap-1.5 text-xs">
                   <Plus className="h-3.5 w-3.5" />
                   {t('sidebar.newSpace')}
                 </Button>
@@ -272,24 +344,32 @@ function MobileMainContent() {
 
         {/* Favorites */}
         {favorites && favorites.length > 0 && (
-          <div className="px-3 pt-1 border-t border-border">
-            <button onClick={() => setShowFavorites(!showFavorites)}
-              className="flex items-center gap-2 w-full px-0 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/70 transition-colors">
-              {showFavorites ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              <Star className="h-3 w-3" />
-              {t('sidebar.favorites') || 'Favorites'}
-            </button>
+          <div className="px-3 pt-1">
+            <div className="mx-0 h-px bg-sidebar-foreground/8 mb-1" />
+            <SectionHeader
+              icon={Star}
+              label={t('sidebar.favorites') || 'Favorites'}
+              isOpen={showFavorites}
+              onToggle={() => setShowFavorites(!showFavorites)}
+            />
             {showFavorites && (
-              <div className="space-y-0.5 mt-0.5">
-                {favorites.slice(0, 8).map((fav) => (
-                  <Link key={fav.id} href={`/spaces/${fav.page.space.slug}/pages/${fav.page.id}`}
-                    className={cn('flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
-                      pathname.includes(fav.page.id) ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50',
-                    )} title={`${fav.page.title} — ${fav.page.space.name}`}>
-                    <FileText className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{fav.page.title}</span>
-                  </Link>
-                ))}
+              <div className="space-y-0.5">
+                {favorites.slice(0, 8).map((fav) => {
+                  const isActive = pathname.includes(fav.page.id);
+                  return (
+                    <Link key={fav.id} href={`/spaces/${fav.page.space.slug}/pages/${fav.page.id}`}
+                      className={cn(
+                        'relative flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all duration-150',
+                        isActive
+                          ? 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground font-medium'
+                          : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/40',
+                      )} title={`${fav.page.title} — ${fav.page.space.name}`}>
+                      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-r-full bg-[var(--sidebar-item-active-border)]" />}
+                      <FileText className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                      <span className="truncate">{fav.page.title}</span>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -297,24 +377,32 @@ function MobileMainContent() {
 
         {/* Recent */}
         {recentPages && recentPages.length > 0 && (
-          <div className="px-3 pt-1 border-t border-border">
-            <button onClick={() => setShowRecent(!showRecent)}
-              className="flex items-center gap-2 w-full px-0 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/70 transition-colors">
-              {showRecent ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              <Clock className="h-3 w-3" />
-              {t('sidebar.recent') || 'Recent'}
-            </button>
+          <div className="px-3 pt-1">
+            <div className="mx-0 h-px bg-sidebar-foreground/8 mb-1" />
+            <SectionHeader
+              icon={Clock}
+              label={t('sidebar.recent') || 'Recent'}
+              isOpen={showRecent}
+              onToggle={() => setShowRecent(!showRecent)}
+            />
             {showRecent && (
-              <div className="space-y-0.5 mt-0.5">
-                {recentPages.slice(0, 6).map((item) => (
-                  <Link key={item.id} href={`/spaces/${item.page.space.slug}/pages/${item.page.id}`}
-                    className={cn('flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
-                      pathname.includes(item.page.id) ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50',
-                    )} title={`${item.page.title} — ${item.page.space.name}`}>
-                    <FileText className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{item.page.title}</span>
-                  </Link>
-                ))}
+              <div className="space-y-0.5">
+                {recentPages.slice(0, 6).map((item) => {
+                  const isActive = pathname.includes(item.page.id);
+                  return (
+                    <Link key={item.id} href={`/spaces/${item.page.space.slug}/pages/${item.page.id}`}
+                      className={cn(
+                        'relative flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all duration-150',
+                        isActive
+                          ? 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground font-medium'
+                          : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/40',
+                      )} title={`${item.page.title} — ${item.page.space.name}`}>
+                      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-r-full bg-[var(--sidebar-item-active-border)]" />}
+                      <FileText className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                      <span className="truncate">{item.page.title}</span>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -323,11 +411,15 @@ function MobileMainContent() {
 
       {/* Admin link */}
       {user?.role === 'ADMIN' && (
-        <div className="px-3 pb-1 border-t border-border pt-1">
+        <div className="px-3 pt-1 pb-1">
+          <div className="mx-0 h-px bg-sidebar-foreground/8 mb-1.5" />
           <Link href="/admin" className={cn(
-            'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
-            pathname.startsWith('/admin') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50',
+            'relative flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all duration-150',
+            pathname.startsWith('/admin')
+              ? 'bg-[var(--sidebar-item-active-bg)] text-sidebar-accent-foreground font-medium'
+              : 'text-sidebar-foreground/50 hover:bg-sidebar-accent/40',
           )}>
+            {pathname.startsWith('/admin') && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-r-full bg-[var(--sidebar-item-active-border)]" />}
             <Shield className="h-3.5 w-3.5" />
             {t('sidebar.admin')}
           </Link>
@@ -335,7 +427,8 @@ function MobileMainContent() {
       )}
 
       {/* User menu */}
-      <div className="border-t border-border p-3">
+      <div className="px-3 pb-3 pt-1">
+        <div className="mx-0 h-px bg-sidebar-foreground/8 mb-2.5" />
         <UserMenu avatarSize="h-7 w-7" showName />
       </div>
     </div>

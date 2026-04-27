@@ -22,6 +22,7 @@ import { slashCommandSuggestion } from './editor/slashCommandSuggestion';
 import { CalloutExtension } from './editor/CalloutExtension';
 import { CodeBlockExtension } from './editor/CodeBlockExtension';
 import { MermaidExtension } from './editor/MermaidExtension';
+import { MermaidBlock } from './editor/extensions/MermaidBlock';
 import { ExcalidrawExtension } from './editor/ExcalidrawExtension';
 import { createMentionExtension } from './editor/MentionExtension';
 import { EmojiPickerButton } from './editor/EmojiPickerButton';
@@ -44,6 +45,7 @@ import { Input } from '@/components/ui/input';
 import { useAiStatus } from '@/hooks/useAiStatus';
 import { useAiTransform } from '@/hooks/useAiTransform';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAppearanceStore } from '@/store/appearanceStore';
 
 interface EditorProps {
   content?: Record<string, unknown>;
@@ -66,6 +68,7 @@ const HIGHLIGHT_COLORS = [
 
 export function Editor({ content, onChange, editable = true, spaceSlug, pageId }: EditorProps) {
   const { t } = useTranslation();
+  const toolbarVariant = useAppearanceStore((s) => s.toolbarVariant);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [showColorPicker, setShowColorPicker] = useState<'text' | 'highlight' | null>(null);
@@ -102,6 +105,7 @@ export function Editor({ content, onChange, editable = true, spaceSlug, pageId }
       CalloutExtension,
       CodeBlockExtension,
       MermaidExtension,
+      MermaidBlock,
       ExcalidrawExtension,
       SlashCommandExtension.configure({
         suggestion: {
@@ -152,17 +156,29 @@ export function Editor({ content, onChange, editable = true, spaceSlug, pageId }
 
   if (!editor) return null;
 
+  // wp-tb-btn — warm-paper toolbar button. `data-active` drives the
+  // accent-soft pill background via globals.css. `onMouseDown`
+  // preventDefault keeps the editor selection alive when the user
+  // clicks a format button.
   const ToolbarButton = ({
     onClick, isActive, children, title, disabled,
   }: {
     onClick: () => void; isActive?: boolean; children: React.ReactNode; title: string; disabled?: boolean;
   }) => (
-    <Button variant="ghost" size="icon" className={cn('h-8 w-8', isActive && 'bg-accent text-accent-foreground')} onClick={onClick} onMouseDown={(e) => e.preventDefault()} title={title} type="button" disabled={disabled}>
+    <button
+      type="button"
+      className="wp-tb-btn"
+      data-active={isActive ? 'true' : undefined}
+      onClick={onClick}
+      onMouseDown={(e) => e.preventDefault()}
+      title={title}
+      disabled={disabled}
+    >
       {children}
-    </Button>
+    </button>
   );
 
-  const ToolbarDivider = () => <div className="mx-0.5 h-6 w-px bg-border" />;
+  const ToolbarDivider = () => <div className="wp-tb-sep" />;
 
   /** Build a tooltip string with optional keyboard shortcut */
   const tip = (label: string, shortcut?: string) => {
@@ -177,11 +193,11 @@ export function Editor({ content, onChange, editable = true, spaceSlug, pageId }
   };
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-[color:var(--rule)] bg-[color:var(--bg)]">
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
 
       {editable && (
-        <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/30 p-1">
+        <div className="wp-toolbar" data-variant={toolbarVariant} data-chrome="toolbar">
           <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title={tip(t('editor.bold'), 'Ctrl+B')}>
             <Bold className="h-4 w-4" />
           </ToolbarButton>
@@ -318,7 +334,7 @@ export function Editor({ content, onChange, editable = true, spaceSlug, pageId }
           <ToolbarButton onClick={() => editor.chain().focus().setExcalidrawBlock().run()} title={t('editor.drawing')}>
             <PenTool className="h-4 w-4" />
           </ToolbarButton>
-          <ToolbarButton onClick={() => editor.chain().focus().setMermaidDiagram().run()} title={t('editor.mermaidDiagram')}>
+          <ToolbarButton onClick={() => editor.chain().focus().setMermaidBlock().run()} title={t('mermaid.insert')}>
             <GitBranch className="h-4 w-4" />
           </ToolbarButton>
 
@@ -362,7 +378,11 @@ export function Editor({ content, onChange, editable = true, spaceSlug, pageId }
             onKeyDown={(e) => {
               if (e.key === 'Enter' && aiPrompt.trim() && !aiGenerating && pageId) {
                 e.preventDefault();
-                aiTransform(pageId, aiPrompt, 'expand' as any).then((result) => {
+                // The prompt bar is a free-form instruction ("Write an article about X").
+                // It must be routed through the `custom-prompt` operation with the
+                // text in the customPrompt slot — passing it as `selection` with
+                // `expand` causes the backend to expand the instruction prose itself.
+                aiTransform(pageId, '', 'custom-prompt', undefined, aiPrompt.trim()).then((result) => {
                   if (result && editor) {
                     editor.chain().focus().insertContent(result).run();
                     setAiPrompt('');
@@ -380,7 +400,7 @@ export function Editor({ content, onChange, editable = true, spaceSlug, pageId }
             disabled={aiGenerating || !aiPrompt.trim() || !pageId}
             onClick={() => {
               if (!pageId) return;
-              aiTransform(pageId, aiPrompt, 'expand' as any).then((result) => {
+              aiTransform(pageId, '', 'custom-prompt', undefined, aiPrompt.trim()).then((result) => {
                 if (result && editor) {
                   editor.chain().focus().insertContent(result).run();
                   setAiPrompt('');

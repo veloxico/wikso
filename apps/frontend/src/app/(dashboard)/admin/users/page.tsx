@@ -50,6 +50,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useTranslation } from '@/hooks/useTranslation';
+import { bcp47Locale } from '@/lib/locale';
 
 const PAGE_SIZE = 10;
 
@@ -234,10 +235,12 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="mb-4 sm:mb-8 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-6 sm:mb-8 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Users className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
-          <h1 className="text-xl sm:text-2xl font-bold">{t('admin.users.title')}</h1>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/8">
+            <Users className="h-5 w-5 text-primary" />
+          </div>
+          <h1 className="text-[1.5rem] font-bold tracking-[-0.02em]">{t('admin.users.title')}</h1>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowInvite(!showInvite)} className="gap-2">
@@ -512,7 +515,7 @@ export default function AdminUsersPage() {
               setSearch(e.target.value);
               setPage(0);
             }}
-            className="pl-9"
+            className="pl-9 bg-muted/30 border-border/60 focus-visible:bg-background"
           />
         </div>
         <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v === 'all' ? '' : v); setPage(0); }}>
@@ -569,12 +572,12 @@ export default function AdminUsersPage() {
       )}
 
       {/* Users Table */}
-      <Card>
+      <Card className="rounded-xl border-border/50">
         <CardContent className="pt-6">
           {isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-12 animate-pulse rounded bg-muted" />
+                <div key={i} className="h-12 animate-pulse rounded-lg bg-muted/50" />
               ))}
             </div>
           ) : (
@@ -582,36 +585,36 @@ export default function AdminUsersPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border text-left">
+                    <tr className="border-b border-border/50 text-left">
                       <th className="pb-3 pr-2">
                         <input
                           type="checkbox"
-                          className="h-4 w-4 rounded border-gray-300"
+                          className="h-4 w-4 rounded border-border accent-primary"
                           checked={allSelectableSelected}
                           onChange={toggleSelectAll}
                           disabled={selectableUsers.length === 0}
                         />
                       </th>
-                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.nameColumn')}</th>
-                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.emailColumn')}</th>
-                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.roleColumn')}</th>
-                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.statusColumn')}</th>
-                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.joinedColumn')}</th>
-                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.lastLoginColumn')}</th>
-                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.ipColumn')}</th>
-                      <th className="pb-3 font-medium text-muted-foreground">{t('admin.users.actionsColumn')}</th>
+                      <th className="pb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/50">{t('admin.users.nameColumn')}</th>
+                      <th className="pb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/50">{t('admin.users.emailColumn')}</th>
+                      <th className="pb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/50">{t('admin.users.roleColumn')}</th>
+                      <th className="pb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/50">{t('admin.users.statusColumn')}</th>
+                      <th className="pb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/50">{t('admin.users.joinedColumn')}</th>
+                      <th className="pb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/50">{t('admin.users.lastLoginColumn')}</th>
+                      <th className="pb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/50">{t('admin.users.ipColumn')}</th>
+                      <th className="pb-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/50">{t('admin.users.actionsColumn')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users?.map((user: AdminUser) => {
                       const isAdmin = user.role === 'ADMIN';
                       return (
-                        <tr key={user.id} className="border-b border-border last:border-0">
+                        <tr key={user.id} className="border-b border-border/40 last:border-0 hover:bg-muted/20 transition-colors">
                           <td className="py-3 pr-2">
                             {isAdmin ? (
                               <input
                                 type="checkbox"
-                                className="h-4 w-4 rounded border-gray-300"
+                                className="h-4 w-4 rounded border-border accent-primary"
                                 disabled
                                 checked={false}
                                 title="Admin users cannot be selected for bulk actions"
@@ -619,7 +622,7 @@ export default function AdminUsersPage() {
                             ) : (
                               <input
                                 type="checkbox"
-                                className="h-4 w-4 rounded border-gray-300"
+                                className="h-4 w-4 rounded border-border accent-primary"
                                 checked={selectedIds.has(user.id)}
                                 onChange={() => toggleSelect(user.id)}
                               />
@@ -669,9 +672,9 @@ export default function AdminUsersPage() {
                             </div>
                           </td>
                           <td className="py-3 text-muted-foreground">
-                            {new Date(user.createdAt).toLocaleDateString(locale)}
+                            {new Date(user.createdAt).toLocaleDateString(bcp47Locale(locale))}
                           </td>
-                          <td className="py-3 text-muted-foreground" title={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString(locale) : undefined}>
+                          <td className="py-3 text-muted-foreground" title={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString(bcp47Locale(locale)) : undefined}>
                             {formatRelativeTime(user.lastLoginAt)}
                           </td>
                           <td className="py-3 text-muted-foreground font-mono text-xs">

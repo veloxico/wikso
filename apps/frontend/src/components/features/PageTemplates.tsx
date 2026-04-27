@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, Lightbulb, Users, CheckSquare2, ArrowRight, Zap, Search, FileText } from 'lucide-react';
+import Link from 'next/link';
+import { Sparkles, ArrowUpRight, FileWarning } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
 import { api } from '@/lib/api';
+import { templateCategoryStyle } from '@/lib/templateStyles';
+import { useAuthStore } from '@/store/authStore';
 
 interface PageTemplatesDialogProps {
   open: boolean;
@@ -21,20 +22,40 @@ interface PageTemplatesDialogProps {
   spaceId?: string;
 }
 
-interface Template {
+interface BackendTemplate {
   id: string;
-  icon: React.ReactNode;
   title: string;
-  description: string;
-  content: object;
-  category?: string;
+  description: string | null;
+  category: string;
+  icon: string | null;
+  contentJson: object;
+  isDefault: boolean;
 }
 
-const categoryIcons: Record<string, React.ElementType> = {
-  General: FileText,
-  Planning: Lightbulb,
-  Documentation: BookOpen,
-  Team: Users,
+/**
+ * Maps the English title of seeded default templates to the i18n key prefix
+ * inside the `templates.*` namespace. Backend stores templates in English
+ * (see TemplatesService.getDefaultTemplates), so we translate at render time
+ * for default ones; admin-created templates show as authored.
+ *
+ * If an admin renames a default template via /admin/templates, the lookup
+ * misses and we fall back to the stored title — acceptable, since the admin
+ * has expressed intent to override.
+ */
+const DEFAULT_TEMPLATE_KEYS: Record<string, string> = {
+  'Blank Page': 'blank',
+  'Meeting Notes': 'meetingNotes',
+  'Technical Spec': 'technicalSpec',
+  'Onboarding Guide': 'onboardingGuide',
+  'Decision Record': 'decisionRecord',
+  Retrospective: 'retrospective',
+};
+
+const CATEGORY_KEYS: Record<string, string> = {
+  General: 'general',
+  Planning: 'planning',
+  Documentation: 'documentation',
+  Team: 'team',
 };
 
 export function PageTemplatesDialog({
@@ -44,11 +65,11 @@ export function PageTemplatesDialog({
   spaceId,
 }: PageTemplatesDialogProps) {
   const { t } = useTranslation();
-  const [search, setSearch] = useState('');
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === 'ADMIN';
 
-  // Fetch backend templates
-  const { data: backendTemplates } = useQuery<any[]>({
-    queryKey: ['templates', spaceId],
+  const { data, isLoading, isError } = useQuery<BackendTemplate[]>({
+    queryKey: ['templates', spaceId ?? 'all'],
     queryFn: async () => {
       const url = spaceId ? `/templates?spaceId=${spaceId}` : '/templates';
       const { data } = await api.get(url);
@@ -57,681 +78,159 @@ export function PageTemplatesDialog({
     enabled: open,
   });
 
-  // TipTap JSON content templates (local fallback)
-  const localTemplates: Template[] = [
-    {
-      id: 'blank',
-      icon: <Zap className="h-6 w-6" />,
-      title: t('templates.blank'),
-      description: t('templates.blankDesc'),
-      content: {
-        type: 'doc',
-        content: [
-          {
-            type: 'paragraph',
-            content: [],
-          },
-        ],
-      },
-    },
-    {
-      id: 'meeting-notes',
-      icon: <BookOpen className="h-6 w-6" />,
-      title: t('templates.meetingNotes'),
-      description: t('templates.meetingNotesDesc'),
-      content: {
-        type: 'doc',
-        content: [
-          {
-            type: 'heading',
-            attrs: { level: 1 },
-            content: [{ type: 'text', text: 'Meeting Title' }],
-          },
-          {
-            type: 'paragraph',
-            content: [],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Date' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: '' }],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Attendees' }],
-          },
-          {
-            type: 'bullet_list',
-            content: [
-              {
-                type: 'list_item',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Agenda' }],
-          },
-          {
-            type: 'bullet_list',
-            content: [
-              {
-                type: 'list_item',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Discussion' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: '' }],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Action Items' }],
-          },
-          {
-            type: 'task_list',
-            content: [
-              {
-                type: 'task_item',
-                attrs: { checked: false },
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Next Steps' }],
-          },
-          {
-            type: 'bullet_list',
-            content: [
-              {
-                type: 'list_item',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    },
-    {
-      id: 'technical-spec',
-      icon: <Lightbulb className="h-6 w-6" />,
-      title: t('templates.technicalSpec'),
-      description: t('templates.technicalSpecDesc'),
-      content: {
-        type: 'doc',
-        content: [
-          {
-            type: 'heading',
-            attrs: { level: 1 },
-            content: [{ type: 'text', text: 'Technical Specification' }],
-          },
-          {
-            type: 'paragraph',
-            content: [],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Overview' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: '' }],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Goals' }],
-          },
-          {
-            type: 'bullet_list',
-            content: [
-              {
-                type: 'list_item',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Non-Goals' }],
-          },
-          {
-            type: 'bullet_list',
-            content: [
-              {
-                type: 'list_item',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Technical Design' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: '' }],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'API Changes' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: '' }],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Testing Strategy' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: '' }],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Timeline' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: '' }],
-          },
-        ],
-      },
-    },
-    {
-      id: 'onboarding-guide',
-      icon: <Users className="h-6 w-6" />,
-      title: t('templates.onboardingGuide'),
-      description: t('templates.onboardingGuideDesc'),
-      content: {
-        type: 'doc',
-        content: [
-          {
-            type: 'heading',
-            attrs: { level: 1 },
-            content: [{ type: 'text', text: 'Onboarding Guide' }],
-          },
-          {
-            type: 'paragraph',
-            content: [],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Welcome' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: 'Welcome to the team! This guide will help you get started.' }],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Prerequisites' }],
-          },
-          {
-            type: 'bullet_list',
-            content: [
-              {
-                type: 'list_item',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Getting Started' }],
-          },
-          {
-            type: 'ordered_list',
-            content: [
-              {
-                type: 'list_item',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Key Resources' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: '' }],
-          },
-          {
-            type: 'table',
-            content: [
-              {
-                type: 'table_row',
-                content: [
-                  {
-                    type: 'table_header',
-                    content: [
-                      {
-                        type: 'paragraph',
-                        content: [{ type: 'text', text: 'Resource' }],
-                      },
-                    ],
-                  },
-                  {
-                    type: 'table_header',
-                    content: [
-                      {
-                        type: 'paragraph',
-                        content: [{ type: 'text', text: 'Link' }],
-                      },
-                    ],
-                  },
-                  {
-                    type: 'table_header',
-                    content: [
-                      {
-                        type: 'paragraph',
-                        content: [{ type: 'text', text: 'Description' }],
-                      },
-                    ],
-                  },
-                ],
-              },
-              {
-                type: 'table_row',
-                content: [
-                  {
-                    type: 'table_cell',
-                    content: [
-                      {
-                        type: 'paragraph',
-                        content: [{ type: 'text', text: '' }],
-                      },
-                    ],
-                  },
-                  {
-                    type: 'table_cell',
-                    content: [
-                      {
-                        type: 'paragraph',
-                        content: [{ type: 'text', text: '' }],
-                      },
-                    ],
-                  },
-                  {
-                    type: 'table_cell',
-                    content: [
-                      {
-                        type: 'paragraph',
-                        content: [{ type: 'text', text: '' }],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'FAQ' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: '' }],
-          },
-        ],
-      },
-    },
-    {
-      id: 'decision-record',
-      icon: <CheckSquare2 className="h-6 w-6" />,
-      title: t('templates.decisionRecord'),
-      description: t('templates.decisionRecordDesc'),
-      content: {
-        type: 'doc',
-        content: [
-          {
-            type: 'heading',
-            attrs: { level: 1 },
-            content: [{ type: 'text', text: 'Decision Record' }],
-          },
-          {
-            type: 'paragraph',
-            content: [],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Status' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: 'Proposed | Accepted | Deprecated | Superseded' }],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Context' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: '' }],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Decision' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: '' }],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Consequences' }],
-          },
-          {
-            type: 'bullet_list',
-            content: [
-              {
-                type: 'list_item',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Participants' }],
-          },
-          {
-            type: 'bullet_list',
-            content: [
-              {
-                type: 'list_item',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    },
-    {
-      id: 'retrospective',
-      icon: <ArrowRight className="h-6 w-6" />,
-      title: t('templates.retrospective'),
-      description: t('templates.retrospectiveDesc'),
-      content: {
-        type: 'doc',
-        content: [
-          {
-            type: 'heading',
-            attrs: { level: 1 },
-            content: [{ type: 'text', text: 'Retrospective' }],
-          },
-          {
-            type: 'paragraph',
-            content: [],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Sprint/Period' }],
-          },
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: '' }],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'What Went Well' }],
-          },
-          {
-            type: 'bullet_list',
-            content: [
-              {
-                type: 'list_item',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'What Could Improve' }],
-          },
-          {
-            type: 'bullet_list',
-            content: [
-              {
-                type: 'list_item',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'heading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Action Items' }],
-          },
-          {
-            type: 'task_list',
-            content: [
-              {
-                type: 'task_item',
-                attrs: { checked: false },
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [{ type: 'text', text: '' }],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    },
-  ];
+  const templates = data ?? [];
 
-  // Merge backend templates with local templates
-  const allTemplates = useMemo(() => {
-    const result: Template[] = [...localTemplates];
-
-    if (backendTemplates) {
-      for (const bt of backendTemplates) {
-        // Skip if we already have a local template with same id
-        if (result.some((t) => t.id === bt.id)) continue;
-        const CategoryIcon = categoryIcons[bt.category] || FileText;
-        result.push({
-          id: bt.id,
-          icon: bt.icon ? <span className="text-xl">{bt.icon}</span> : <CategoryIcon className="h-6 w-6" />,
-          title: bt.title,
-          description: bt.description || '',
-          content: bt.contentJson,
-          category: bt.category,
-        });
-      }
-    }
-
-    return result;
-  }, [localTemplates, backendTemplates]);
-
-  // Filter by search
-  const filteredTemplates = useMemo(() => {
-    if (!search) return allTemplates;
-    const query = search.toLowerCase();
-    return allTemplates.filter(
-      (t) =>
-        t.title.toLowerCase().includes(query) ||
-        t.description.toLowerCase().includes(query) ||
-        (t.category && t.category.toLowerCase().includes(query)),
-    );
-  }, [allTemplates, search]);
-
-  const handleSelect = (template: Template) => {
-    onSelect(template.content);
+  const handleSelect = (template: BackendTemplate) => {
+    onSelect(template.contentJson);
     onOpenChange(false);
-    setSearch('');
+  };
+
+  // Resolve the localized strings for a template. For seeded defaults we look
+  // up the i18n key by English title; everything else falls through to the
+  // value stored in the DB (admin-created templates, or defaults whose admin
+  // renamed them).
+  const localizedTitle = (tpl: BackendTemplate): string => {
+    if (tpl.isDefault) {
+      const key = DEFAULT_TEMPLATE_KEYS[tpl.title];
+      if (key) return t(`templates.${key}`);
+    }
+    return tpl.title;
+  };
+  const localizedDesc = (tpl: BackendTemplate): string | null => {
+    if (tpl.isDefault) {
+      const key = DEFAULT_TEMPLATE_KEYS[tpl.title];
+      if (key) return t(`templates.${key}Desc`);
+    }
+    return tpl.description;
+  };
+  const localizedCategory = (tpl: BackendTemplate): string => {
+    const key = CATEGORY_KEYS[tpl.category];
+    return key ? t(`templates.categories.${key}`) : tpl.category;
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t('templates.title')}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            {t('templates.title')}
+          </DialogTitle>
           <DialogDescription>{t('templates.chooseTemplate')}</DialogDescription>
         </DialogHeader>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder={t('templates.searchPlaceholder') || 'Search templates...'}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
-          {filteredTemplates.map((template) => (
-            <div
-              key={template.id}
-              className="relative group rounded-lg border border-border p-4 hover:border-border/80 hover:shadow-md transition-all cursor-pointer"
-              onClick={() => handleSelect(template)}
-            >
-              <div className="flex items-start gap-3 mb-2">
-                <div className="text-muted-foreground mt-0.5">
-                  {template.icon}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-1">
-                    {template.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {template.description}
-                  </p>
-                  {template.category && (
-                    <span className="inline-block mt-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/60 bg-muted px-2 py-0.5 rounded">
-                      {template.category}
-                    </span>
-                  )}
+        {isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-border/60 p-4 animate-pulse"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-muted/60" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 rounded bg-muted/60" />
+                    <div className="h-3 w-48 rounded bg-muted/40" />
+                    <div className="h-3 w-20 rounded bg-muted/30 mt-2" />
+                  </div>
                 </div>
               </div>
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSelect(template);
-                  }}
+            ))}
+          </div>
+        )}
+
+        {!isLoading && isError && (
+          <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-center my-2">
+            <FileWarning className="mx-auto mb-2 h-6 w-6 text-destructive" />
+            <p className="text-sm text-muted-foreground">
+              {t('templates.loadError')}
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !isError && templates.length === 0 && (
+          <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-10 text-center my-2">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <Sparkles className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <h3 className="mb-1 text-sm font-semibold">
+              {t('templates.emptyTitle')}
+            </h3>
+            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+              {t('templates.emptyDesc')}
+            </p>
+            {isAdmin && (
+              <Link
+                href="/admin/templates"
+                onClick={() => onOpenChange(false)}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                {t('templates.manageTemplates')}
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
+          </div>
+        )}
+
+        {!isLoading && !isError && templates.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 py-2">
+              {templates.map((template) => {
+                const style = templateCategoryStyle(template.category);
+                const { Icon } = style;
+                const title = localizedTitle(template);
+                const description = localizedDesc(template);
+                const category = localizedCategory(template);
+                return (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => handleSelect(template)}
+                    className="group text-left rounded-xl border border-border/70 bg-card p-4 transition-all duration-150 hover:border-primary/40 hover:shadow-[0_4px_20px_-8px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ring-1 ${style.ring} ${style.bg} ${style.fg}`}
+                      >
+                        {template.icon ? (
+                          <span className="text-lg leading-none">{template.icon}</span>
+                        ) : (
+                          <Icon className="h-5 w-5" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-semibold leading-tight mb-1 group-hover:text-primary transition-colors">
+                          {title}
+                        </h3>
+                        {description && (
+                          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                            {description}
+                          </p>
+                        )}
+                        <span className="mt-2 inline-block text-[10px] uppercase tracking-[0.08em] text-muted-foreground/70">
+                          {category}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {isAdmin && (
+              <div className="pt-2 mt-1 border-t border-border/40">
+                <Link
+                  href="/admin/templates"
+                  onClick={() => onOpenChange(false)}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {t('common.add')}
-                  <ArrowRight className="h-3 w-3" />
-                </Button>
+                  {t('templates.manageTemplates')}
+                  <ArrowUpRight className="h-3 w-3" />
+                </Link>
               </div>
-            </div>
-          ))}
-
-          {filteredTemplates.length === 0 && (
-            <div className="col-span-2 text-center py-8">
-              <Search className="mx-auto mb-2 h-6 w-6 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">
-                {t('templates.noResults') || 'No templates match your search'}
-              </p>
-            </div>
-          )}
-        </div>
+            )}
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

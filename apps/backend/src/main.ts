@@ -1,4 +1,4 @@
-// dotenv is only needed for local dev — Docker provides env vars via docker-compose
+// dotenv is only needed for local dev — Docker provides env vars via docker-compose.
 try { require('dotenv/config'); } catch {}
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
@@ -8,7 +8,11 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // rawBody: true exposes req.rawBody so webhook-style handlers (e.g. Slack
+  // Events API) can verify HMAC signatures against the unparsed payload.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true,
+  });
 
   // Hard cap: 100 MB. Actual per-file limit is configurable via admin settings (maxAttachmentSizeMb).
   app.useBodyParser('json', { limit: '100mb' });

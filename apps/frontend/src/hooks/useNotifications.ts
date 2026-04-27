@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
 import type { Notification } from '@/types';
 
 export function useNotifications() {
@@ -13,6 +14,26 @@ export function useNotifications() {
   });
 }
 
+/**
+ * Lightweight unread counter — polled every 45 s.
+ * Only enabled when the user is authenticated to avoid
+ * 401 spam on the public/login pages.
+ */
+export function useUnreadNotificationCount() {
+  const user = useAuthStore((s) => s.user);
+  return useQuery<{ count: number }>({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: async () => {
+      const { data } = await api.get('/notifications/unread-count');
+      return data ?? { count: 0 };
+    },
+    enabled: !!user,
+    refetchInterval: 45_000,
+    refetchOnWindowFocus: true,
+    staleTime: 15_000,
+  });
+}
+
 export function useMarkAsRead() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -21,6 +42,7 @@ export function useMarkAsRead() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     },
   });
 }
@@ -33,6 +55,7 @@ export function useMarkAllAsRead() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     },
   });
 }

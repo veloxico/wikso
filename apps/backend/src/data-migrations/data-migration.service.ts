@@ -15,6 +15,16 @@ export class DataMigrationService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
+    // Skip everything in setup mode — Prisma isn't connected to a real DB.
+    // The setup wizard runs migrations itself; bootstrap will fire again
+    // after the container restarts with the configured URL.
+    if (!this.prisma.isReady) {
+      this.logger.warn(
+        'Skipping data migrations — database not configured (setup mode)',
+      );
+      return;
+    }
+
     await this.stampAppVersion();
     await this.runPendingMigrations();
     // Invalidate settings cache so the freshly-stamped appVersion

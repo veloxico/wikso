@@ -1,5 +1,20 @@
 'use client';
 
+/**
+ * CommandPalette — Cmd/Ctrl+K launcher.
+ *
+ * Uses the warm-paper `wp-cmdk*` styles from globals.css. Each row is
+ * a wp-cmdk-row with a left-side icon "tile" (wp-cmdk-row-icon) that
+ * lights up in `--accent-soft / --accent-ink` when keyboard-selected
+ * — same affordance as the slash menu, so the user only learns the
+ * pattern once.
+ *
+ * Footer shows the relevant keyboard hints (↵ enter, ↑↓ navigate, esc).
+ * cmdk handles all of the focus/selection plumbing — we just need to
+ * wire `data-selected` (which it sets on the active row) into the
+ * styles.
+ */
+
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
@@ -9,6 +24,14 @@ import { useTranslation } from '@/hooks/useTranslation';
 interface CommandPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface PaletteItem {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  sub?: string;
+  path: string;
+  shortcut?: string;
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
@@ -22,82 +45,66 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       onOpenChange(false);
       setSearch('');
     },
-    [router, onOpenChange]
+    [router, onOpenChange],
   );
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50">
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
+  const navItems: PaletteItem[] = [
+    { icon: LayoutDashboard, label: t('commandPalette.spaces'), path: '/spaces' },
+    { icon: Plus, label: t('commandPalette.newSpace'), path: '/spaces/new' },
+    { icon: FileText, label: t('search.title'), path: '/search' },
+    { icon: Bell, label: t('notifications.title'), path: '/notifications' },
+    { icon: User, label: t('profile.title'), path: '/profile' },
+    { icon: Shield, label: t('commandPalette.admin'), path: '/admin' },
+  ];
 
-      {/* Dialog */}
-      <div className="fixed left-1/2 top-1/4 w-full max-w-lg -translate-x-1/2">
-        <Command
-          className="rounded-xl border border-border bg-popover text-popover-foreground shadow-2xl"
-          shouldFilter={true}
-        >
-          <div className="flex items-center border-b border-border px-3">
-            <Search className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+  return (
+    <div className="wp-cmdk-overlay" onClick={() => onOpenChange(false)}>
+      <div onClick={(e) => e.stopPropagation()}>
+        <Command className="wp-cmdk" shouldFilter={true}>
+          <div className="wp-cmdk-search">
+            <Search className="h-4 w-4 shrink-0 text-[color:var(--ink-3)]" strokeWidth={1.75} />
             <Command.Input
               value={search}
               onValueChange={setSearch}
               placeholder={t('commandPalette.placeholder')}
-              className="flex h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               autoFocus
             />
           </div>
-          <Command.List className="max-h-80 overflow-y-auto p-2">
-            <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
+          <Command.List className="flex-1 overflow-y-auto p-2">
+            <Command.Empty className="py-10 text-center text-sm text-[color:var(--ink-3)]">
               {t('commandPalette.noResults')}
             </Command.Empty>
 
-            <Command.Group heading={t('commandPalette.navigation')} className="text-xs font-medium text-muted-foreground px-2 py-1.5">
-              <Command.Item
-                onSelect={() => navigate('/spaces')}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent aria-selected:bg-accent"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                {t('commandPalette.spaces')}
-              </Command.Item>
-              <Command.Item
-                onSelect={() => navigate('/spaces/new')}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent aria-selected:bg-accent"
-              >
-                <Plus className="h-4 w-4" />
-                {t('commandPalette.newSpace')}
-              </Command.Item>
-              <Command.Item
-                onSelect={() => navigate('/search')}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent aria-selected:bg-accent"
-              >
-                <FileText className="h-4 w-4" />
-                {t('search.title')}
-              </Command.Item>
-              <Command.Item
-                onSelect={() => navigate('/notifications')}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent aria-selected:bg-accent"
-              >
-                <Bell className="h-4 w-4" />
-                {t('notifications.title')}
-              </Command.Item>
-              <Command.Item
-                onSelect={() => navigate('/profile')}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent aria-selected:bg-accent"
-              >
-                <User className="h-4 w-4" />
-                {t('profile.title')}
-              </Command.Item>
-              <Command.Item
-                onSelect={() => navigate('/admin')}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-accent aria-selected:bg-accent"
-              >
-                <Shield className="h-4 w-4" />
-                {t('commandPalette.admin')}
-              </Command.Item>
+            <Command.Group heading={t('commandPalette.navigation')}>
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Command.Item
+                    key={item.path}
+                    value={item.label}
+                    onSelect={() => navigate(item.path)}
+                    className="wp-cmdk-row"
+                  >
+                    <span className="wp-cmdk-row-icon">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <div className="wp-cmdk-row-title truncate">{item.label}</div>
+                      {item.sub && <div className="wp-cmdk-row-sub truncate">{item.sub}</div>}
+                    </span>
+                    {item.shortcut && <span className="wp-cmdk-row-shortcut">{item.shortcut}</span>}
+                  </Command.Item>
+                );
+              })}
             </Command.Group>
           </Command.List>
+          <div className="wp-cmdk-foot">
+            <span><kbd>↵</kbd> open</span>
+            <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+            <span><kbd>esc</kbd> close</span>
+          </div>
         </Command>
       </div>
     </div>

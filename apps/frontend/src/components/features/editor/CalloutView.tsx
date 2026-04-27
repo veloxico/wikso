@@ -2,50 +2,40 @@
 
 import { NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import { Info, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { CalloutType } from './CalloutExtension';
 
-const CALLOUT_CONFIG: Record<
-  CalloutType,
-  {
-    icon: typeof Info;
-    bgClass: string;
-    borderClass: string;
-    iconClass: string;
-  }
-> = {
-  info: {
-    icon: Info,
-    bgClass: 'bg-blue-50 dark:bg-blue-950/30',
-    borderClass: 'border-blue-200 dark:border-blue-800',
-    iconClass: 'text-blue-500',
-  },
-  warning: {
-    icon: AlertTriangle,
-    bgClass: 'bg-amber-50 dark:bg-amber-950/30',
-    borderClass: 'border-amber-200 dark:border-amber-800',
-    iconClass: 'text-amber-500',
-  },
-  success: {
-    icon: CheckCircle,
-    bgClass: 'bg-green-50 dark:bg-green-950/30',
-    borderClass: 'border-green-200 dark:border-green-800',
-    iconClass: 'text-green-500',
-  },
-  error: {
-    icon: XCircle,
-    bgClass: 'bg-red-50 dark:bg-red-950/30',
-    borderClass: 'border-red-200 dark:border-red-800',
-    iconClass: 'text-red-500',
-  },
+/**
+ * CalloutView — renders the TipTap `callout` node as a warm-paper
+ * `.wp-callout` block. The previous iteration used generic Tailwind
+ * palettes (`bg-blue-50`, `border-amber-200`…) that fought the
+ * warm-paper OKLCH tokens — the greens looked neon next to Source
+ * Serif 4 body text, and the whole thing broke when the user switched
+ * to the moss / plum accent.
+ *
+ * The new rendering delegates ALL coloring to the `.wp-callout` CSS
+ * primitive in globals.css (scoped by `data-callout-type`). Each type
+ * gets its own hue + chroma; dark mode rebalances in the same rule.
+ * The wrapping React node is now just structural — `.wp-callout-stamp`
+ * for the icon slot and `.wp-callout-body` for the editable content.
+ *
+ * The stamp is a button that cycles types in-order (note → tip → warn
+ * → decision → note) when the editor is editable. Icons and the cycle
+ * order are unchanged — what changed is the visual language.
+ */
+
+const CONFIG: Record<CalloutType, { icon: typeof Info }> = {
+  info: { icon: Info },
+  warning: { icon: AlertTriangle },
+  success: { icon: CheckCircle },
+  error: { icon: XCircle },
 };
 
 const TYPES: CalloutType[] = ['info', 'warning', 'success', 'error'];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function CalloutView(props: any) {
   const type: CalloutType = props.node.attrs.type || 'info';
-  const config = CALLOUT_CONFIG[type];
-  const Icon = config.icon;
+  const Icon = CONFIG[type].icon;
 
   const cycleType = () => {
     if (!props.editor.isEditable) return;
@@ -56,30 +46,26 @@ export function CalloutView(props: any) {
 
   return (
     <NodeViewWrapper
-      className={cn(
-        'callout my-3 rounded-lg border-l-4 p-4',
-        config.bgClass,
-        config.borderClass,
-      )}
+      className="wp-callout"
       data-callout=""
       data-callout-type={type}
     >
-      <div className="flex gap-3">
-        <button
-          type="button"
-          className={cn(
-            'mt-0.5 shrink-0 cursor-pointer transition-transform hover:scale-110',
-            config.iconClass,
-          )}
-          onClick={cycleType}
-          title="Click to change type"
-          contentEditable={false}
-        >
-          <Icon className="h-5 w-5" />
-        </button>
-        <div className="min-w-0 flex-1">
-          <NodeViewContent className="callout-content" />
-        </div>
+      <button
+        type="button"
+        className="wp-callout-stamp"
+        onClick={cycleType}
+        title="Click to change type"
+        contentEditable={false}
+        aria-label={`Callout type: ${type}. Click to cycle.`}
+      >
+        <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+      </button>
+      {/* `min-width: 0` is set on `.wp-callout-body` in CSS; it's
+          required for the grid `1fr` column to allow text-wrap.
+          The `flex-1` Tailwind class was a leftover from the old
+          flex layout and is dead in the new grid context. */}
+      <div className="wp-callout-body">
+        <NodeViewContent />
       </div>
     </NodeViewWrapper>
   );
